@@ -2,7 +2,7 @@
 
 ## Verified deployment — 2026-11-02
 
-Live URL: https://riway-platform.ai-edu-web.workers.dev
+Live URL: https://riway-platform.pages.dev
 
 Cloudflare deployment ID: `d488088349a74f3ba45fbb372955aa91`.
 Application build source: `56a2b2551c0333d6d91dedbc9c1913555680e4bd` on `main`.
@@ -35,4 +35,4 @@ Connect the client-owned `baisylvester/riway` repository and choose `main`. Set 
 
 Approve GitHub repository access only if requested by Cloudflare's official installation flow. No production RIWAY domain or existing Worker should be replaced.
 
-The workers.dev URL uses the account's existing Workers subdomain. Current deployment verification is recorded above; repeat the same checks for subsequent releases.
+RIWAY uses its own Pages project at riway-platform.pages.dev. Its advanced-mode Worker forwards requests through the RIWAY_APP service binding to riway-platform. No AIEDU application or account-wide Workers subdomain is changed. Deploy the gateway with: npx wrangler pages deploy . --cwd deployment/pages --project-name riway-platform --branch main --no-bundle --commit-dirty true. The RIWAY workers.dev public endpoint is disabled after verification; the service binding remains available.

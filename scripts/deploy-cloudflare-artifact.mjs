@@ -183,6 +183,6 @@ console.log(
 await api(`/workers/scripts/${config.name}/subdomain`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ enabled: true, previews_enabled: true }),
+  body: JSON.stringify({ enabled: config.workers_dev !== false, previews_enabled: config.workers_dev !== false }),
 });
 console.log("Deployed:", config.vars.NEXT_PUBLIC_SITE_URL);

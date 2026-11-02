@@ -1,6 +1,6 @@
 # RIWAY International platform
 
-Live Cloudflare development deployment: https://riway-platform.ai-edu-web.workers.dev. See CLOUDFLARE.md for verified release details. Payments remain disabled.
+Live Cloudflare development deployment: https://riway-platform.pages.dev. See CLOUDFLARE.md for verified release details. Payments remain disabled.
 
 Project BAI-RWY-2026-001. Built in the required directory:
 `C:\Users\PC2\AndroidStudioProjects\PROJECTS\riway\riway_web_app`

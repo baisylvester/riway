@@ -35,3 +35,7 @@ Run through an authorized privileged SQL connection against an approved test env
 Real email confirmation/recovery delivery, authenticator enrollment from an actual staff account, Storage upload over the deployed Vercel path, full browser matrix, screen-reader/contrast audit, 4G performance, load/concurrency tests and backup restoration have not been independently verified. Payment/provider tests are deferred by instruction. SSO, membership activation, compensation submission, shipping and messaging cannot be verified without the client contracts.
 
 Do not claim 99.9% availability, Core Web Vitals compliance, legal compliance or production readiness based solely on a passing build or these tests.
+
+## Cloudflare verification
+
+The Linux CI run 41417600082 passed typecheck, 18 unit tests, audit, Next.js build, OpenNext build and Wrangler bundle validation. Its checksum-verified artifact was deployed to Cloudflare. All 11 HTTP integration checks passed against https://riway-platform.ai-edu-web.workers.dev. The live homepage, catalogue and images rendered correctly. Browser auth email delivery and production SMTP remain outside the verified checks.

@@ -1,6 +1,6 @@
 # Implementation status
 
-Updated 2026-11-02. User confirmed platform development, then explicitly deferred payments and client APIs. Work is in the mandatory project directory. Existing Supabase project is connected; no extra project was created.
+Updated 2026-11-02. Live Cloudflare deployment is verified at https://riway-platform.ai-edu-web.workers.dev; 11 live HTTP checks passed. User confirmed platform development, then explicitly deferred payments and client APIs. Work is in the mandatory project directory. Existing Supabase project is connected; no extra project was created.
 
 | Area                                                                | Status                                                       | Practical limit                                                                               |
 | ------------------------------------------------------------------- | ------------------------------------------------------------ | --------------------------------------------------------------------------------------------- |
@@ -21,7 +21,7 @@ Updated 2026-11-02. User confirmed platform development, then explicitly deferre
 | Order list and market-scoped CSV export                             | Implemented                                                  | Fulfilment, cancellation, refunds, invoices and tax workflows await policy/provider contracts |
 | RLS / audit / rate limits / validation                              | Implemented; three SQL suites pass                           | WAF, external penetration testing and operational security review remain                      |
 | Unit tests / browser specs / CI                                     | 18 unit tests pass; SQL suites pass; browser flows inspected | Full Playwright CLI, auth and cross-browser suites remain unexecuted                          |
-| Vercel / GitHub preparation                                         | Configuration and runbooks prepared                          | No deployment destination or remote supplied; not published                                   |
+| Cloudflare / GitHub deployment                                      | Deployed and verified; remote main published                 | Manual deployment from verified Linux CI artifact; see CLOUDFLARE.md                          |
 | Payments / refunds                                                  | Deferred by user                                             | No gateway chosen; all handlers fail closed                                                   |
 | RIWAY membership/compensation, SSO                                  | Awaiting client API                                          | Interfaces prepared; no endpoints or commission rules invented                                |
 | Courier / email / SMS / CRM                                         | Awaiting provider contract                                   | Not connected                                                                                 |
@@ -45,5 +45,4 @@ The application is ready for the next client integration phase, not a completed 
 4. Integrate only documented client APIs; implement pending workflows, then run sandbox/UAT/security/performance checks.
 5. Update status with implemented, tested, sandbox-verified and production-integrated states separately.
 
-Local Git metadata was initialized, but lockfile writes remained blocked by the execution environment. No commit or remote push was saved; complete this from the user's normal shell. The source archive excludes all Git metadata and credentials.
-
+Local Git metadata was initialized, but lockfile writes remained blocked by the execution environment. Remote main was published through the GitHub connector; sync the local Git metadata from the user's normal shell when needed. The source archive excludes all Git metadata and credentials.

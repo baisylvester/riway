@@ -2,7 +2,9 @@
 
 ## Current state
 
-Local source and a successful optimized Next.js build are available. The designated Supabase schema and private Storage bucket are configured. GitHub Actions and `vercel.json` are prepared. **No GitHub remote, Vercel project, public deployment or domain change has been made.** Deployment destinations were not supplied. Payments remain disabled by user instruction.
+The application is deployed to Cloudflare Workers at https://riway-platform.ai-edu-web.workers.dev, following the user's Cloudflare deployment request. Supabase remains the designated backend. Remote main is published through the GitHub connector. See CLOUDFLARE.md for the verified deployment ID, build commit, artifact checksum and manual redeployment process. Payments and client APIs remain disabled. No production RIWAY domain has been changed.
+
+The original Vercel instructions below are retained as an alternative; Cloudflare is the active deployment target.
 
 ## Environment
 
@@ -54,5 +56,4 @@ Monitor `/api/health`, server errors, auth failures, storage capacity and later 
 
 ## Local Git limitation
 
-Git repository initialization succeeded, but this sandbox could not create Git lockfiles even after filesystem access was granted. No initial commit or remote push was saved. The source archive is complete. From the project directory in your normal Windows shell, run git add . and git commit, then select the main branch and approved remote. This requires no application changes.
-
+Git repository initialization succeeded, but this sandbox could not create Git lockfiles even after filesystem access was granted. The remote main branch was published through the GitHub connector; local Git metadata remains unsynced. The source archive is complete. From the project directory in your normal Windows shell, run git add . and git commit, then select the main branch and approved remote. This requires no application changes.

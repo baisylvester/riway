@@ -2,6 +2,8 @@
 
 ## Decisions
 
+Hosting update: the user's subsequent Cloudflare request supersedes the initial Vercel hosting target. The existing Next.js application is deployed to Cloudflare Workers through OpenNext; Supabase is unchanged. See CLOUDFLARE.md for the current verified release.
+
 The supplied proposal suggests AWS, Medusa and Payload as a discovery baseline. The subsequently supplied development brief explicitly requires Next.js, Supabase and Vercel. This application follows the latter stack while retaining the proposal's functional scope and approval restrictions.
 
 Next.js App Router provides server-rendered corporate/store pages, protected member/staff pages, Server Actions for forms and Route Handlers for JSON/upload endpoints. React client components manage the local bag, authentication and MFA. Tailwind's PostCSS integration and a shared CSS design system provide the responsive interface.

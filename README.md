@@ -1,5 +1,7 @@
 # RIWAY International platform
 
+Live Cloudflare development deployment: https://riway-platform.ai-edu-web.workers.dev. See CLOUDFLARE.md for verified release details. Payments remain disabled.
+
 Project BAI-RWY-2026-001. Built in the required directory:
 `C:\Users\PC2\AndroidStudioProjects\PROJECTS\riway\riway_web_app`
 
@@ -43,4 +45,3 @@ Legal and product information includes clearly marked review notices. No prices,
 ## Operations
 
 See `DEPLOYMENT.md` for staff provisioning and Vercel setup, `TESTING.md` for verified results, `INTEGRATIONS.md` for the API handoff contract and `IMPLEMENTATION_STATUS.md` for scope and outstanding work. Supabase is hosted in **eu-west-1 (Ireland)**; RIWAY must approve data location before production personal data is collected.
-

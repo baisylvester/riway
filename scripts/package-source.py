@@ -10,7 +10,7 @@ args = parser.parse_args()
 root = Path(__file__).resolve().parents[1]
 output = Path(args.output).resolve()
 output.parent.mkdir(parents=True, exist_ok=True)
-excluded = {'.git', '.cache', '.next', 'node_modules', '.vercel', '.temp', '.branches', 'test-results', 'playwright-report', '__pycache__'}
+excluded = {'.git', '.cache', '.next', '.open-next', '.wrangler', '.cloudflare-bundle', 'node_modules', '.vercel', '.temp', '.branches', 'test-results', 'playwright-report', '__pycache__'}
 files = []
 with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
     for path in sorted(root.rglob('*')):
@@ -18,6 +18,8 @@ with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as archive:
         if not path.is_file() or any(part in excluded for part in relative.parts):
             continue
         if path.name.startswith('.env') and path.name != '.env.example':
+            continue
+        if path.name.startswith('.dev.vars'):
             continue
         if path.name.endswith('.tsbuildinfo'):
             continue

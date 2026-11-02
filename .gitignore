@@ -12,3 +12,4 @@ supabase/.branches/
 .open-next/
 .wrangler/
 .dev.vars*
+.cloudflare-bundle/

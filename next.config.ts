@@ -1,5 +1,7 @@
 import type { NextConfig } from "next";
 const config: NextConfig = {
+  // Cloudflare serves these small approved source assets directly; no paid Images binding is required.
+  images: { unoptimized: process.env.CLOUDFLARE_BUILD === "1" },
   poweredByHeader: false,
   async headers() {
     return [

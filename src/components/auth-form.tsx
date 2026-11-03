@@ -1,5 +1,5 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { browserDb } from "@/lib/supabase/browser";
@@ -8,6 +8,7 @@ export function AuthForm({
 }: {
   mode?: "login" | "register" | "reset" | "update";
 }) {
+  const statusId = useId();
   const [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     router = useRouter();
@@ -67,11 +68,17 @@ export function AuthForm({
     }
   }
   return (
-    <form className="stack" onSubmit={submit}>
+    <form
+      aria-describedby={message ? statusId : undefined}
+      aria-busy={busy}
+      className="stack"
+      onSubmit={submit}
+    >
       {mode !== "update" && (
         <label>
           Email address
           <input
+            aria-describedby={message ? statusId : undefined}
             name="email"
             type="email"
             autoComplete="email"
@@ -84,6 +91,7 @@ export function AuthForm({
         <label>
           Password
           <input
+            aria-describedby={message ? statusId : undefined}
             name="password"
             type="password"
             minLength={12}
@@ -115,7 +123,7 @@ export function AuthForm({
             }[mode]}
       </button>
       {message && (
-        <p className="notice" role="status">
+        <p id={statusId} className="notice" role="status">
           {message}
         </p>
       )}

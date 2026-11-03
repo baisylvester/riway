@@ -1,8 +1,9 @@
 "use client";
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { useStore } from "./store-provider";
 import { markets, type Market } from "@/lib/domain";
 export function Checkout({ market }: { market: Market }) {
+  const statusId = useId();
   const { items } = useStore(),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
@@ -37,7 +38,12 @@ export function Checkout({ market }: { market: Market }) {
     }
   }
   return (
-    <form onSubmit={submit} className="two-column">
+    <form
+      aria-describedby={statusId}
+      aria-busy={busy}
+      onSubmit={submit}
+      className="two-column"
+    >
       <div className="panel stack">
         <h2>Delivery details</h2>
         <p className="muted small">
@@ -55,6 +61,7 @@ export function Checkout({ market }: { market: Market }) {
             <label key={name} className={name === "line1" ? "full" : ""}>
               {label}
               <input
+                aria-describedby={message ? statusId : undefined}
                 name={name}
                 required
                 autoComplete={
@@ -93,7 +100,9 @@ export function Checkout({ market }: { market: Market }) {
         <button className="button" disabled={busy || !items.length}>
           {busy ? "Checking…" : "Check ordering availability"}
         </button>
-        <p role="status">{message}</p>
+        <p id={statusId} role="status">
+          {message}
+        </p>
       </aside>
     </form>
   );

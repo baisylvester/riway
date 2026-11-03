@@ -1,160 +1,151 @@
 import Link from "next/link";
-import Image from "next/image";
+import { BrandMotion } from "@/components/brand/brand-motion";
+import { catalogue, content, currentMarket } from "@/lib/data";
+import { GoalsHero, GoalsList } from "@/components/brand/brand-interactions";
 import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUpRight,
-  Globe2,
-  HeartHandshake,
-  Compass,
-} from "lucide-react";
-import { catalogue } from "@/lib/data";
-import { ProductArt, ProductCard } from "@/components/product-card";
+  Houses,
+  Unboxing,
+  RightWayTrack,
+  Recognition,
+} from "@/components/brand/editorial";
 export default async function Home() {
-  const { products } = await catalogue();
+  const [{ products }, events, market] = await Promise.all([
+    catalogue(),
+    content("event"),
+    currentMarket(),
+  ]);
+  const purtier = products.find((p) => p.slug === "purtier-placenta");
+  const conscientious = products.find((p) => p.slug === "conscientious");
+  const upcoming = events
+    .filter(
+      (e) =>
+        (!e.market || e.market === market) &&
+        e.starts_at &&
+        new Date(e.starts_at) > new Date(),
+    )
+    .slice(0, 4);
   return (
-    <>
-      <section className="hero">
-        <div className="hero-copy">
-          <span className="eyebrow">
-            <span className="gold-line" /> PURPOSE. PEOPLE. POSSIBILITIES.
-          </span>
-          <h1>
-            A better tomorrow
-            <br />
-            begins with <em>you.</em>
-          </h1>
-          <p>
-            Discover a world inspired by possibility.
-            <br />
-            Exceptional collections. Meaningful connections.
-            <br />
-            One shared journey forward.
-          </p>
-          <div className="hero-buttons">
-            <Link className="button" href="/shop">
-              Explore our collections <ArrowUpRight size={17} />
-            </Link>
-            <Link className="text-link" href="/about">
-              The RIWAY story <ArrowRight size={17} />
-            </Link>
-          </div>
-          <div className="hero-bottom">
-            <span className="hero-number">
-              01 <span>/ 02</span>
-            </span>
-            <span className="slider-line" />
-            <a href="#collections" aria-label="Scroll to collections">
-              <ArrowDown size={17} />
-            </a>
-          </div>
-        </div>
-        <div className="hero-visual">
-          <span className="hero-orbit orbit-one" />
-          <span className="hero-orbit orbit-two" />
-          <div className="hero-watermark">PURTIER</div>
-          <ProductArt
-            product={{ slug: "purtier-placenta", name: "PURTIER PLACENTA" }}
-            hero
-          />
-          <div className="hero-caption">
-            <span className="eyebrow">THE SIGNATURE COLLECTION</span>
-            <h2>PURTIER PLACENTA</h2>
-            <Link href="/shop/purtier-placenta">
-              Discover the collection <ArrowUpRight size={15} />
-            </Link>
-          </div>
-          <span className="vertical-caption">
-            RIWAY INTERNATIONAL · EST. 2008
-          </span>
-        </div>
-      </section>
-      <div className="brand-strip">
-        <span>Rooted in Singapore. Connected to the world.</span>
+    <BrandMotion>
+      <GoalsHero />
+      <section className="rw-section rw-manifesto" id="story">
         <div>
-          <Globe2 size={18} /> A global community
-        </div>
-        <span className="strip-divider" />
-        <div>
-          <HeartHandshake size={18} /> People at our heart
-        </div>
-        <span className="strip-divider" />
-        <div>
-          <Compass size={18} /> A shared direction
-        </div>
-      </div>
-      <section className="section" id="collections">
-        <div className="section-heading">
-          <div>
-            <span className="eyebrow">CONSIDERED. DISTINCTIVE. RIWAY.</span>
-            <h2>Extraordinary, by nature.</h2>
-          </div>
-          <Link className="text-link" href="/shop">
-            View all collections <ArrowUpRight size={17} />
-          </Link>
-        </div>
-        <div className="products-grid">
-          {products.map((p) => (
-            <ProductCard key={p.id} product={p} />
-          ))}
-        </div>
-        <p className="collection-notice">
-          Explore our product range. Online sales are awaiting market approvals.
-        </p>
-      </section>
-      <section className="world-section">
-        <div className="world-photo">
-          <Image
-            src="/images/pegasus.jpg"
-            alt="RIWAY Baby Pegasus yachts at sea"
-            fill
-            sizes="(max-width: 760px) 100vw, 50vw"
-          />
-        </div>
-        <div className="world-copy">
-          <span className="eyebrow">MORE THAN A DESTINATION</span>
+          <span className="eyebrow">About RIWAY</span>
           <h2>
-            A shared vision.
+            People at the heart.
             <br />
-            An extraordinary journey.
+            Possibility on
+            <br />
+            <em>the horizon.</em>
           </h2>
           <p>
             Since 2008, RIWAY has brought people together around a belief in
             possibility. From Singapore to our international community, it is
             our people who give that vision life.
           </p>
-          <Link className="button button-light" href="/about">
-            Step into our world <ArrowUpRight size={17} />
+          <Link className="text-link" href="/about">
+            Step into our world ↗
+          </Link>
+          <div className="rw-meta">
+            <span>
+              <b>2008</b>Founded in Singapore
+            </span>
+            <span>
+              <b>RIWAY</b>A shared direction
+            </span>
+            <span>
+              <b>Together</b>People at our heart
+            </span>
+          </div>
+        </div>
+        <img
+          src="/design/riway/hero-skyline.jpg"
+          alt="A RIWAY leader looking across the city"
+          loading="lazy"
+        />
+      </section>
+      <Houses
+        purtier={purtier ? `/shop/${purtier.slug}` : undefined}
+        conscientious={
+          conscientious ? `/shop/${conscientious.slug}` : undefined
+        }
+      />
+      {purtier && <Unboxing kind="purtier" href={`/shop/${purtier.slug}`} />}
+      {conscientious && (
+        <Unboxing kind="conscientious" href={`/shop/${conscientious.slug}`} />
+      )}
+      <GoalsList />
+      <RightWayTrack />
+      <Recognition />
+      <section className="rw-section rw-dark rw-events" id="events">
+        <div className="rw-section-heading">
+          <div>
+            <span className="eyebrow">Events</span>
+            <h2>
+              Where the
+              <br />
+              <em>spirit gathers.</em>
+            </h2>
+          </div>
+          <Link className="rw-pill" href="/events">
+            Explore events ↗
           </Link>
         </div>
+        <div
+          className="rw-event-archive"
+          aria-label="RIWAY event archive imagery"
+        >
+          {[
+            ["gala-stage.jpg", "RIWAY gala stage"],
+            ["tlm-istanbul.jpg", "RIWAY community meeting"],
+            ["fire-stage.jpg", "RIWAY event performance"],
+            ["crowd.jpg", "RIWAY community audience"],
+          ].map(([image, alt]) => (
+            <img
+              key={image}
+              src={`/design/riway/${image}`}
+              alt={alt}
+              loading="lazy"
+            />
+          ))}
+        </div>
+        <p className="small">Moments from the RIWAY image archive.</p>
+        {upcoming.length ? (
+          <div className="rw-event-list">
+            {upcoming.map((e) => (
+              <Link key={e.id} href={`/events/${e.slug}`}>
+                <h3>{e.title}</h3>
+                <p>{e.excerpt}</p>
+                <span>View event ↗</span>
+              </Link>
+            ))}
+          </div>
+        ) : (
+          <p>
+            Confirmed, approved event details will appear on our events page.
+          </p>
+        )}
       </section>
-      <section className="section community">
-        <span className="eyebrow">TOGETHER, WE GO FURTHER</span>
+      <section className="rw-section rw-product-cta" id="contact">
+        <span className="eyebrow">Together, we go further</span>
         <h2>
           Your next chapter
           <br />
-          starts with a connection.
+          <em>starts with a connection.</em>
         </h2>
-        <p>
-          Learn about RIWAY membership, our community,
-          <br />
-          and the people behind the journey.
-        </p>
-        <Link className="button" href="/membership">
-          Discover the opportunity <ArrowUpRight size={17} />
+        <Link className="rw-pill" href="/membership">
+          Discover membership ↗
         </Link>
-        <div className="community-links">
-          <Link href="/stories">
-            Our stories <ArrowUpRight size={18} />
-          </Link>
-          <Link href="/events">
-            Moments that connect us <ArrowUpRight size={18} />
-          </Link>
-          <Link href="/support">
-            We’re here to help <ArrowUpRight size={18} />
-          </Link>
+        <div className="rw-utility-links">
+          <Link href="/shop">Live catalogue</Link>
+          <Link href="/stories">Our stories</Link>
+          <Link href="/distributor">Distributor area</Link>
+          <Link href="/support">Contact & support</Link>
         </div>
+        <p className="small">
+          Online purchasing is unavailable. Explore the collections and save
+          products to your review bag.
+        </p>
       </section>
-    </>
+    </BrandMotion>
   );
 }

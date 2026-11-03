@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import "./brand.css";
 import { StoreProvider } from "@/components/store-provider";
 import { Header, Footer } from "@/components/chrome";
 import { currentMarket } from "@/lib/data";

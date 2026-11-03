@@ -1,0 +1,25 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "riway-platform",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-11-02",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "workers_dev": false,
+  "assets": {
+    "directory": ".open-next/assets",
+    "binding": "ASSETS",
+  },
+  "services": [
+    {
+      "binding": "WORKER_SELF_REFERENCE",
+      "service": "riway-platform",
+    },
+  ],
+  "vars": {
+    "NEXT_PUBLIC_SUPABASE_URL": "https://skiimthwadramxdzhgoy.supabase.co",
+    "PAYMENT_PROVIDER": "disabled",
+    "RIWAY_INTEGRATION": "disabled",
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_QP1Wn3dmD8FVmdH07fhK6A_HzFKMl_y",
+    "NEXT_PUBLIC_SITE_URL": "https://riway-platform.pages.dev",
+  },
+}

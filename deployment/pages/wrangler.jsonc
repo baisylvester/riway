@@ -1,0 +1,7 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "riway-platform",
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-11-02",
+  "services": [{ "binding": "RIWAY_APP", "service": "riway-platform" }]
+}

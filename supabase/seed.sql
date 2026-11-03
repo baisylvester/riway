@@ -1,0 +1,2 @@
+-- Initial migration installs only verified public product identities and blocked markets.
+-- Intentionally no customer, staff, sponsor, price, stock or transaction seed data.

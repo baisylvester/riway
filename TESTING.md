@@ -1,5 +1,14 @@
 # Testing
 
+## UI integration verified on 2026-11-03
+
+Typecheck, 20 unit tests, Next.js production build and all 11 HTTP checks pass. Full Playwright Chromium/mobile suite: 21 passed, one intentional desktop skip for the mobile-only menu. New coverage includes market failure feedback, category/empty states, quantity limits/removal, unknown-product UI, keyboard goals, reduced motion, WebGL failure/context loss, client-route cleanup and mobile-menu focus behavior. See DESIGN-INTEGRATION.md for the parity inventory.
+
+Reference and application screenshots were reviewed at desktop (1440×1000), tablet (834×1112) and mobile (390×844). No recorded page JavaScript errors; both packaging sequences rendered in WebGL at all three widths.
+
+OpenNext Cloudflare build was attempted but is blocked by the documented Windows esbuild/config-resolution limitation. Authenticated account/staff/distributor acceptance tests and SQL security fixtures were not run during the UI integration; no authorized test accounts were supplied. Earlier verification below is historical and does not imply those checks were rerun.
+
+
 ## Verified on 2026-11-02
 
 - `npm run typecheck`: passed.

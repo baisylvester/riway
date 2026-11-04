@@ -22,6 +22,7 @@ test("catalogue search and bag persist across reload", async ({ page }) => {
     .click();
   await page.getByRole("button", { name: "Add to bag for review" }).click();
   await page.getByRole("link", { name: "View bag →" }).click();
+  await expect(page).toHaveURL(/\/cart$/);
   await expect(
     page.getByRole("heading", { name: "PURTIER PLACENTA", exact: true }),
   ).toBeVisible();
@@ -60,6 +61,10 @@ test("public pages fit the viewport", async ({ page }) => {
     "/auth/login",
   ]) {
     await page.goto(path);
+    if (path === "/")
+      await expect(page.locator(".reference-design .loader")).toHaveCount(0, {
+        timeout: 15000,
+      });
     await expect(page.locator("h1")).toBeVisible();
     expect(
       await page.evaluate(

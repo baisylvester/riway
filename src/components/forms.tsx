@@ -1,5 +1,5 @@
 "use client";
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 import {
   saveProfile,
   saveAddress,
@@ -16,13 +16,20 @@ export function ProfileForm({
     marketing_consent?: boolean;
   } | null;
 }) {
+  const statusId = useId();
   const [s, a, p] = useActionState(saveProfile, { message: "" });
   return (
-    <form action={a} className="panel stack">
+    <form
+      aria-describedby={statusId}
+      aria-busy={p}
+      action={a}
+      className="panel stack"
+    >
       <h2>Your profile</h2>
       <label>
         Full name
         <input
+          aria-describedby={statusId}
           name="full_name"
           defaultValue={profile?.full_name}
           required
@@ -32,10 +39,16 @@ export function ProfileForm({
       </label>
       <label>
         Phone number
-        <input name="phone" defaultValue={profile?.phone} maxLength={25} />
+        <input
+          aria-describedby={statusId}
+          name="phone"
+          defaultValue={profile?.phone}
+          maxLength={25}
+        />
       </label>
       <label className="checkbox">
         <input
+          aria-describedby={statusId}
           type="checkbox"
           name="marketing_consent"
           defaultChecked={profile?.marketing_consent}
@@ -45,14 +58,22 @@ export function ProfileForm({
       <button className="button" disabled={p}>
         Save profile
       </button>
-      <p role="status">{s.message}</p>
+      <p id={statusId} role="status">
+        {s.message}
+      </p>
     </form>
   );
 }
 export function AddressForm() {
+  const statusId = useId();
   const [s, a, p] = useActionState(saveAddress, { message: "" });
   return (
-    <form action={a} className="panel stack">
+    <form
+      aria-describedby={statusId}
+      aria-busy={p}
+      action={a}
+      className="panel stack"
+    >
       <h2>Add an address</h2>
       <div className="form-grid">
         {[
@@ -64,12 +85,17 @@ export function AddressForm() {
         ].map(([n, l]) => (
           <label key={n}>
             {l}
-            <input name={n} required maxLength={n === "line1" ? 200 : 100} />
+            <input
+              aria-describedby={statusId}
+              name={n}
+              required
+              maxLength={n === "line1" ? 200 : 100}
+            />
           </label>
         ))}
         <label>
           Country
-          <select name="country">
+          <select aria-describedby={statusId} name="country">
             {Object.entries(markets).map(([c, v]) => (
               <option value={c} key={c}>
                 {v.name}
@@ -81,41 +107,66 @@ export function AddressForm() {
       <button className="button" disabled={p}>
         Save address
       </button>
-      <p role="status">{s.message}</p>
+      <p id={statusId} role="status">
+        {s.message}
+      </p>
     </form>
   );
 }
 export function SupportForm({ market }: { market: Market }) {
+  const statusId = useId();
   const [s, a, p] = useActionState(sendSupport, { message: "" });
   return (
-    <form action={a} className="panel stack">
+    <form
+      aria-describedby={statusId}
+      aria-busy={p}
+      action={a}
+      className="panel stack"
+    >
       <h2>How can we help?</h2>
       <p className="small muted">Sign in to send and track a request.</p>
       <input type="hidden" name="market" value={market} />
       <label>
         Subject
-        <input name="subject" required minLength={5} maxLength={160} />
+        <input
+          aria-describedby={statusId}
+          name="subject"
+          required
+          minLength={5}
+          maxLength={160}
+        />
       </label>
       <label>
         Your message
-        <textarea name="message" required minLength={20} maxLength={4000} />
+        <textarea
+          aria-describedby={statusId}
+          name="message"
+          required
+          minLength={20}
+          maxLength={4000}
+        />
       </label>
       <button className="button" disabled={p}>
         Send support request
       </button>
-      <p role="status">{s.message}</p>
+      <p id={statusId} role="status">
+        {s.message}
+      </p>
     </form>
   );
 }
 export function EventRegistration({ id }: { id: string }) {
+  const statusId = useId();
   const [s, a, p] = useActionState(registerEvent, { message: "" });
   return (
-    <form action={a}>
+    <form aria-describedby={statusId} aria-busy={p} action={a}>
       <input type="hidden" name="event_id" value={id} />
       <button className="button" disabled={p}>
         Register for event
       </button>
-      <p role="status">{s.message}</p>
+      <p id={statusId} role="status">
+        {s.message}
+      </p>
     </form>
   );
 }

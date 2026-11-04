@@ -9,7 +9,7 @@ import {
   Menu,
   X,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useStore } from "./store-provider";
 import { markets, type Market } from "@/lib/domain";
 export function Header({ market }: { market: Market }) {
@@ -18,6 +18,54 @@ export function Header({ market }: { market: Market }) {
     router = useRouter();
   const [open, setOpen] = useState(false);
   const [marketError, setMarketError] = useState("");
+  const menuButton = useRef<HTMLButtonElement>(null);
+  const navigation = useRef<HTMLElement>(null);
+  useEffect(() => {
+    setOpen(false);
+  }, [path]);
+  useEffect(() => {
+    if (!open) return;
+    const nav = navigation.current;
+    const trigger = menuButton.current;
+    const mobile = matchMedia("(max-width: 760px)");
+    if (!mobile.matches) return;
+    const outside = [
+      document.getElementById("main"),
+      document.querySelector("footer"),
+    ].filter(Boolean) as HTMLElement[];
+    outside.forEach((el) => (el.inert = true));
+    nav?.querySelector<HTMLAnchorElement>("a")?.focus();
+    const close = () => setOpen(false);
+    const keydown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        close();
+      }
+      if (e.key === "Tab") {
+        const links = Array.from(
+          nav?.querySelectorAll<HTMLElement>("a,button,select") || [],
+        );
+        const focusable = [...links, trigger].filter(Boolean) as HTMLElement[];
+        const index = focusable.indexOf(document.activeElement as HTMLElement);
+        if (e.shiftKey && index <= 0) {
+          e.preventDefault();
+          focusable.at(-1)?.focus();
+        }
+        if (!e.shiftKey && index === focusable.length - 1) {
+          e.preventDefault();
+          focusable[0]?.focus();
+        }
+      }
+    };
+    document.addEventListener("keydown", keydown);
+    mobile.addEventListener("change", close);
+    return () => {
+      document.removeEventListener("keydown", keydown);
+      mobile.removeEventListener("change", close);
+      outside.forEach((el) => (el.inert = false));
+      trigger?.focus({ preventScroll: true });
+    };
+  }, [open]);
   const links = [
     ["/about", "Our world"],
     ["/shop", "Our collections"],
@@ -37,6 +85,8 @@ export function Header({ market }: { market: Market }) {
           RIWAY<span>INTERNATIONAL</span>
         </Link>
         <nav
+          id="main-navigation"
+          ref={navigation}
           className={open ? "navigation open" : "navigation"}
           aria-label="Main navigation"
         >
@@ -50,6 +100,23 @@ export function Header({ market }: { market: Market }) {
               {label}
             </Link>
           ))}
+          <div className="rw-menu-extra">
+            <Link href="/stories" onClick={() => setOpen(false)}>
+              Stories
+            </Link>
+            <Link href="/support" onClick={() => setOpen(false)}>
+              Contact & support
+            </Link>
+            <Link href="/distributor" onClick={() => setOpen(false)}>
+              Distributor area
+            </Link>
+            <Link href="/account" onClick={() => setOpen(false)}>
+              Member account
+            </Link>
+            <Link href="/cart" onClick={() => setOpen(false)}>
+              Review bag
+            </Link>
+          </div>
         </nav>
         <div className="header-actions">
           <label className="market">
@@ -98,6 +165,8 @@ export function Header({ market }: { market: Market }) {
             <span>{items.reduce((a, i) => a + i.quantity, 0)}</span>
           </Link>
           <button
+            ref={menuButton}
+            aria-controls="main-navigation"
             className="mobile-menu"
             aria-label={open ? "Close menu" : "Open menu"}
             aria-expanded={open}
@@ -138,6 +207,14 @@ export function Footer() {
           <Link href="/legal">Policies & conduct</Link>
         </div>
       </div>
+      <span className="rw-footer-word" aria-hidden="true">
+        RIWAY
+      </span>
+      <p className="rw-footer-notice">
+        Explore our collections and save products to your review bag. Online
+        purchasing and payment collection are unavailable. Contact RIWAY for
+        approved market-specific product information.
+      </p>
       <div className="footer-bottom">
         <span>
           © {new Date().getFullYear()} RIWAY International. All rights reserved.

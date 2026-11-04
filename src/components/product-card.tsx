@@ -21,7 +21,7 @@ export function ProductArt({
   ) : product.slug === "conscientious" ? (
     <Image
       className="product-photo"
-      src="/images/conscientious.jpg"
+      src="/design/conscientious/collection.jpg"
       width={980}
       height={551}
       alt="CONSCIENTIOUS collection"

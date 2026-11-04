@@ -1,13 +1,13 @@
 @import "tailwindcss";
 :root {
-  --ink: #163a30;
-  --green: #173d32;
-  --cream: #f7f6f0;
-  --gold: #a68a51;
-  --muted: #6e756e;
-  --border: #dce0d7;
+  --ink: #141416;
+  --green: #9e1225;
+  --cream: #efece6;
+  --gold: #b8923f;
+  --muted: #69665f;
+  --border: #d1ccc3;
   --white: #fff;
-  --serif: Georgia, "Times New Roman", serif;
+  --serif: "Instrument Serif", Georgia, serif;
 }
 * {
   box-sizing: border-box;
@@ -19,7 +19,7 @@ body {
   margin: 0;
   background: var(--cream);
   color: var(--ink);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: "Inter Tight", Arial, sans-serif;
   font-size: 14px;
   line-height: 1.65;
 }
@@ -259,7 +259,7 @@ h3 {
   letter-spacing: 0.2px;
 }
 .button:hover {
-  background: #295a49;
+  background: #771021;
 }
 .button-light {
   background: #f8f6ec;

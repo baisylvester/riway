@@ -61,6 +61,10 @@ test("public pages fit the viewport", async ({ page }) => {
     "/auth/login",
   ]) {
     await page.goto(path);
+    if (path === "/")
+      await expect(page.locator(".reference-design .loader")).toHaveCount(0, {
+        timeout: 15000,
+      });
     await expect(page.locator("h1")).toBeVisible();
     expect(
       await page.evaluate(

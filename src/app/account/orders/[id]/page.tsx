@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { requireSession } from "@/lib/data";
 import { money } from "@/lib/domain";
+import { Reorder } from "@/components/reorder";
 export default async function Order({
   params,
 }: {
@@ -39,6 +40,12 @@ export default async function Order({
         ),
       )}
       <p className="price">Total {money(o.total_minor, o.currency)}</p>
+      <Reorder items={o.order_items
+        .filter((i: { product_id: string | null }) => i.product_id)
+        .map((i: { product_id: string; quantity: number }) => ({
+          productId: i.product_id,
+          quantity: i.quantity,
+        }))} />
     </div>
   );
 }

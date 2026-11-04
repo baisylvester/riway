@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import "./brand.css";
+import "./reference.css";
 import { StoreProvider } from "@/components/store-provider";
-import { Header, Footer } from "@/components/chrome";
+import { SiteChrome } from "@/components/site-chrome";
 import { currentMarket } from "@/lib/data";
 export const metadata: Metadata = {
   title: {
@@ -26,9 +27,7 @@ export default async function RootLayout({
           <a className="skip-link" href="#main">
             Skip to content
           </a>
-          <Header market={market} />
-          <main id="main">{children}</main>
-          <Footer />
+          <SiteChrome market={market}>{children}</SiteChrome>
         </StoreProvider>
       </body>
     </html>

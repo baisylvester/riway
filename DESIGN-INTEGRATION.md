@@ -11,13 +11,21 @@
 - Preserve loading, error, pending, success, unavailable, empty, not-found and unauthorized states. No database, policy, migration or action changes.
 
 ## Design mapping / decisions
-- index.html → /; purtier.html → /shop/purtier-placenta; conscientious.html → /shop/conscientious. Other products retain generic dynamic route.
-- Tokens porcelain #efece6/#e9e5dd, ink #141416, burgundy #9e1225, gold #b8923f, cinema #070708, ivory #ece7dd.
-- Local font files, scoped brand CSS; shared functional styling. Supplied photos + procedural model factories adapted to ESM; React owns lazy loading, animation and disposal.
-- Native scroll, keyboard buttons/chips, native snap track; no scroll locks or preloaders. Reduced motion uses static images. Product review controls precede cinema.
-- Reference claims/dosages/laureate records/contact info not approved: preserve app copy/notices; visual archive imagery is not a scheduled event or approved product claim.
+- Actual reference folder inspected: riway_ui_design/riway, including all three HTML pages, shared/site CSS, motion scripts and procedural models.
+- index.html → /; purtier.html → /purtier; conscientious.html → /conscientious. Existing /shop/[slug] routes retain live product review, market selection and bag actions.
+- Reference HTML translated to React JSX; original CSS scoped under .reference-design and per-brand attributes. Existing functional chrome is shown outside the three reference routes.
+- Exact reference Lenis 1.1.18 (lerp 0.085, wheelMultiplier 0.95), GSAP 3.12.5 and SplitType 0.3.4. Source cursor quickTo duration 0.18, magnetic strength 0.35, preloader 1500/1600ms, wipe power4.inOut, scrub text, clip reveals, counters, stagger and horizontal tracks retained.
+- Complete landing manifesto, houses, both four-beat unboxings, Six Goals, track, sixteen laureates, events marquee and footer.
+- Complete product sections and source product copy/ingredient dosages. Dedicated experiences are presentation routes; original commerce/auth/account/admin/API safeguards remain.
+- Source model factories reused with reference PMREM/DPR restored inside the new runtime. Offscreen/hidden canvases pause; event listeners, contexts, timelines, RAF, rendering resources and Lenis ticker clean up.
+- Keyboard controls and focus equivalents supplement source pointer interactions. Mobile commerce menu links remain accessible. Touch disables the custom cursor; reduced motion skips loader/smooth scrolling and supplies static product imagery.
+- 52 reference images reused with matching SHA-256 hashes. Local Instrument Serif, Inter Tight and Cinzel fonts reused.
 
-## Verification
-Implemented and verified 2026-11-03. Typecheck, 20 unit tests, Next production build and 11 HTTP checks pass. Full Playwright: 21 passed, 1 intentional desktop skip for the mobile-only menu. Three-width reference/application screenshots and product WebGL renders reviewed. Cloudflare build attempted: blocked by documented Windows OpenNext/esbuild ancestor-directory/config resolution failure. Authenticated account/distributor/staff writes and SQL fixtures not run without authorized test accounts. No deployment or production writes.
-
-Principal additions: src/app/brand.css; components/brand (editorial, motion, interactions, ProductStage, lazy rendering runtime and five adapted factories); public/design and local fonts. Shared chrome and form accessibility updated. StoreProvider, cart/domain/actions/data/proxy/services and security/deployment configuration unchanged. Detailed implementation report saved with the chat outputs.
+## Verification (2026-11-04)
+- Production build, typecheck, 20 unit tests and 11 HTTP/security boundary checks pass.
+- Playwright source/application comparisons: /, /purtier, /conscientious at 1440x900, 1024x768 and 390x844. Every measured section top and height matches the source at each size; no horizontal overflow.
+- Dedicated interaction script verifies desktop cursor Drag label/difference blend, menu Escape/focus, wheel caption, six unboxing progress screenshots, HIM/HER theme, wipe navigation, destination preloaders and reduced-motion touch fallback on all three routes. No console or page errors in that script.
+- Full browser regression suite also exercises catalogue/search/market/bag/private areas and WebGL fallback/context loss. Final results recorded in the accompanying chat report.
+- Lazy fallback photos beneath successful offscreen WebGL scenes can remain unloaded until needed; these are not missing assets. All referenced source assets exist and match.
+- Original contact links connect to /support. A small commerce link group was added to the source menu. Animation screenshots differ with idle animation time, pointer position and adaptive GPU tier.
+- No deployment, database migrations, live orders or authenticated staff writes performed.

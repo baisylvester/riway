@@ -4,38 +4,40 @@ import { ProductStage } from "./product-stage";
 const goals = [
   [
     "Financial",
-    "Possibility, with purpose.",
-    "Explore RIWAY membership and its current requirements. Membership is not a guarantee of income.",
+    "Freedom you can measure.",
+    "A platform to achieve financial freedom and master the abilities to meet market demands.",
   ],
   [
     "Health",
-    "Care for the everyday.",
-    "Discover our nutrition collection. Approved market-specific product information remains essential.",
+    "A body that carries the dream.",
+    "A healthy body, for a better quality of life and the ability to realise our dream.",
   ],
   [
     "Social",
-    "A world of connections.",
-    "A shared journey across cultures and communities.",
+    "A circle that lifts everyone.",
+    "Expand the social circle, and exert a positive influence on everyone in it.",
   ],
   [
     "Family",
-    "People at the heart.",
-    "Meaningful connections begin with the people closest to us.",
+    "A warm and loving home.",
+    "Help more families seek the concept of happiness in creating a warm and loving family.",
   ],
   [
     "Mental",
-    "A considered direction.",
-    "Creating the next chapter with care and purpose.",
+    "Thinking, raised higher.",
+    "The right thoughts, constantly enriching ourselves to raise our thinking to a higher level.",
   ],
   [
     "Spiritual",
-    "One shared journey.",
-    "People, purpose and possibility are at the heart of our community.",
+    "Integrity, righteousness, positivity.",
+    "Spiritual wealth, and becoming a trustworthy person.",
   ],
 ];
 export function GoalsHero() {
-  const [active, setActive] = useState(-1);
+  const [active, setActive] = useState(0);
   const drag = useRef<number | null>(null);
+  const wheelAccumulator = useRef(0);
+  const lastWheelStep = useRef(0);
   const controls = useRef<HTMLDivElement>(null);
   function move(index: number) {
     const next = (index + goals.length) % goals.length;
@@ -87,6 +89,24 @@ export function GoalsHero() {
         onPointerCancel={() => {
           drag.current = null;
         }}
+        onWheel={(e) => {
+          // Match the reference wheel: desktop wheel input advances one goal
+          // at a time while allowing the page to continue at the ends.
+          if (window.matchMedia("(pointer: coarse)").matches) return;
+          e.preventDefault();
+          wheelAccumulator.current += e.deltaY;
+          const now = performance.now();
+          if (
+            Math.abs(wheelAccumulator.current) >= 110 &&
+            now - lastWheelStep.current > 420
+          ) {
+            const direction = wheelAccumulator.current > 0 ? 1 : -1;
+            const next = Math.max(0, Math.min(goals.length - 1, active - direction));
+            if (next !== active) move(next);
+            wheelAccumulator.current = 0;
+            lastWheelStep.current = now;
+          }
+        }}
       >
         <div className="rw-wheel-ring" aria-hidden="true" />
         {goals.map(([label], i) => (
@@ -107,23 +127,13 @@ export function GoalsHero() {
       </div>
       <div className="rw-caption" id="rw-goal-caption" aria-live="polite">
         <span className="eyebrow">
-          {active < 0
-            ? "Purpose. People. Possibilities."
-            : `${String(active + 1).padStart(2, "0")} — ${goals[active][0]}`}
+          {`${String(active + 1).padStart(2, "0")} — ${goals[active][0]}`}
         </span>
         <h1 id="rw-hero-title">
-          {active < 0 ? (
-            <>
-              Showing you the <em>Right Way.</em>
-            </>
-          ) : (
-            goals[active][1]
-          )}
+          {goals[active][1]}
         </h1>
         <p>
-          {active < 0
-            ? "Six goals. One shared journey forward. Explore the wheel."
-            : goals[active][2]}
+          {goals[active][2]}
         </p>
         <a className="text-link" href="#collections">
           Explore our collections ↗

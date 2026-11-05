@@ -5,6 +5,35 @@ on:
 permissions:
   contents: read
 jobs:
+  postgres-concurrency:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: riway_test
+          POSTGRES_PASSWORD: disposable-fixture-only
+          POSTGRES_DB: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U riway_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run test:postgres
+        env:
+          RIWAY_TEST_DISPOSABLE: "1"
+          RIWAY_TEST_PG_PORT: "5432"
+          RIWAY_POSTGRES_BIN: /usr/bin
+          PGPASSWORD: disposable-fixture-only
   verify:
     runs-on: ubuntu-latest
     env:

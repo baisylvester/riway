@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import { browserDb } from "@/lib/supabase/browser";
 export function Referral({ code }: { code: string }) {
   const [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
@@ -12,13 +11,16 @@ export function Referral({ code }: { code: string }) {
         onClick={async () => {
           setBusy(true);
           try {
-            const { data, error } = await browserDb().rpc("claim_referral", {
-              c: code,
+            const response = await fetch("/api/referral", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ code }),
             });
+            const data = await response.json();
             setMessage(
-              error
+              !response.ok
                 ? "Sign in to link this verified distributor. An existing sponsor cannot be replaced."
-                : String(data),
+                : data.message,
             );
           } catch {
             setMessage("Your referral could not be linked. Please try again.");

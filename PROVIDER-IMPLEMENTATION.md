@@ -1,5 +1,7 @@
 # Provider implementation plan — 5 November 2026
 
+Latest setup progress is in `ROLLOUT-STATUS.md`: the sender domain has been registered pending DNS, Clerk development MFA is enabled, R2 is explicitly deferred, and owner onboarding/daily low-stock notifications plus the dormant Worker scheduler have been added. There are now four pending hosted migrations and 48 local automated tests. Linux CI has passed real PostgreSQL concurrency and OpenNext bundle verification for the first release candidate; no deployment or hosted migration has occurred.
+
 1. Keep UUID application identities stable; map Clerk issuer/subject pairs to them in a private database table. Use Supabase third-party JWT verification and RLS for data access. Preserve the Supabase login path during rollout.
 2. Add Resend delivery with actual SDK idempotency, validated templates, recipient restrictions in test mode, bounded retries, and redacted failures.
 3. Integrate R2 with existing authorized editorial uploads and expiring previews. Record the storage backend per asset so historical Supabase media continues to work.

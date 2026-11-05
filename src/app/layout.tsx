@@ -22,21 +22,25 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const market = await currentMarket();
-  const layout = (
+  const content = (
+    <StoreProvider>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <SiteChrome market={market}>{children}</SiteChrome>
+    </StoreProvider>
+  );
+  return (
     <html lang="en">
       <body>
-        <StoreProvider>
-          <a className="skip-link" href="#main">
-            Skip to content
-          </a>
-          <SiteChrome market={market}>{children}</SiteChrome>
-        </StoreProvider>
+        {authProvider() === "clerk" ? (
+          <ClerkProvider signInUrl="/auth/login" signUpUrl="/auth/register">
+            {content}
+          </ClerkProvider>
+        ) : (
+          content
+        )}
       </body>
     </html>
-  );
-  return authProvider() === "clerk" ? (
-    <ClerkProvider>{layout}</ClerkProvider>
-  ) : (
-    layout
   );
 }

@@ -134,6 +134,8 @@ for (const bucket of session.buckets ?? []) {
 }
 const headersPath = path.join(assetsRoot, "_headers");
 const metadata = {
+  // Preserve already provisioned provider credentials across code deployments.
+  keep_bindings: ["secret_text", "secret_key"],
   main_module: "worker.js",
   compatibility_date: config.compatibility_date,
   compatibility_flags: config.compatibility_flags,
@@ -186,3 +188,11 @@ await api(`/workers/scripts/${config.name}/subdomain`, {
   body: JSON.stringify({ enabled: config.workers_dev !== false, previews_enabled: config.workers_dev !== false }),
 });
 console.log("Deployed:", config.vars.NEXT_PUBLIC_SITE_URL);
+if (config.triggers?.crons) {
+  await api(`/workers/scripts/${config.name}/schedules`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(config.triggers.crons.map((cron) => ({ cron }))),
+  });
+  console.log("Configured notification schedule.");
+}

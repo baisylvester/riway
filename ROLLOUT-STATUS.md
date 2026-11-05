@@ -18,9 +18,9 @@
 
 ## Verification and rollout boundaries
 
-- 45 unit/database tests and typecheck pass. Production Next.js build passes.
+- 48 unit/database tests and typecheck pass. Production Next.js build passes.
 - Embedded PostgreSQL replays all ten migration files and the three existing security suites.
-- A real PostgreSQL concurrency test and a disposable PostgreSQL 17 CI job were added. Local startup was blocked by Windows restricted-token creation (`pg_ctl` error 87); this is not a passed concurrency run.
+- A real PostgreSQL concurrency test and a disposable PostgreSQL 17 CI job were added. Local startup was blocked by Windows restricted-token creation (`pg_ctl` error 87). The Linux CI run `41996457266` passed the real PostgreSQL concurrency job, all migration/security replays, Next.js/OpenNext build and Wrangler bundle validation for release candidate `ad8cd51`. Conditional CI browser steps were skipped because repository variables were absent; local browser checks were verified separately.
 - Supabase `riway` is healthy, with the original six hosted migrations. At inspection, profiles/orders/staff/media tables each had zero rows. No hosted migration or account role was changed.
 - Supabase staging branch creation was rejected because branching requires Pro. No plan upgrade or charge was authorized.
 - Cloudflare's existing CLI OAuth session could not refresh. Browser access works, but no deployment occurred.
@@ -39,3 +39,11 @@
 4. Run Linux/OpenNext and real PostgreSQL concurrency verification for the exact release revision.
 5. Apply reviewed migrations after the staging/backup checks, provision an approved RIWAY super admin, and complete authenticated tenant acceptance.
 6. Enable email in allowlisted test mode and configure the notification worker scheduler. Production email, auth cutover, and deployment require the remaining provider and UAT checks. Keep commerce and R2 deferred.
+
+## Scheduled worker
+
+`custom-worker.ts` adds a scheduled handler to the generated OpenNext fetch handler, using the existing `WORKER_SELF_REFERENCE` service binding. The configured cron runs once per minute; it returns immediately while `EMAIL_PROVIDER=disabled`. When activated, it drains the durable outbox and enqueues one low-inventory report per owner/store/day after 09:00 Asia/Shanghai. The deploy helper preserves existing secret bindings and applies only this worker's cron schedules. No new Worker or paid R2 subscription is required for this scheduler. It is not deployed yet.
+
+## Release candidate
+
+The existing project's Git metadata denies writes despite scoped permission grants. A separate release checkout at `C:\Users\PC2\Documents\Codex\2026-11-05\ac\work\riway-release` contains the rollout branch `integration/riway-provider-rollout-20261105`. It is based on remote main and excludes the user's two unrelated UI edits. No environment file or credentials were included. The original project remains the working source directory.

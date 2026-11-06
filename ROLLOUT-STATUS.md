@@ -8,7 +8,7 @@
 - All five pending migrations are applied. Hosted history now matches all eleven local migration versions. Existing native account identity was preserved; all seven inventory/identity public tables have RLS enabled. Anonymous stock mutations and browser notification-queue claims are denied.
 - All 16 HTTP checks passed against the live URL after deployment. The inventory route redirects signed-out visitors to login rather than showing the previous 404.
 - Runtime remains Supabase Auth and Supabase Storage; email and payment delivery remain disabled. The minute notification schedule is installed and dormant while email is disabled. Clerk credentials and Resend DNS/credentials remain pending; R2 remains explicitly deferred.
-- The user selected `sylvester@beyondai.ph` for live super-admin access. Provisioning must verify this exact live account, confirmed email and a verified authenticator. No existing account is promoted as a substitute, and no demo stores/accounts are seeded into production.
+- The selected live administrator's email is verified and its RIWAY super-admin role is assigned. Privileged access remains MFA-gated; the user must enroll and verify the live authenticator before admin actions become available. No other account was promoted as a substitute, and no demo stores/accounts were seeded into production.
 
 The implementation-time notes below describe earlier checkpoints; the live release above supersedes their statements that deployment and migrations were pending.
 

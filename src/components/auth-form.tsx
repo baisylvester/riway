@@ -1,8 +1,8 @@
 "use client";
 import { useEffect, useId, useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { browserDb } from "@/lib/supabase/browser";
+import { authErrorMessage } from "@/lib/auth-feedback";
 export function AuthForm({
   mode = "login",
 }: {
@@ -12,25 +12,28 @@ export function AuthForm({
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
   const [message, setMessage] = useState(""),
-    [busy, setBusy] = useState(false),
-    router = useRouter();
+    [busy, setBusy] = useState(false);
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     setBusy(true);
     setMessage("");
     const f = new FormData(e.currentTarget),
-      client = browserDb(),
-      email = String(f.get("email") ?? ""),
+      email = String(f.get("email") ?? "").trim(),
       password = String(f.get("password") ?? "");
+    let navigating = false;
     try {
+      const client = browserDb();
       if (mode === "login") {
         const { error } = await client.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-        router.push("/account");
-        router.refresh();
+        // Authentication changes the cookie boundary. A document navigation
+        // cannot reuse a signed-out redirect cached by Next route prefetching.
+        navigating = true;
+        setMessage("Signed in. Opening your account…");
+        window.location.replace("/account");
       }
       if (mode === "register") {
         const { error } = await client.auth.signUp({
@@ -56,17 +59,14 @@ export function AuthForm({
       if (mode === "update") {
         const { error } = await client.auth.updateUser({ password });
         if (error) throw error;
-        router.push("/account");
-        router.refresh();
+        navigating = true;
+        window.location.replace("/account");
       }
-    } catch {
-      setMessage(
-        mode === "login"
-          ? "Sign-in failed. Check your credentials and email confirmation."
-          : "The request could not be completed. Please try again later.",
-      );
+    } catch (error) {
+      navigating = false;
+      setMessage(authErrorMessage(error, mode));
     } finally {
-      setBusy(false);
+      if (!navigating) setBusy(false);
     }
   }
   return (
@@ -97,8 +97,8 @@ export function AuthForm({
             aria-describedby={message ? statusId : undefined}
             name="password"
             type="password"
-            minLength={12}
-            maxLength={128}
+            minLength={mode === "login" ? undefined : 12}
+            maxLength={mode === "login" ? undefined : 128}
             autoComplete={
               mode === "login" ? "current-password" : "new-password"
             }
@@ -154,14 +154,12 @@ export function AuthForm({
   );
 }
 export function SignOut() {
-  const router = useRouter();
   return (
     <button
       className="button button-outline"
       onClick={async () => {
-        await browserDb().auth.signOut();
-        router.push("/");
-        router.refresh();
+        const { error } = await browserDb().auth.signOut();
+        if (!error) window.location.replace("/");
       }}
     >
       Sign out

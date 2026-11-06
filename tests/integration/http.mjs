@@ -78,6 +78,19 @@ const login = await check(
 const loginHtml = await login.text();
 assert.match(loginHtml, /<form[^>]*method="post"/);
 assert.match(loginHtml, /<button[^>]*disabled=""[^>]*>Loading sign-in/);
+const loginPassword = loginHtml.match(/<input[^>]*name="password"[^>]*>/)?.[0];
+assert.ok(loginPassword);
+assert.doesNotMatch(loginPassword, /minlength|maxlength/);
+const confirmation = await check(
+  "expired confirmation link feedback",
+  "/auth/login?error=confirmation",
+  {},
+  200,
+);
+assert.match(
+  await confirmation.text(),
+  /confirmation or password-reset link could not be verified/,
+);
 await check(
   "unconfigured Clerk webhook",
   "/api/webhooks/clerk",

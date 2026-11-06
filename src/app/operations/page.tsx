@@ -7,6 +7,8 @@ import {
   StockThresholdForm,
 } from "@/components/inventory-forms";
 import { z } from "zod";
+import { auth } from "@clerk/nextjs/server";
+import { authProvider, secondFactorVerified } from "@/lib/auth-config";
 
 export default async function Operations({
   searchParams,
@@ -14,6 +16,29 @@ export default async function Operations({
   searchParams: Promise<{ store?: string; page?: string }>;
 }) {
   const { client, user } = await requireSession();
+  const verified =
+    authProvider() === "clerk"
+      ? secondFactorVerified((await auth()).sessionClaims)
+      : (await client.auth.mfa.getAuthenticatorAssuranceLevel()).data
+          ?.currentLevel === "aal2";
+  if (!verified)
+    return (
+      <section className="section page-section stack">
+        <span className="eyebrow">RIWAY · ACCOUNT SECURITY</span>
+        <h1>Verify your authenticator</h1>
+        <p>
+          You are signed in. Store management requires an authenticator code
+          before administrator or store access is available.
+        </p>
+        <p>
+          Set up or verify your authenticator below. After verification, this
+          page will load your stores and administrator controls.
+        </p>
+        <SecurityPanel />
+        <Link href="/account/security">Account security</Link>
+        <Link href="/account">Return to your account</Link>
+      </section>
+    );
   const [{ data: tenants, error }, { data: platformAdmin }] = await Promise.all(
     [
       client.from("tenants").select("id,name,active").order("name"),
@@ -46,16 +71,22 @@ export default async function Operations({
   if (!selected)
     return (
       <section className="section page-section stack">
+        <span className="eyebrow">
+          {platformAdmin === true
+            ? "RIWAY · SUPER ADMIN"
+            : "RIWAY · STORE OPERATIONS"}
+        </span>
         <h1>Store management</h1>
         <p>
           Your RIWAY account ID: <code>{user.id}</code>
         </p>
         <p>
-          No stores are available. Ask RIWAY to assign your account to a store,
-          then verify your authenticator.
+          {platformAdmin === true
+            ? "Your administrator account is ready. Create your first store below."
+            : "No stores are assigned to your account yet. Ask your RIWAY administrator to assign a store."}
         </p>
         {platformAdmin === true && <InventorySetupForm kind="tenant" />}
-        <SecurityPanel />
+        <Link href="/account/security">Account security</Link>
       </section>
     );
   const [locations, products, balances, ledger, members, catalogue] =

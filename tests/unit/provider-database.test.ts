@@ -337,6 +337,26 @@ describe("tenant inventory PostgreSQL security", () => {
 });
 
 describe("notification outbox", () => {
+  it("preserves never-attempted notifications across delayed provider activation", async () => {
+    await pg.exec("reset role; begin");
+    try {
+      await pg.exec("delete from private.notification_jobs");
+      await pg.query(
+        `insert into private.notification_jobs(user_id,kind,reference,created_at)
+         values($1,'support_received',$2,now()-interval '3 days')`,
+        [owner, crypto.randomUUID()],
+      );
+      await pg.exec("set role service_role");
+      const jobs = await rpc("public.claim_notifications()");
+      expect(jobs).toHaveLength(1);
+      expect(jobs[0].attempts).toBe(1);
+      expect(Date.parse(jobs[0].first_attempt_at)).toBeGreaterThan(
+        Date.now() - 60000,
+      );
+    } finally {
+      await pg.exec("rollback; reset role");
+    }
+  });
   it("enqueues atomically, leases jobs exclusively and rejects forged completion tokens", async () => {
     await identity(owner);
     const created = await pg.query<{ id: string }>(
@@ -371,6 +391,64 @@ describe("notification outbox", () => {
       ]),
     ).toBe(true);
     expect(await rpc("public.claim_notifications()")).toHaveLength(0);
+  });
+  it("expires attempted deliveries after the safety window and preserves retry limits", async () => {
+    await pg.exec("reset role; begin");
+    try {
+      await pg.exec("delete from private.notification_jobs");
+      await pg.query(
+        `insert into private.notification_jobs(user_id,kind,reference,attempts,first_attempt_at)
+         values($1,'support_received',$2,1,now()-interval '24 hours'),
+          ($1,'support_received',$3,6,now()-interval '1 hour')`,
+        [owner, crypto.randomUUID(), crypto.randomUUID()],
+      );
+      await pg.exec("set role service_role");
+      expect(await rpc("public.claim_notifications()")).toHaveLength(0);
+      await pg.exec("reset role");
+      const jobs = await pg.query(
+        "select status,last_error_code from private.notification_jobs",
+      );
+      expect(jobs.rows).toEqual([
+        { status: "failed", last_error_code: "expired" },
+        { status: "failed", last_error_code: "expired" },
+      ]);
+    } finally {
+      await pg.exec("rollback; reset role");
+    }
+  });
+  it("keeps the original retry deadline and recipient when recovering an expired lease", async () => {
+    await pg.exec("reset role; begin");
+    try {
+      await pg.exec("delete from private.notification_jobs");
+      await pg.query(
+        `insert into private.notification_jobs(user_id,kind,reference)
+         values($1,'support_received',$2)`,
+        [owner, crypto.randomUUID()],
+      );
+      await pg.exec("set role service_role");
+      const [first] = await rpc("public.claim_notifications()");
+      await rpc("public.prepare_notification($1,$2,'owner@example.invalid')", [
+        first.id,
+        first.lease,
+      ]);
+      await pg.exec(
+        "reset role; update private.notification_jobs set lease_until=now()-interval '1 minute'; set role service_role",
+      );
+      const [retry] = await rpc("public.claim_notifications()");
+      expect(retry.first_attempt_at).toBe(first.first_attempt_at);
+      expect(retry.recipient).toBe("owner@example.invalid");
+      expect(retry.attempts).toBe(2);
+      expect(retry.lease).not.toBe(first.lease);
+      expect(
+        await rpc("public.finish_notification($1,$2,'sent','stale')", [
+          first.id,
+          first.lease,
+        ]),
+      ).toBe(false);
+      expect(await rpc("public.claim_notifications()")).toHaveLength(0);
+    } finally {
+      await pg.exec("rollback; reset role");
+    }
   });
   it("queues onboarding only for owners and suppresses revoked memberships", async () => {
     await identity(admin);

@@ -9,6 +9,7 @@ import {
   reportDate,
 } from "@/services/resend-email";
 import { failure } from "@/lib/http";
+import { notificationConfiguration } from "@/lib/notification-config";
 export async function POST(request: Request) {
   const secret = process.env.NOTIFICATION_WORKER_SECRET;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -28,6 +29,9 @@ export async function POST(request: Request) {
     !timingSafeEqual(received, expected)
   )
     return failure("Unauthorized", 401);
+  // Reject incomplete setup before claiming jobs or consuming their retry budget.
+  if (notificationConfiguration(process.env).issues.length)
+    return failure("Notification delivery configuration is incomplete.", 503);
   const client = createClient(url, key, {
     auth: { persistSession: false, autoRefreshToken: false },
   });

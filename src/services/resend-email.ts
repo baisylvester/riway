@@ -64,6 +64,7 @@ export class ResendTransactionalEmailProvider implements TransactionalEmailProvi
         retryable =
           code === 429 ||
           code >= 500 ||
+          result.error?.name === "concurrent_idempotent_requests" ||
           result.error?.name === "application_error";
       } catch {
         /* Transport errors are redacted and retried with the same key. */

@@ -1,6 +1,14 @@
 # RIWAY provider rollout — 6 November 2026
 
-## Current live release — notification activation fixes
+## Current live release — QR follow-up and feature audit
+
+PRs #4–#6 are merged. Current application merge revision is `0885d05a5d1d8da63aa0d91b6295a7c5e7b4035b`, whose tree exactly matches verified build source `2fb761adddf06ee005f2838a8118c43862ba7502`. Both CI runs `42178283974` and `42178319133` passed. Artifact `13484306364` independently matched SHA-256 `dc1fa8198c46741b5de7546a1334bc27b8e4885e6b242e5864947f3dedb7e9b6` before deployment. Cloudflare version `85b6f7b0-3b40-49e5-92d6-50c27aae8287` serves 100% of traffic, deployed at 15:06 Asia/Shanghai. Its live authenticator module byte hash matches the artifact.
+
+Authenticator setup now draws an inline QR directly from the enrollment URI and includes a manual setup key. The user confirmed the QR and setup-key option appear. Completing authenticator verification and signed-in browser acceptance remain pending. Order/admin pagination now rejects fractional values. Local verification passed 97 tests and TypeScript; all five hosted rollback-only SQL suites passed. Post-deployment checks passed 30 HTTP/API cases, 45 route scenarios and all 103 static assets. Browser interaction testing was explicitly declined. Initial intermittent Cloudflare 1101 responses on two missing-record paths did not recur, but their original cause remains unconfirmed.
+
+Runtime remains Supabase Auth/Storage with email/payments disabled and the minute cron dormant. Public DNS still returned NXDOMAIN for the three Resend verification records at inspection. Provider setup, content/store provisioning and commercial acceptance remain outstanding. No new migration was needed for this release. Earlier release sections below are historical.
+
+## Previous live release — notification activation fixes
 
 PR #3 is merged into `main` as `8a54bef0bcff237b40f504ebafc96cc8d08342d4`. That exact application's verified Linux artifact was deployed at 14:20 Asia/Shanghai on 6 November 2026. Cloudflare version `0fbdcdd1-f065-4bd6-b349-06eeedf87e1d` is serving 100% of traffic; deployment ID `3dd9b70d-129a-4882-a0b2-9a8a27b87838`. The prior version was `30d39e7c-416a-402a-831a-9fb04722d5ba`.
 

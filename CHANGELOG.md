@@ -1,5 +1,12 @@
 # Changelog
 
+## Authenticator and live feature audit — released 2026-11-06
+
+- Render authenticator QR modules locally from the enrollment URI and offer a manual setup key after the user still observed a broken image following the first data-URL correction. The user confirmed both now appear on the live site.
+- Validate order/admin pagination as positive integer input. Expand HTTP and rollback-only hosted customer/inventory coverage.
+- Merge PRs #4–#6 and deploy the verified Linux artifact for `2fb761a` (merged as `0885d05`). Cloudflare version `85b6f7b0-3b40-49e5-92d6-50c27aae8287` serves 100% of traffic.
+- Verify 97 automated tests, TypeScript, five hosted SQL suites, 30 live HTTP/API cases, 45 route scenarios and 103 static assets. Browser interactions were excluded at the user's request; authenticator code verification and real provider delivery remain pending.
+
 ## Notification activation fixes — released 2026-11-06
 
 - Preserve unattempted notifications during delayed email-provider activation; start the bounded retry window at first claim and recover only never-attempted expired jobs.

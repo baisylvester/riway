@@ -1,5 +1,11 @@
 # Testing
 
+## Final deployed audit — 6 November 2026, 15:07 Asia/Shanghai
+
+PR #6 merged as `0885d05a5d1d8da63aa0d91b6295a7c5e7b4035b`; its tree exactly matches build source `2fb761adddf06ee005f2838a8118c43862ba7502`. CI runs `42178283974` and `42178319133` passed. The checksum-verified artifact `13484306364` was deployed as Cloudflare version `85b6f7b0-3b40-49e5-92d6-50c27aae8287` at 100% traffic. The live authenticator module matched the artifact byte-for-byte.
+
+Final source passed 97 tests across 15 files and TypeScript. Post-deployment checks passed 30 HTTP/API cases, 45 route scenarios, 28 discovered assets and all 103 artifact static assets. The five hosted SQL suites passed in rollback-only transactions; cleanup found no retained QA users/content. The user confirmed the QR code and manual setup-key option appear. Authenticator code verification, signed-in browser actions and real provider delivery remain pending. Browser testing was excluded at the user's request; conditional CI browser steps were skipped. Email/payment providers remain disabled. Earlier sections below retain the sequence of findings and historical releases.
+
 ## Live feature audit — 6 November 2026
 
 The live HTTP/database audit found the authenticator QR image was wrapping Supabase's already-formed SVG data URL. PR #4 corrected it, passed 95 tests and CI, and was deployed from a checksum-verified Linux artifact. The corrected client modules served by the live site were compared byte-for-byte with that artifact. Actual enrollment scanning/verification still requires the user; no enrollment secrets or codes were collected.

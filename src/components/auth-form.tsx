@@ -1,5 +1,5 @@
 "use client";
-import { useId, useState, type FormEvent } from "react";
+import { useEffect, useId, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { browserDb } from "@/lib/supabase/browser";
@@ -9,6 +9,8 @@ export function AuthForm({
   mode?: "login" | "register" | "reset" | "update";
 }) {
   const statusId = useId();
+  const [ready, setReady] = useState(false);
+  useEffect(() => setReady(true), []);
   const [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
     router = useRouter();
@@ -69,6 +71,7 @@ export function AuthForm({
   }
   return (
     <form
+      method="post"
       aria-describedby={message ? statusId : undefined}
       aria-busy={busy}
       className="stack"
@@ -112,15 +115,17 @@ export function AuthForm({
           </span>
         </label>
       )}
-      <button className="button" disabled={busy}>
-        {busy
-          ? "Please wait…"
-          : {
-              login: "Sign in",
-              register: "Create website account",
-              reset: "Send reset link",
-              update: "Update password",
-            }[mode]}
+      <button className="button" disabled={!ready || busy}>
+        {!ready
+          ? "Loading sign-in…"
+          : busy
+            ? "Please wait…"
+            : {
+                login: "Sign in",
+                register: "Create website account",
+                reset: "Send reset link",
+                update: "Update password",
+              }[mode]}
       </button>
       {message && (
         <p id={statusId} className="notice" role="status">

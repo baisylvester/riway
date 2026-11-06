@@ -61,7 +61,7 @@ export async function setupInventory(
   if (!user) return { message: "Sign in to continue." };
   const kind = form.get("kind");
   const tenant = z.uuid().safeParse(form.get("tenant"));
-  let error: unknown = null;
+  let error: { code?: string } | null = null;
   if (kind === "tenant") {
     const input = z
       .object({ name: z.string().trim().min(2).max(120), owner: z.uuid() })
@@ -121,10 +121,51 @@ export async function setupInventory(
     }));
   }
   revalidatePath("/operations");
+  if (error?.code === "P0002")
+    return {
+      ok: false,
+      message:
+        "This account is not a store member. Use Add store member first.",
+    };
   return {
     ok: !error,
     message: error
       ? "Setup rejected. Check permissions, MFA, duplicate records and account IDs."
       : "Store setup saved.",
+  };
+}
+
+export async function setStockThreshold(
+  _: Result,
+  form: FormData,
+): Promise<Result> {
+  const input = z
+    .object({
+      tenant: z.uuid(),
+      location: z.uuid(),
+      product: z.uuid(),
+      threshold: z.coerce.number().int().min(0).max(1000000),
+    })
+    .safeParse(Object.fromEntries(form));
+  if (!input.success)
+    return {
+      ok: false,
+      message: "Choose a location, SKU and threshold from 0 to 1,000,000.",
+    };
+  const { user, client } = await session();
+  if (!user) return { ok: false, message: "Sign in to continue." };
+  const v = input.data;
+  const { error } = await client.rpc("set_tenant_stock_threshold", {
+    t: v.tenant,
+    l: v.location,
+    p: v.product,
+    threshold: v.threshold,
+  });
+  revalidatePath("/operations");
+  return {
+    ok: !error,
+    message: error
+      ? "Threshold rejected. Check store owner access, MFA and the selected SKU/location."
+      : "Low-stock threshold saved.",
   };
 }

@@ -161,6 +161,105 @@ describe("tenant inventory PostgreSQL security", () => {
     await movement("damage", 5);
     await movement("restore", 5);
   });
+  it("rejects access changes for non-members without a false audit event", async () => {
+    await pg.exec("reset role");
+    const before = (
+      await pg.query<{ n: number }>(
+        "select count(*)::int as n from public.audit_logs where action='SETUP_ACCESS'",
+      )
+    ).rows[0].n;
+    await identity(owner);
+    for (const role of ["inventory", "revoke"]) {
+      await expect(
+        rpc("public.setup_tenant_inventory($1,'access',$2)", [
+          tenant,
+          { user_id: other, role },
+        ]),
+      ).rejects.toThrow("Store member not found");
+    }
+    await pg.exec("reset role");
+    expect(
+      (
+        await pg.query<{ n: number }>(
+          "select count(*)::int as n from public.audit_logs where action='SETUP_ACCESS'",
+        )
+      ).rows[0].n,
+    ).toBe(before);
+  });
+  it("lets owners configure thresholds without changing stock quantities or movement history", async () => {
+    await identity(owner);
+    const before = (
+      await pg.query<{
+        on_hand: number;
+        reserved: number;
+        allocated: number;
+        damaged: number;
+      }>("select * from public.tenant_stock")
+    ).rows[0];
+    const entries = (
+      await pg.query("select id from public.tenant_stock_ledger")
+    ).rows.length;
+    await rpc("public.set_tenant_stock_threshold($1,$2,$3,2)", [
+      tenant,
+      location,
+      product,
+    ]);
+    expect(
+      (await pg.query("select * from public.tenant_stock")).rows[0],
+    ).toMatchObject({
+      low_stock_threshold: 2,
+      on_hand: before.on_hand,
+      reserved: before.reserved,
+      allocated: before.allocated,
+      damaged: before.damaged,
+    });
+    expect(
+      (await pg.query("select id from public.tenant_stock_ledger")).rows.length,
+    ).toBe(entries);
+    for (const threshold of [-1, 1000001, null]) {
+      await expect(
+        rpc("public.set_tenant_stock_threshold($1,$2,$3,$4)", [
+          tenant,
+          location,
+          product,
+          threshold,
+        ]),
+      ).rejects.toThrow("Invalid stock threshold");
+    }
+    await rpc("public.set_tenant_stock_threshold($1,$2,$3,5)", [
+      tenant,
+      location,
+      product,
+    ]);
+  });
+  it("protects threshold configuration with owner, MFA and tenant boundaries", async () => {
+    for (const user of [viewer, other]) {
+      await identity(user);
+      await expect(
+        rpc("public.set_tenant_stock_threshold($1,$2,$3,3)", [
+          tenant,
+          location,
+          product,
+        ]),
+      ).rejects.toThrow("Store owner access required");
+    }
+    await identity(owner, { aal: "aal1" });
+    await expect(
+      rpc("public.set_tenant_stock_threshold($1,$2,$3,3)", [
+        tenant,
+        location,
+        product,
+      ]),
+    ).rejects.toThrow("Store owner access required");
+    await identity(admin);
+    await expect(
+      rpc("public.set_tenant_stock_threshold($1,$2,$3,3)", [
+        otherTenant,
+        location,
+        product,
+      ]),
+    ).rejects.toThrow(/foreign key/);
+  });
   it("prevents viewers from writing or promoting themselves", async () => {
     await identity(viewer);
     expect(

@@ -4,13 +4,14 @@ import { SecurityPanel } from "@/components/auth-panel";
 import {
   InventorySetupForm,
   StockMovementForm,
+  StockThresholdForm,
 } from "@/components/inventory-forms";
 import { z } from "zod";
 
 export default async function Operations({
   searchParams,
 }: {
-  searchParams: Promise<{ store?: string }>;
+  searchParams: Promise<{ store?: string; page?: string }>;
 }) {
   const { client, user } = await requireSession();
   const [{ data: tenants, error }, { data: platformAdmin }] = await Promise.all(
@@ -29,6 +30,14 @@ export default async function Operations({
       </section>
     );
   const params = await searchParams;
+  const parsedPage = z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(10000)
+    .safeParse(params.page ?? 1);
+  const page = parsedPage.success ? parsedPage.data : 1;
+  const pageSize = 50;
   const requested = z.uuid().safeParse(params.store);
   const selected =
     tenants.find(
@@ -62,10 +71,13 @@ export default async function Operations({
       client.from("tenant_stock").select("*").eq("tenant_id", selected.id),
       client
         .from("tenant_stock_ledger")
-        .select("id,operation,quantity,reason,created_at,actor_id")
+        .select(
+          "id,operation,quantity,reason,created_at,actor_id,location_id,tenant_product_id",
+        )
         .eq("tenant_id", selected.id)
         .order("created_at", { ascending: false })
-        .limit(100),
+        .order("id", { ascending: false })
+        .range((page - 1) * pageSize, page * pageSize),
       client
         .from("tenant_memberships")
         .select("user_id,role")
@@ -88,6 +100,15 @@ export default async function Operations({
     id: p.id,
     name: `${p.sku} · ${catalogue.data?.find((c) => c.id === p.product_id)?.name || "Product"}`,
   }));
+  const stock = balances.data || [];
+  const availableUnits = stock.reduce(
+    (total, b) => total + b.on_hand - b.reserved - b.allocated - b.damaged,
+    0,
+  );
+  const lowStock = stock.filter(
+    (b) =>
+      b.on_hand - b.reserved - b.allocated - b.damaged <= b.low_stock_threshold,
+  ).length;
   return (
     <section className="section page-section stack">
       <span className="eyebrow">
@@ -111,6 +132,20 @@ export default async function Operations({
         Your RIWAY account ID: <code>{user.id}</code>
       </p>
       <h2>Inventory</h2>
+      <div className="stats">
+        <div className="stat">
+          <span>Available units</span>
+          <strong>{availableUnits}</strong>
+        </div>
+        <div className="stat">
+          <span>Low-stock SKU/location balances</span>
+          <strong>{lowStock}</strong>
+        </div>
+        <div className="stat">
+          <span>Store SKUs</span>
+          <strong>{products.data?.length || 0}</strong>
+        </div>
+      </div>
       <div style={{ overflowX: "auto" }}>
         <table>
           <thead>
@@ -123,6 +158,7 @@ export default async function Operations({
               <th>Damaged</th>
               <th>Available</th>
               <th>Status</th>
+              <th>Alert threshold</th>
             </tr>
           </thead>
           <tbody>
@@ -150,6 +186,7 @@ export default async function Operations({
                       ? "Low stock"
                       : "Available"}
                   </td>
+                  <td>{b.low_stock_threshold}</td>
                 </tr>
               );
             })}
@@ -157,6 +194,12 @@ export default async function Operations({
         </table>
       </div>
       {!balances.data?.length && <p>No stock movements recorded yet.</p>}
+      {canWrite && (!locations.data?.length || !products.data?.length) && (
+        <p role="status">
+          Add a location and store SKU before recording stock. Ask your store
+          owner if you do not have setup access.
+        </p>
+      )}
       {canWrite && (
         <StockMovementForm
           key={selected.id}
@@ -178,6 +221,13 @@ export default async function Operations({
       )}
       {owner && (
         <>
+          <StockThresholdForm
+            key={selected.id}
+            tenant={selected.id}
+            locations={locations.data || []}
+            products={productOptions}
+            balances={stock}
+          />
           <h2>Store members</h2>
           {members.data?.map((m) => (
             <p key={m.user_id}>
@@ -201,15 +251,29 @@ export default async function Operations({
             <tr>
               <th>Time</th>
               <th>Movement</th>
+              <th>Location</th>
+              <th>SKU</th>
+              <th>Recorded by</th>
               <th>Quantity</th>
               <th>Reason/reference</th>
             </tr>
           </thead>
           <tbody>
-            {ledger.data?.map((e) => (
+            {ledger.data?.slice(0, pageSize).map((e) => (
               <tr key={e.id}>
                 <td>{new Date(e.created_at).toISOString()}</td>
                 <td>{e.operation}</td>
+                <td>
+                  {locations.data?.find((l) => l.id === e.location_id)?.name ||
+                    e.location_id}
+                </td>
+                <td>
+                  {products.data?.find((p) => p.id === e.tenant_product_id)
+                    ?.sku || e.tenant_product_id}
+                </td>
+                <td>
+                  <code style={{ overflowWrap: "anywhere" }}>{e.actor_id}</code>
+                </td>
                 <td>{e.quantity}</td>
                 <td>{e.reason}</td>
               </tr>
@@ -217,6 +281,20 @@ export default async function Operations({
           </tbody>
         </table>
       </div>
+      {!ledger.data?.length && <p>No movements on this page.</p>}
+      <nav className="tab-links" aria-label="Movement history pages">
+        {page > 1 && (
+          <Link href={`/operations?store=${selected.id}&page=${page - 1}`}>
+            Newer movements
+          </Link>
+        )}
+        <span>Page {page}</span>
+        {(ledger.data?.length || 0) > pageSize && (
+          <Link href={`/operations?store=${selected.id}&page=${page + 1}`}>
+            Older movements
+          </Link>
+        )}
+      </nav>
     </section>
   );
 }

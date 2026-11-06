@@ -1,7 +1,97 @@
 "use client";
 import { useActionState, useEffect, useState } from "react";
-import { moveStock, setupInventory } from "@/app/operations/actions";
+import {
+  moveStock,
+  setupInventory,
+  setStockThreshold,
+} from "@/app/operations/actions";
 type Option = { id: string; name: string };
+export function StockThresholdForm({
+  tenant,
+  locations,
+  products,
+  balances,
+}: {
+  tenant: string;
+  locations: Option[];
+  products: Option[];
+  balances: {
+    location_id: string;
+    tenant_product_id: string;
+    low_stock_threshold: number;
+  }[];
+}) {
+  const [location, chooseLocation] = useState(locations[0]?.id || "");
+  const [product, chooseProduct] = useState(products[0]?.id || "");
+  const threshold =
+    balances.find(
+      (b) => b.location_id === location && b.tenant_product_id === product,
+    )?.low_stock_threshold ?? 5;
+  const [state, action, pending] = useActionState(setStockThreshold, {
+    message: "",
+    ok: false,
+  });
+  return (
+    <form action={action} className="panel stack">
+      <h2>Low-stock alerts</h2>
+      <input type="hidden" name="tenant" value={tenant} />
+      <label>
+        Location
+        <select
+          name="location"
+          required
+          value={location}
+          onChange={(e) => chooseLocation(e.target.value)}
+        >
+          {locations.map((l) => (
+            <option key={l.id} value={l.id}>
+              {l.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Store product
+        <select
+          name="product"
+          required
+          value={product}
+          onChange={(e) => chooseProduct(e.target.value)}
+        >
+          {products.map((p) => (
+            <option key={p.id} value={p.id}>
+              {p.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label>
+        Low-stock threshold
+        <input
+          name="threshold"
+          key={`${location}/${product}/${threshold}`}
+          type="number"
+          min="0"
+          max="1000000"
+          step="1"
+          defaultValue={threshold}
+          required
+        />
+      </label>
+      <p className="small">
+        Stock is low when available units are at or below this threshold. When
+        email reports are enabled, they use the same threshold.
+      </p>
+      <button
+        className="button"
+        disabled={pending || !locations.length || !products.length}
+      >
+        Save threshold
+      </button>
+      <p role="status">{state.message}</p>
+    </form>
+  );
+}
 export function StockMovementForm({
   tenant,
   locations,

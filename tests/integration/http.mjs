@@ -69,6 +69,15 @@ await check(
 await check("private account redirect", "/account", {}, 307);
 await check("private staff redirect", "/admin", {}, 307);
 await check("tenant portal requires authentication", "/operations", {}, 307);
+const login = await check(
+  "login form is safe before JavaScript loads",
+  "/auth/login",
+  {},
+  200,
+);
+const loginHtml = await login.text();
+assert.match(loginHtml, /<form[^>]*method="post"/);
+assert.match(loginHtml, /<button[^>]*disabled=""[^>]*>Loading sign-in/);
 await check(
   "unconfigured Clerk webhook",
   "/api/webhooks/clerk",

@@ -17,7 +17,9 @@ if (!account || !/^[a-f0-9]{32}$/.test(account))
   throw new Error("Set CLOUDFLARE_ACCOUNT_ID to the approved account.");
 if (config.name !== "riway-platform")
   throw new Error("Unexpected Worker target.");
-const workerFile = path.join(root, ".cloudflare-bundle/worker.js");
+// Wrangler names the bundled entry after the configured main (custom-worker.ts).
+const workerEntry = path.basename(config.main).replace(/\.[^.]+$/, ".js");
+const workerFile = path.join(root, ".cloudflare-bundle", workerEntry);
 const assetsRoot = path.join(root, ".open-next/assets");
 if (!fs.existsSync(workerFile) || !fs.existsSync(assetsRoot))
   throw new Error("Verified build artifact is missing.");

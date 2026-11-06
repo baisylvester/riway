@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserDb } from "@/lib/supabase/browser";
+import { authenticatorQrSource } from "@/lib/authenticator-qr";
 export function MFA() {
   const [factor, setFactor] = useState(""),
     [qr, setQr] = useState(""),
@@ -39,8 +40,9 @@ export function MFA() {
                 friendlyName: "RIWAY authenticator",
               });
               if (error) throw error;
+              const image = authenticatorQrSource(data.totp.qr_code);
               setFactor(data.id);
-              setQr(data.totp.qr_code);
+              setQr(image);
               setMessage(
                 "Scan this QR code with your authenticator, then enter its code.",
               );
@@ -59,7 +61,7 @@ export function MFA() {
       {qr && (
         <img
           className="mfa-qr"
-          src={`data:image/svg+xml;utf8,${encodeURIComponent(qr)}`}
+          src={qr}
           alt="Scan to enroll your RIWAY authenticator"
         />
       )}

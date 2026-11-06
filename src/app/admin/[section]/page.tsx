@@ -9,6 +9,7 @@ import {
   OfferForm,
 } from "@/components/admin-forms";
 import { money, type Product } from "@/lib/domain";
+import { pageNumber } from "@/lib/pagination";
 export default async function AdminSection({
   params,
   searchParams,
@@ -18,7 +19,7 @@ export default async function AdminSection({
 }) {
   const { section } = await params;
   const { edit, page: rawPage } = await searchParams;
-  const page = Math.max(1, Math.min(1000, Number(rawPage) || 1));
+  const page = pageNumber(rawPage);
   const { client } = await session();
   const { data: products } = await client
     .from("products")

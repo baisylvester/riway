@@ -103,7 +103,13 @@ afterAll(async () => {
 });
 
 describe("existing security regression scripts", () => {
-  for (const script of ["rls.sql", "checkout.sql", "operations.sql"]) {
+  for (const script of [
+    "rls.sql",
+    "checkout.sql",
+    "operations.sql",
+    "tenant_inventory.sql",
+    "customer_workflows.sql",
+  ]) {
     it(`passes ${script} after the identity migration`, async () => {
       await pg.exec(
         "reset role; select set_config('request.jwt.claims','{}',false)",

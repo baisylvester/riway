@@ -1,5 +1,17 @@
 # RIWAY provider rollout — 6 November 2026
 
+## Current live release
+
+- Published the verified application from `166c508` to `https://riway-platform.pages.dev`. Worker version `34d85df6-5fa7-4bef-866f-31659f54a6a9` is serving 100% of traffic. Previous version: `4dd01165-3b00-4db7-a9fc-8d35a84a7b2e`.
+- PR #2 was merged as `5512728`. Deployment tooling fix `c60b3e1` resolves the configured `custom-worker.js` CI entry. Both main-branch CI runs passed. The merged application tree matches the verified artifact revision; the tooling fix changes only the upload helper.
+- Downloaded artifact `13468483324` from passing run `42143507034` and independently matched SHA-256 `5019ed70762a9b4f2dc81bfd194ee50f90d61fdd9e5100480740836d72fad99f` before publishing.
+- All five pending migrations are applied. Hosted history now matches all eleven local migration versions. Existing native account identity was preserved; all seven inventory/identity public tables have RLS enabled. Anonymous stock mutations and browser notification-queue claims are denied.
+- All 16 HTTP checks passed against the live URL after deployment. The inventory route redirects signed-out visitors to login rather than showing the previous 404.
+- Runtime remains Supabase Auth and Supabase Storage; email and payment delivery remain disabled. The minute notification schedule is installed and dormant while email is disabled. Clerk credentials and Resend DNS/credentials remain pending; R2 remains explicitly deferred.
+- The user selected `sylvester@beyondai.ph` for live super-admin access. Provisioning must verify this exact live account, confirmed email and a verified authenticator. No existing account is promoted as a substitute, and no demo stores/accounts are seeded into production.
+
+The implementation-time notes below describe earlier checkpoints; the live release above supersedes their statements that deployment and migrations were pending.
+
 ## Inventory dashboard follow-up
 
 - Added `20261106010616_inventory_dashboard_controls.sql`. Missing-member access changes now fail without writing a misleading audit event. Owner-only low-stock threshold configuration enforces MFA, tenant boundaries and a 0–1,000,000 range.

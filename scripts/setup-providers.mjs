@@ -1,6 +1,6 @@
 import { createServer } from "node:http";
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { readFileSync, writeFileSync, renameSync } from "node:fs";
+import { readFileSync, writeFileSync, renameSync, existsSync } from "node:fs";
 import { resolve } from "node:path";
 
 // Local, temporary setup utility. It accepts only named provider settings and
@@ -14,6 +14,11 @@ const allowed = new Map([
   ["CLERK_WEBHOOK_SIGNING_SECRET", "Clerk webhook signing secret"],
   ["RESEND_API_KEY", "Resend sending key"],
   ["SUPABASE_SERVICE_ROLE_KEY", "Supabase service key"],
+  ["STRIPE_SECRET_KEY", "Stripe sandbox/test secret key"],
+  [
+    "STRIPE_WEBHOOK_SECRET",
+    "Stripe test webhook signing secret (leave blank to create a new endpoint)",
+  ],
 ]);
 const headers = {
   "Content-Type": "text/html; charset=utf-8",
@@ -85,6 +90,10 @@ const server = createServer(async (request, response) => {
         (key === "CLERK_ISSUER_URL" &&
           !/^https:\/\/[A-Za-z0-9.-]+$/.test(value)) ||
         (key === "RESEND_API_KEY" && !value.startsWith("re_")) ||
+        (key === "STRIPE_SECRET_KEY" &&
+          !/^(sk|rk)_test_[A-Za-z0-9]+$/.test(value)) ||
+        (key === "STRIPE_WEBHOOK_SECRET" &&
+          !/^whsec_[A-Za-z0-9]+$/.test(value)) ||
         (key === "CLERK_SECRET_KEY" && !value.startsWith("sk_test_")) ||
         (key === "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY" &&
           !value.startsWith("pk_test_")),
@@ -97,13 +106,15 @@ const server = createServer(async (request, response) => {
     return;
   }
   try {
-    let text = readFileSync(file, "utf8");
+    let text = existsSync(file) ? readFileSync(file, "utf8") : "";
     const updates = new Map(values);
     if (!/^NOTIFICATION_WORKER_SECRET=.+$/m.test(text))
       updates.set(
         "NOTIFICATION_WORKER_SECRET",
         randomBytes(32).toString("hex"),
       );
+    if (!/^PAYMENT_WORKER_SECRET=.+$/m.test(text))
+      updates.set("PAYMENT_WORKER_SECRET", randomBytes(32).toString("hex"));
     for (const [key, value] of updates) {
       const line = `${key}=${JSON.stringify(value)}`;
       const pattern = new RegExp(`^${key}=.*$`, "m");

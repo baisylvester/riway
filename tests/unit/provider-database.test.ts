@@ -109,6 +109,7 @@ describe("existing security regression scripts", () => {
     "operations.sql",
     "tenant_inventory.sql",
     "customer_workflows.sql",
+      "stripe.sql",
   ]) {
     it(`passes ${script} after the identity migration`, async () => {
       await pg.exec(

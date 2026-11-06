@@ -1,5 +1,9 @@
 # Application API
 
+## Stripe checkout addition
+
+`POST /api/checkout` retains the unavailable response by default. With explicitly configured Stripe, it validates accepted terms/version, uses the authenticated user's transactional `create_order`, snapshots payment state through service-only RPCs and returns a hosted checkout URL. No browser price/amount or sponsor override is accepted. `POST /api/payments/resume` resumes only the current user's order. `POST /api/webhooks/payments` validates bounded raw signed payloads and reconciles a freshly retrieved canonical Stripe session before acknowledgement. `POST /api/internal/payments` requires a separate bearer secret and processes at most five due payment attempts. `/admin/payments` exposes role/market/MFA-scoped operational status, never keys. See `STRIPE.md`; live defaults remain disabled and provider acceptance is pending.
+
 ## Added in the provider/tenant implementation
 
 - `/operations`: authenticated store portal; RIWAY super admins oversee tenants; owners configure locations/SKUs/members; inventory users record stock movements; viewers read. Database permissions enforce MFA and tenant isolation for every action.

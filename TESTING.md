@@ -1,5 +1,9 @@
 # Testing
 
+## Stripe integration candidate - 6 November 2026
+
+TypeScript and 126 tests across 17 files pass locally. New coverage includes official SDK/Web Crypto signature verification, altered/stale/mode-mismatched payloads, safe return destinations, immutable price/expiry/idempotency snapshots, ambiguous network retry, user-scoped order creation, changed terms, resume ownership, webhook retry responses and disabled-checkout settlement. A sixth rollback-only SQL suite exercises payment state/stock/authorization and all-line legacy reservation expiry. The real PostgreSQL runner adds ten concurrent duplicate payment events and requires exactly one stock transition. Its Linux CI result must be recorded separately; an authored concurrency assertion is not a passing run. Real Stripe account/key, test-card checkout, webhook delivery and provider acceptance remain pending.
+
 ## Final deployed audit — 6 November 2026, 15:07 Asia/Shanghai
 
 PR #6 merged as `0885d05a5d1d8da63aa0d91b6295a7c5e7b4035b`; its tree exactly matches build source `2fb761adddf06ee005f2838a8118c43862ba7502`. CI runs `42178283974` and `42178319133` passed. The checksum-verified artifact `13484306364` was deployed as Cloudflare version `85b6f7b0-3b40-49e5-92d6-50c27aae8287` at 100% traffic. The live authenticator module matched the artifact byte-for-byte.

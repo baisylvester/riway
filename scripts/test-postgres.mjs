@@ -70,7 +70,8 @@ function parallelSql(text) {
     child.stdout.on("data", (b) => (output += b));
     child.stderr.on("data", (b) => (error += b));
     child.on("error", reject);
-    child.on("exit", (code) => resolve({ code, output, error }));
+    // `exit` can fire before stderr pipes drain, hiding the expected SQL error.
+    child.on("close", (code) => resolve({ code, output, error }));
     child.stdin.end(text);
   });
 }
@@ -121,6 +122,7 @@ try {
     "operations.sql",
     "tenant_inventory.sql",
     "customer_workflows.sql",
+    "stripe.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
@@ -171,13 +173,72 @@ try {
     ),
     "1",
   );
+  const customer = randomUUID(),
+    sponsor = randomUUID();
+  sql(`insert into auth.users(id,email) values('${customer}','stripe-concurrency@example.invalid'),('${sponsor}','stripe-sponsor@example.invalid');
+   insert into public.distributor_profiles(user_id,external_member_id,code,display_name,active,verified_at,market) values('${sponsor}','${sponsor}','QA-${sponsor}','Stripe concurrency fixture',true,now(),'PH');
+   insert into public.sponsor_attributions(user_id,distributor_id) values('${customer}','${sponsor}');
+   insert into public.product_offers(product_id,market,currency,retail_minor,regulatory_approved,approval_reference) values('${product}','PH','PHP',10000,true,'DISPOSABLE-QA');
+   insert into public.inventory(product_id,market,on_hand) values('${product}','PH',10);
+   update public.markets set online_sales_approved=true,payments_ready=true,policy_reference='DISPOSABLE-QA' where code='PH';`);
+  const paymentOrder =
+    sql(`select set_config('request.jwt.claims','{"sub":"${customer}","role":"authenticated","aal":"aal1"}',false);
+   set role authenticated;
+   select public.create_order('PH','[{"productId":"${product}","quantity":1}]','{"full_name":"Public fixture","phone":"0000000000","line1":"Disposable fixture address","city":"Manila","postal_code":"1000","country":"PH"}','${randomUUID()}','2026-11-draft');`)
+      .split("\n")
+      .at(-1);
+  assert.match(paymentOrder, /^[0-9a-f-]{36}$/);
+  const snapshot = JSON.parse(
+    sql(
+      `select public.prepare_stripe_checkout('${paymentOrder}','${customer}',false,'https://example.invalid');`,
+    ),
+  );
+  const paymentEvent = `evt_${randomUUID()}`;
+  const paymentRaces = await Promise.all(
+    Array.from({ length: 10 }, () =>
+      parallelSql(
+        `set role service_role; select public.apply_stripe_checkout_event('${paymentEvent}','${snapshot.id}','${paymentOrder}','cs_test_concurrency',false,10000,'php','complete','paid','pi_concurrency');`,
+      ),
+    ),
+  );
+  assert(
+    paymentRaces.every((r) => r.code === 0),
+    "Concurrent Stripe replays must all be acknowledged",
+  );
+  assert.equal(
+    paymentRaces.filter((r) => r.output.trim().endsWith("paid")).length,
+    1,
+    "Exactly one event applies stock/payment transitions",
+  );
+  assert.equal(
+    paymentRaces.filter((r) => r.output.trim().endsWith("duplicate")).length,
+    9,
+  );
+  const paymentStock = JSON.parse(
+    sql(
+      `select jsonb_build_object('onHand',on_hand,'reserved',reserved) from public.inventory where product_id='${product}' and market='PH';`,
+    ),
+  );
+  assert.deepEqual(paymentStock, { onHand: 9, reserved: 0 });
+  assert.equal(
+    sql(
+      `select count(*) from public.inventory_movements where product_id='${product}' and reason='Stripe paid order ${paymentOrder}';`,
+    ),
+    "1",
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
-        securitySuites: 5,
+        securitySuites: 6,
         parallelReservations: { attempted: 10, accepted: 5 },
         parallelIdempotentReceipts: { attempted: 10, journalEntries: 1 },
+        parallelStripeEvents: {
+          attempted: 10,
+          applied: 1,
+          duplicates: 9,
+          paymentStock,
+        },
         state,
         dataDirectory: data || "disposable CI service",
       },

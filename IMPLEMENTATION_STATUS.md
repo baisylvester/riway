@@ -1,5 +1,9 @@
 # Implementation status
 
+## Stripe-first continuation - 6 November 2026
+
+The user selected Stripe first, explicitly deferred Tax, and requested deployment with credentials configured later. Hosted checkout, verified raw-body webhooks, canonical session reconciliation, service-only idempotent payment/stock transitions, payment resumption, a separate reconciliation scheduler and an admin payment view are implemented. Migration `20261106083056_stripe_checkout.sql` is applied and the hosted rollback suite passed with no retained fixtures. Local 126 tests, TypeScript and Linux verification passed; exposed payment-read wrappers are additionally hardened in the next migration. Defaults remain disabled, and all existing approval/sponsor/pricing/stock gates remain. Real provider acceptance and server credentials are pending. This does not complete the broader proposal's membership, fulfillment, tax, promotions, subscriptions, reporting and optional scope. Later release evidence in `ROLLOUT-STATUS.md` supersedes this entry.
+
 ## New local implementation — 5 November 2026
 
 Clerk's configurable login/UUID identity bridge, Resend durable outbox and worker, R2 editorial storage and tenant inventory management are now implemented locally. RIWAY is the separately provisioned super admin; third-party store owners manage internal stock as isolated tenants. Forty-one automated tests, typecheck, build, fifteen HTTP checks and four new browser checks pass. Three migrations remain unapplied to hosted Supabase, and no provider flags have been enabled. Real provider credentials, staging dashboard configuration, administrator provisioning, authenticated UAT and Linux OpenNext verification remain. External POS sync is deferred per user direction. See `PROVIDER-IMPLEMENTATION.md` for current scope and precise limits; the older table below describes the earlier deployed release.

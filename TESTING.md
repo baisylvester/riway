@@ -1,5 +1,13 @@
 # Testing
 
+## Live feature audit — 6 November 2026
+
+The live HTTP/database audit found the authenticator QR image was wrapping Supabase's already-formed SVG data URL. PR #4 corrected it, passed 95 tests and CI, and was deployed from a checksum-verified Linux artifact. The corrected client modules served by the live site were compared byte-for-byte with that artifact. Actual enrollment scanning/verification still requires the user; no enrollment secrets or codes were collected.
+
+The audit also reproduced fractional URL pagination offsets in order/staff lists. Page values now require whole positive integers and remain bounded to 1,000. Local verification passes 100 tests and TypeScript. The five rollback SQL suites (`rls.sql`, `checkout.sql`, `operations.sql`, `tenant_inventory.sql`, `customer_workflows.sql`) passed against hosted Supabase, covering profile/address/cart/event workflows, tenant stock/access, referrals, editorial gates, queue leases and checkout constraints. No QA users, content, stores, orders, addresses, carts, tickets, event registrations or notifications remained after the tests. Both embedded and real PostgreSQL CI runners now include all five suites.
+
+Thirty HTTP/API checks passed on the live site, covering authentication, origin/method/schema guards, callbacks and intentionally disabled providers. A separate scan covered 45 route scenarios and their linked assets. Initial missing-event/distributor probes returned two intermittent Cloudflare 1101 errors; 20 repeated missing-record probes after the QR release all returned the not-found payload without server errors. Their original cause is unconfirmed and must not be described as fixed by the QR change. Interactive browser testing was explicitly declined after browser control was found disabled. Responsive behavior, animation, click flows and authenticated browser actions are not counted as verified in this audit.
+
 ## Live release verified on 6 November 2026
 
 PR #3 merged as `8a54bef0bcff237b40f504ebafc96cc8d08342d4`. Main CI run `42173219266` passed for that exact revision, including unit/database tests, typecheck, dependency audit, real PostgreSQL concurrency/security checks, Next.js/OpenNext builds and Cloudflare bundle validation. Artifact `13481918366` independently matched its published SHA-256 before deployment. All 17 live HTTP checks passed afterward, and Cloudflare confirmed version `0fbdcdd1-f065-4bd6-b349-06eeedf87e1d` at 100% traffic.

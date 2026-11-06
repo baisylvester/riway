@@ -116,4 +116,131 @@ await check(
   },
   403,
 );
+await check(
+  "bag writes reject a missing origin",
+  "/api/cart",
+  { method: "PUT", body: "[]" },
+  403,
+);
+await check(
+  "signed-out bag writes require authentication",
+  "/api/cart",
+  {
+    method: "PUT",
+    headers: { origin: base, "content-type": "application/json" },
+    body: "[]",
+  },
+  401,
+);
+await check(
+  "cross-site bag writes are rejected even with a matching origin",
+  "/api/cart",
+  {
+    method: "PUT",
+    headers: { origin: base, "sec-fetch-site": "cross-site" },
+    body: "[]",
+  },
+  403,
+);
+await check(
+  "signed-out referral writes require authentication",
+  "/api/referral",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: '{"code":"AUDIT-NOT-FOUND"}',
+  },
+  401,
+);
+await check(
+  "checkout rejects a missing origin",
+  "/api/checkout",
+  { method: "POST", body: "{}" },
+  403,
+);
+await check(
+  "checkout rejects malformed JSON",
+  "/api/checkout",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: "{",
+  },
+  400,
+);
+const validCheckout = {
+  market: "PH",
+  items: [{ productId: "90000000-0000-4000-8000-000000000001", quantity: 1 }],
+  address: {
+    full_name: "HTTP audit fixture",
+    phone: "0000000000",
+    line1: "Temporary audit address",
+    city: "Manila",
+    postal_code: "1000",
+    country: "PH",
+  },
+  terms: true,
+  idempotencyKey: "90000000-0000-4000-8000-000000000002",
+};
+const checkoutOptions = (data) => ({
+  method: "POST",
+  headers: { origin: base, "content-type": "application/json" },
+  body: JSON.stringify(data),
+});
+await check(
+  "valid signed-out checkout still requires authentication",
+  "/api/checkout",
+  checkoutOptions(validCheckout),
+  401,
+);
+await check(
+  "checkout rejects a different delivery market",
+  "/api/checkout",
+  checkoutOptions({
+    ...validCheckout,
+    address: { ...validCheckout.address, country: "SG" },
+  }),
+  400,
+);
+await check(
+  "checkout rejects zero quantity",
+  "/api/checkout",
+  checkoutOptions({
+    ...validCheckout,
+    items: [{ ...validCheckout.items[0], quantity: 0 }],
+  }),
+  400,
+);
+await check(
+  "checkout rejects missing terms acceptance",
+  "/api/checkout",
+  checkoutOptions({ ...validCheckout, terms: false }),
+  400,
+);
+await check(
+  "health endpoint rejects unsupported writes",
+  "/api/health",
+  { method: "POST" },
+  405,
+);
+await check(
+  "saved bag rejects unsupported methods",
+  "/api/cart",
+  { method: "POST" },
+  405,
+);
+const invalidCallback = await check(
+  "invalid auth callback stays on the RIWAY origin",
+  "/auth/callback?next=https%3A%2F%2Funtrusted.example",
+  {},
+  307,
+);
+assert.equal(
+  new URL(invalidCallback.headers.get("location"), base).origin,
+  new URL(base).origin,
+);
+assert.match(
+  invalidCallback.headers.get("location"),
+  /auth\/login\?error=confirmation/,
+);
 console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));

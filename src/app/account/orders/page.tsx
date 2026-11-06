@@ -1,15 +1,13 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/data";
 import { money } from "@/lib/domain";
+import { pageNumber } from "@/lib/pagination";
 export default async function Orders({
   searchParams,
 }: {
   searchParams: Promise<{ page?: string }>;
 }) {
-  const page = Math.max(
-    1,
-    Math.min(1000, Number((await searchParams).page) || 1),
-  );
+  const page = pageNumber((await searchParams).page);
   const { client, user } = await requireSession();
   const { data, error } = await client
     .from("orders")

@@ -115,7 +115,13 @@ try {
     .sort();
   for (const file of migrations)
     sql(readFileSync(join("supabase/migrations", file), "utf8"));
-  for (const file of ["rls.sql", "checkout.sql", "operations.sql"])
+  for (const file of [
+    "rls.sql",
+    "checkout.sql",
+    "operations.sql",
+    "tenant_inventory.sql",
+    "customer_workflows.sql",
+  ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
  insert into private.platform_admins values('${admin}');
@@ -169,7 +175,7 @@ try {
     JSON.stringify(
       {
         migrations: migrations.length,
-        legacySecuritySuites: 3,
+        securitySuites: 5,
         parallelReservations: { attempted: 10, accepted: 5 },
         parallelIdempotentReceipts: { attempted: 10, journalEntries: 1 },
         state,

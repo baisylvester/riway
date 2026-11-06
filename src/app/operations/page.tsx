@@ -9,6 +9,7 @@ import {
 import { z } from "zod";
 import { auth } from "@clerk/nextjs/server";
 import { authProvider, secondFactorVerified } from "@/lib/auth-config";
+import { InventoryEmailStatus } from "@/components/inventory-email-status";
 
 export default async function Operations({
   searchParams,
@@ -86,6 +87,7 @@ export default async function Operations({
             : "No stores are assigned to your account yet. Ask your RIWAY administrator to assign a store."}
         </p>
         {platformAdmin === true && <InventorySetupForm kind="tenant" />}
+        {platformAdmin === true && <InventoryEmailStatus />}
         <Link href="/account/security">Account security</Link>
       </section>
     );
@@ -148,6 +150,7 @@ export default async function Operations({
           : "RIWAY · STORE OPERATIONS"}
       </span>
       <h1>{selected.name}</h1>
+      {platformAdmin === true && <InventoryEmailStatus />}
       <nav className="tab-links" aria-label="Stores">
         {tenants.map((t) => (
           <Link

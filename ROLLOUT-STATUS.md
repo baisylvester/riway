@@ -1,5 +1,17 @@
 # RIWAY provider rollout — 6 November 2026
 
+## Pending continuation — notification activation fixes
+
+The continuation branch contains an unapplied twelfth migration, `20261106060000_notification_activation_window.sql`. It starts the 23-hour retry safety window at first claim instead of creation, so messages queued while email is disabled are preserved. It recovers only expired jobs with zero attempts; attempted jobs retain their original conservative deadline, and previously sent messages remain terminal. Exclusive leases, the six-attempt limit and service-only access are preserved.
+
+The notification endpoint now checks sender, reply-to, worker credentials, website URL, timezone, report hour and test allowlist before claiming work. Resend's `concurrent_idempotent_requests` conflict is retried with the same key; changed-payload conflicts remain permanent errors. MFA-verified RIWAY super admins see delivery configuration and missing setup on `/operations`, including before the first store exists. No credential values or test-recipient addresses are rendered.
+
+Local verification: 86 tests across 13 files, TypeScript and the production Next.js webpack build pass. The new tests cover the pre-fix failure, upgrade from an existing queue, retry deadlines/limits, stale leases, configuration failures, idempotency conflicts and dashboard access/secret isolation. Local browser verification could not finish: automatic approval review rejected launching the isolated production preview server. An earlier development preview failed hydration under the production CSP and is not counted as a browser pass. Linux CI and hosted acceptance must be recorded separately.
+
+Provider inspection confirms Resend `beyondai.ph` remains unverified; DNS verification was started and is pending. Its current DKIM and two sending CNAME records match the previously saved sheet. The RIWAY Cloudflare hosting account exposes only itself and has no DNS zones. The user is opening the account that owns the domain and completing live authenticator setup. No DNS record, credential, provider flag or hosted database was changed by this continuation. Payments and R2 remain deferred.
+
+The release history below describes the already deployed application. These continuation changes are not live until reviewed, migrated and published.
+
 ## Current live release
 
 - Published the verified application from `166c508` to `https://riway-platform.pages.dev`. Worker version `34d85df6-5fa7-4bef-866f-31659f54a6a9` is serving 100% of traffic. Previous version: `4dd01165-3b00-4db7-a9fc-8d35a84a7b2e`.

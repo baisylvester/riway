@@ -1,5 +1,12 @@
 # Changelog
 
+## Unreleased — 2026-11-06
+
+- Preserve unattempted notifications during delayed email-provider activation; start the bounded retry window at first claim and recover only never-attempted expired jobs.
+- Reject incomplete notification configuration before consuming queue retries, and retry Resend's in-progress idempotency conflicts without changing the key.
+- Show email configuration and setup gaps to MFA-verified RIWAY super admins without exposing credentials or recipient lists.
+- Add database-upgrade, notification-worker, configuration and admin-visibility regression coverage. Hosted migration and deployment remain pending.
+
 ## 0.1.0 — 2026-11-02
 
 - Reviewed proposal, development brief and existing official website; retained market/online-policy restrictions.

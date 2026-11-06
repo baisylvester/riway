@@ -1,5 +1,13 @@
 # Testing
 
+## Verified on 6 November 2026 — notification continuation candidate
+
+All 86 tests across 13 files, TypeScript and the production Next.js webpack build pass. Tests include a demonstrated pre-fix failure for an unattempted three-day-old job, migration of an existing queue, conservative deadlines for attempted jobs, zero-attempt recovery, six-attempt exhaustion, stale-lease recovery, exclusive claims, forged completion rejection and browser-role denial. Endpoint tests verify invalid/unauthorized configuration cannot initialize or claim the queue. Render tests verify MFA and RIWAY super-admin restrictions and that no configured secrets or recipient lists reach the HTML. Resend fakes distinguish retriable in-progress idempotency conflicts from permanent changed-payload conflicts. No real email was sent.
+
+For a linked dependency directory whose Vite cache is not writable, run `node node_modules/vitest/vitest.mjs run --configLoader native`. The normal `npm test` command remains valid for clean CI installations. The webpack production build was used locally; Cloudflare/OpenNext requires Linux verification.
+
+Local browser acceptance remains unverified. Automatic approval review rejected launching the isolated production preview server because its approval category is disabled. The earlier development preview could not hydrate under the production CSP; that attempt is not counted as passing. The static render tests are not substitutes for browser or hosted MFA acceptance. No hosted migration, production stock write, provider activation or live deployment was performed for this candidate. See `ROLLOUT-STATUS.md`.
+
 ## Verified on 5 November 2026 — provider/tenant implementation
 
 Typecheck and production build pass. All 41 automated tests pass across 7 files, including embedded PostgreSQL replay of every migration and the existing RLS/checkout/operations SQL scripts. New database tests cover tenant isolation, role escalation, stock limits, idempotency conflicts/replay, MFA, suspension/revocation, final-owner protection, Clerk UUID mapping/deletion, and durable queue leases/forged completion. Provider tests use fakes and send no external messages or objects. Fifteen local HTTP checks and four newly added desktop Chrome/mobile-emulation browser checks pass with confirmed process exit 0. Use `PLAYWRIGHT_EXTERNAL_SERVER=1` with `PLAYWRIGHT_PORT` when testing against a separately started production server to avoid Windows npm server teardown hangs.

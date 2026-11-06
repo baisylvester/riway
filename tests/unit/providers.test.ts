@@ -51,6 +51,35 @@ describe("transactional email boundary", () => {
     await expect(provider.send(message)).rejects.toThrow("allowlist");
     expect(send).not.toHaveBeenCalled();
   });
+  it("retries an in-flight idempotent request but rejects changed-payload conflicts", async () => {
+    const send = vi
+      .fn()
+      .mockResolvedValueOnce({
+        error: { statusCode: 409, name: "concurrent_idempotent_requests" },
+      })
+      .mockResolvedValue({ data: { id: "original-message" } });
+    const provider = new ResendTransactionalEmailProvider(
+      emailClient(send),
+      "sender@example.invalid",
+      "test",
+      message.to,
+      async () => {},
+    );
+    expect(await provider.send(message)).toEqual({
+      providerMessageId: "original-message",
+    });
+    expect(send).toHaveBeenCalledTimes(2);
+    expect(send.mock.calls[0][1].idempotencyKey).toBe(
+      send.mock.calls[1][1].idempotencyKey,
+    );
+    send.mockReset().mockResolvedValue({
+      error: { statusCode: 409, name: "invalid_idempotent_request" },
+    });
+    await expect(provider.send(message)).rejects.toMatchObject({
+      retryable: false,
+    });
+    expect(send).toHaveBeenCalledTimes(1);
+  });
   it("redacts permanent errors and does not retry them", async () => {
     const send = vi.fn().mockResolvedValue({
       error: { statusCode: 422, message: "sensitive provider body" },

@@ -1,5 +1,11 @@
 # Changelog
 
+## Stripe Payments foundation - released disabled 2026-11-06
+
+- Integrate hosted Checkout, exact raw-body SDK webhook verification, canonical session/amount matching, idempotent payment-stock transitions, customer resumption, a separate reconciliation worker and scoped payment operations status.
+- Fix all-line expiry for non-Stripe orders and preserve stock under uncertain/pending Stripe sessions. Add six-suite SQL replay and concurrent duplicate-payment verification.
+- Deploy PR #7's verified Linux artifact; 126 tests, TypeScript, 35 live API cases, 45 route scenarios and 103 assets pass. Credentials and Tax remain deferred. The final private-wrapper database hardening is CI-tested but awaiting restored Supabase access; see `ROLLOUT-STATUS.md`.
+
 ## Authenticator and live feature audit — released 2026-11-06
 
 - Render authenticator QR modules locally from the enrollment URI and offer a manual setup key after the user still observed a broken image following the first data-URL correction. The user confirmed both now appear on the live site.

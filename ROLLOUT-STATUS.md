@@ -1,5 +1,15 @@
 # RIWAY provider rollout — 6 November 2026
 
+## Latest live release - Stripe Payments disabled
+
+PR #7 merged as `6522b990faa74689bcf5b655b33c535b7b73d8d5`, with a tree identical to tested build `79ef39cc5bbcede779f7071aea5f76627204c48e`. CI runs `42189319675` and `42189327485` passed, including real PostgreSQL concurrency (one applied payment transition and nine duplicate acknowledgements), six SQL suites, 126 tests, TypeScript, audit and Linux/OpenNext packaging. Artifact `13489445790` matched SHA-256 `36908b2606053546a8439120c9b962d75332dc5af15dcd2ee35e6e37d948bd29` before deployment. Worker upload returned `deployment_id=6b44ff1d1f7a4750a43e62b1382048db`; live HTTP and client-module hashes confirm the new app is serving. The renewed OAuth scope did not allow an independent traffic-percentage query, so none is claimed from it.
+
+Post-release checks passed 35 HTTP/API cases, 45 route scenarios and all 103 static assets. The user explicitly requested deployment disabled, credentials later and Tax deferred. `PAYMENT_PROVIDER=disabled`, `STRIPE_MODE=test`, `STRIPE_LIVE_APPROVED=false`; automatic tax is false. No Worker server secrets, Stripe webhook endpoint, real payment or false paid order was provisioned. Supabase Auth/Storage remain active and email disabled.
+
+Hosted migration `20261106083056_stripe_checkout.sql` is applied. Its rollback-only Stripe suite passed, and cleanup verified no retained QA users/products, orders, reservations, attempts or events. Source migration `20261106083403_stripe_rpc_hardening.sql` is tested but pending hosted application because Supabase tools disconnected and the CLI has no login. It moves the two owner/market/MFA-checked read implementations behind private helpers/public invoker wrappers. The user said they would reconnect; at the last check the tools remained unavailable. Do not claim that advisor warning has been cleared remotely. The existing leaked-password-protection warning remains separate. Credentials and real provider acceptance remain pending; this is not the full proposal delivery. See `STRIPE.md`.
+
+Older release sections below are historical.
+
 ## Current live release — QR follow-up and feature audit
 
 PRs #4–#6 are merged. Current application merge revision is `0885d05a5d1d8da63aa0d91b6295a7c5e7b4035b`, whose tree exactly matches verified build source `2fb761adddf06ee005f2838a8118c43862ba7502`. Both CI runs `42178283974` and `42178319133` passed. Artifact `13484306364` independently matched SHA-256 `dc1fa8198c46741b5de7546a1334bc27b8e4885e6b242e5864947f3dedb7e9b6` before deployment. Cloudflare version `85b6f7b0-3b40-49e5-92d6-50c27aae8287` serves 100% of traffic, deployed at 15:06 Asia/Shanghai. Its live authenticator module byte hash matches the artifact.

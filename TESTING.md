@@ -1,5 +1,11 @@
 # Testing
 
+## Deployed disabled Stripe release - 6 November 2026
+
+Verified build `79ef39cc5bbcede779f7071aea5f76627204c48e` (merge `6522b990faa74689bcf5b655b33c535b7b73d8d5`) passed CI `42189319675`/`42189327485` and was deployed from checksum-verified artifact `13489445790`. Local 126 tests/17 files and TypeScript passed. Linux CI passed six SQL suites and ten concurrent duplicate Stripe events with one payment/stock transition. Live postchecks passed 35 HTTP/API cases, 45 route scenarios, 103 static assets and exact payment-module byte matching. No browser/real Stripe transaction is counted as passed.
+
+Migration `20261106083056` and its hosted rollback suite passed with no retained fixtures. The additional `20261106083403` private-wrapper hardening is tested in CI but unapplied remotely because the Supabase connection became unavailable. Reconnect, apply and rerun the hosted suite/advisors before claiming its remote completion. Payment credentials and Tax were deferred by the user; default checkout and automatic tax remain disabled. Earlier candidate sections are historical.
+
 ## Stripe integration candidate - 6 November 2026
 
 TypeScript and 126 tests across 17 files pass locally. New coverage includes official SDK/Web Crypto signature verification, altered/stale/mode-mismatched payloads, safe return destinations, immutable price/expiry/idempotency snapshots, ambiguous network retry, user-scoped order creation, changed terms, resume ownership, webhook retry responses and disabled-checkout settlement. A sixth rollback-only SQL suite exercises payment state/stock/authorization and all-line legacy reservation expiry. The real PostgreSQL runner adds ten concurrent duplicate payment events and requires exactly one stock transition. Its Linux CI result must be recorded separately; an authored concurrency assertion is not a passing run. Real Stripe account/key, test-card checkout, webhook delivery and provider acceptance remain pending.

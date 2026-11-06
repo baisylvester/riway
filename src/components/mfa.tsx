@@ -2,10 +2,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { browserDb } from "@/lib/supabase/browser";
-import { authenticatorQrSource } from "@/lib/authenticator-qr";
+import { authenticatorQr } from "@/lib/authenticator-qr";
+import { AuthenticatorQr } from "@/components/authenticator-qr";
 export function MFA() {
   const [factor, setFactor] = useState(""),
-    [qr, setQr] = useState(""),
+    [qr, setQr] = useState<ReturnType<typeof authenticatorQr> | null>(null),
     [code, setCode] = useState(""),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false),
@@ -22,6 +23,9 @@ export function MFA() {
         disabled={busy}
         onClick={async () => {
           setBusy(true);
+          setQr(null);
+          setFactor("");
+          setCode("");
           try {
             const c = browserDb();
             const { data: fs, error: fe } = await c.auth.mfa.listFactors();
@@ -33,14 +37,16 @@ export function MFA() {
             } else {
               for (const f of fs.all.filter(
                 (f) => f.factor_type === "totp" && f.status === "unverified",
-              ))
-                await c.auth.mfa.unenroll({ factorId: f.id });
+              )) {
+                const { error } = await c.auth.mfa.unenroll({ factorId: f.id });
+                if (error) throw error;
+              }
               const { data, error } = await c.auth.mfa.enroll({
                 factorType: "totp",
                 friendlyName: "RIWAY authenticator",
               });
               if (error) throw error;
-              const image = authenticatorQrSource(data.totp.qr_code);
+              const image = authenticatorQr(data.totp.uri);
               setFactor(data.id);
               setQr(image);
               setMessage(
@@ -59,11 +65,17 @@ export function MFA() {
         Set up or verify authenticator
       </button>
       {qr && (
-        <img
-          className="mfa-qr"
-          src={qr}
-          alt="Scan to enroll your RIWAY authenticator"
-        />
+        <>
+          <AuthenticatorQr qr={qr} />
+          <details>
+            <summary>Can’t scan? Enter a setup key</summary>
+            <p>
+              In your authenticator, add a time-based account named RIWAY and
+              enter this key:
+            </p>
+            <code>{qr.secret}</code>
+          </details>
+        </>
       )}
       {factor && (
         <form
@@ -78,7 +90,7 @@ export function MFA() {
                 code,
               });
               if (error) throw error;
-              setQr("");
+              setQr(null);
               setFactor("");
               setCode("");
               setMessage("Authenticator verified.");

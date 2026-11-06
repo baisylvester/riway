@@ -8,6 +8,12 @@ The audit also reproduced fractional URL pagination offsets in order/staff lists
 
 Thirty HTTP/API checks passed on the live site, covering authentication, origin/method/schema guards, callbacks and intentionally disabled providers. A separate scan covered 45 route scenarios and their linked assets. Initial missing-event/distributor probes returned two intermittent Cloudflare 1101 errors; 20 repeated missing-record probes after the QR release all returned the not-found payload without server errors. Their original cause is unconfirmed and must not be described as fixed by the QR change. Interactive browser testing was explicitly declined after browser control was found disabled. Responsive behavior, animation, click flows and authenticated browser actions are not counted as verified in this audit.
 
+## Authenticator follow-up on 6 November 2026
+
+The user still observed a broken QR image after the data-URL normalization release. Enrollment now builds an inline SVG module matrix locally from Supabase's `totp.uri`, without using its `qr_code` image URL. The page offers the same URI's secret as a manual time-based setup key, clears stale enrollment state on retry and checks pending-factor removal errors. No enrollment material is sent to an external QR service or persisted by this UI.
+
+All 97 tests across 15 files and TypeScript pass. An independent jsQR decoder recovered the exact enrollment URI from the rendered module path using RFC 6238's public fixture secret. Static React rendering confirms an opaque background, four-module quiet zone and no image URL. Actual scanning and verification in the user's signed-in browser remain pending; HTTP/database testing is the authorized audit scope.
+
 ## Live release verified on 6 November 2026
 
 PR #3 merged as `8a54bef0bcff237b40f504ebafc96cc8d08342d4`. Main CI run `42173219266` passed for that exact revision, including unit/database tests, typecheck, dependency audit, real PostgreSQL concurrency/security checks, Next.js/OpenNext builds and Cloudflare bundle validation. Artifact `13481918366` independently matched its published SHA-256 before deployment. All 17 live HTTP checks passed afterward, and Cloudflare confirmed version `0fbdcdd1-f065-4bd6-b349-06eeedf87e1d` at 100% traffic.

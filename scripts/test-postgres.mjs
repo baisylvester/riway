@@ -70,7 +70,8 @@ function parallelSql(text) {
     child.stdout.on("data", (b) => (output += b));
     child.stderr.on("data", (b) => (error += b));
     child.on("error", reject);
-    child.on("exit", (code) => resolve({ code, output, error }));
+    // `exit` can fire before stderr pipes drain, hiding the expected SQL error.
+    child.on("close", (code) => resolve({ code, output, error }));
     child.stdin.end(text);
   });
 }

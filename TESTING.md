@@ -1,5 +1,11 @@
 # Testing
 
+## Live release verified on 6 November 2026
+
+PR #3 merged as `8a54bef0bcff237b40f504ebafc96cc8d08342d4`. Main CI run `42173219266` passed for that exact revision, including unit/database tests, typecheck, dependency audit, real PostgreSQL concurrency/security checks, Next.js/OpenNext builds and Cloudflare bundle validation. Artifact `13481918366` independently matched its published SHA-256 before deployment. All 17 live HTTP checks passed afterward, and Cloudflare confirmed version `0fbdcdd1-f065-4bd6-b349-06eeedf87e1d` at 100% traffic.
+
+Hosted migration `20261106060000` was applied transactionally and recorded. Postchecks verified all twelve migration versions, the new column/function and service-only queue access. The queue had zero jobs before application. A live browser check verified the signed-in inventory page's MFA requirement; privileged inventory writes and the admin-only email panel remain pending the user's authenticator verification. Conditional CI Playwright steps were skipped. Email remains disabled, with Supabase Auth/Storage active. Earlier sections are historical and do not supersede this release evidence.
+
 ## Verified on 6 November 2026 — notification continuation candidate
 
 All 86 tests across 13 files, TypeScript and the production Next.js webpack build pass. Tests include a demonstrated pre-fix failure for an unattempted three-day-old job, migration of an existing queue, conservative deadlines for attempted jobs, zero-attempt recovery, six-attempt exhaustion, stale-lease recovery, exclusive claims, forged completion rejection and browser-role denial. Endpoint tests verify invalid/unauthorized configuration cannot initialize or claim the queue. Render tests verify MFA and RIWAY super-admin restrictions and that no configured secrets or recipient lists reach the HTML. Resend fakes distinguish retriable in-progress idempotency conflicts from permanent changed-payload conflicts. No real email was sent.

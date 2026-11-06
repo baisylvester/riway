@@ -1,11 +1,12 @@
 # Changelog
 
-## Unreleased — 2026-11-06
+## Notification activation fixes — released 2026-11-06
 
 - Preserve unattempted notifications during delayed email-provider activation; start the bounded retry window at first claim and recover only never-attempted expired jobs.
 - Reject incomplete notification configuration before consuming queue retries, and retry Resend's in-progress idempotency conflicts without changing the key.
 - Show email configuration and setup gaps to MFA-verified RIWAY super admins without exposing credentials or recipient lists.
-- Add database-upgrade, notification-worker, configuration and admin-visibility regression coverage. Hosted migration and deployment remain pending.
+- Add database-upgrade, notification-worker, configuration and admin-visibility regression coverage. All 86 local tests and main CI passed.
+- Merge PR #3, apply and verify the twelfth hosted migration, and deploy the checksum-verified Linux artifact for `8a54bef`. All 17 live HTTP checks pass. Email activation and privileged inventory acceptance still await provider/MFA setup.
 
 ## 0.1.0 — 2026-11-02
 

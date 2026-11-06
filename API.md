@@ -1,5 +1,15 @@
 # Application API
 
+## Added in the provider/tenant implementation
+
+- `/operations`: authenticated store portal; RIWAY super admins oversee tenants; owners configure locations/SKUs/members; inventory users record stock movements; viewers read. Database permissions enforce MFA and tenant isolation for every action.
+- `POST /api/referral`: same-origin authenticated referral claim, shared by both auth providers.
+- `POST /api/webhooks/clerk`: verifies the Clerk signature and disables deleted identities through a service-only RPC; returns 503 when unconfigured.
+- `POST /api/internal/notifications`: bearer-secret worker endpoint (minimum 32-character configured secret), service-only leased outbox processing; returns 503 when unconfigured.
+- RPCs `create_tenant`, `setup_tenant_inventory`, `mutate_tenant_stock`, `is_platform_admin`: RLS-aware, server-validated tenant operations. No browser table mutation grants exist for stock, membership, or journal tables.
+
+See `PROVIDER-IMPLEMENTATION.md` for provider variables, job lease/idempotency behavior and rollout. These additions have not been deployed.
+
 Errors use `{ "error": { "message": "..." } }`. JSON mutations validate Origin against the actual request origin. Server Actions use Next.js origin protections, validate fields and retain Supabase/RLS enforcement. Account and API responses are private/no-store. Never use a service-role key in a browser.
 
 | Endpoint                    | Access                   | Result                                                                     |

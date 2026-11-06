@@ -1,5 +1,6 @@
 import { session } from "@/lib/data";
 import { MediaUpload } from "@/components/media-upload";
+import { r2Storage } from "@/services/r2-storage";
 export default async function Media() {
   const { client } = await session();
   const { data, error } = await client
@@ -10,6 +11,13 @@ export default async function Media() {
   if (error) throw Error("Media library unavailable");
   const rows = await Promise.all(
     data.map(async (r) => {
+      if (r.storage_provider === "r2") {
+        try {
+          return { ...r, url: await r2Storage().preview(r.object_path) };
+        } catch {
+          return { ...r, url: undefined };
+        }
+      }
       const { data } = await client.storage
         .from("editorial-media")
         .createSignedUrl(r.object_path, 60);

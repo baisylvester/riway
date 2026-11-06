@@ -1,5 +1,9 @@
 # Database
 
+## Pending provider/tenant migrations — 5 November 2026
+
+Three new migration files add canonical UUID/Clerk identity mapping and per-asset storage backends; tenant roles/locations/SKUs/stock journals and atomic inventory RPCs; and a private durable notification outbox. They have been replayed locally in embedded PostgreSQL, including all three existing security scripts, but are not applied remotely. See `PROVIDER-IMPLEMENTATION.md` for exact filenames, identity-FK implications, provisioning and rollback. Tenant stock is independent from the existing corporate checkout inventory. New UUID identity helpers replace native-only `auth.uid()` calls in existing policies/functions while preserving grants and scopes.
+
 Project: `riway` / `skiimthwadramxdzhgoy`. PostgreSQL 17, eu-west-1. Existing application schema was empty before development. Migrations were applied through the connected Supabase tool; local filenames were aligned to the resulting remote history to prevent accidental reapplication.
 
 | Applied version | Change                                                                                     |

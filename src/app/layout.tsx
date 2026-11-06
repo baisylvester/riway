@@ -5,6 +5,8 @@ import "./reference.css";
 import { StoreProvider } from "@/components/store-provider";
 import { SiteChrome } from "@/components/site-chrome";
 import { currentMarket } from "@/lib/data";
+import { ClerkProvider } from "@clerk/nextjs";
+import { authProvider } from "@/lib/auth-config";
 export const metadata: Metadata = {
   title: {
     default: "RIWAY International · A world of possibilities",
@@ -20,15 +22,24 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const market = await currentMarket();
+  const content = (
+    <StoreProvider>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
+      <SiteChrome market={market}>{children}</SiteChrome>
+    </StoreProvider>
+  );
   return (
     <html lang="en">
       <body>
-        <StoreProvider>
-          <a className="skip-link" href="#main">
-            Skip to content
-          </a>
-          <SiteChrome market={market}>{children}</SiteChrome>
-        </StoreProvider>
+        {authProvider() === "clerk" ? (
+          <ClerkProvider signInUrl="/auth/login" signUpUrl="/auth/register">
+            {content}
+          </ClerkProvider>
+        ) : (
+          content
+        )}
       </body>
     </html>
   );

@@ -68,6 +68,51 @@ await check(
 );
 await check("private account redirect", "/account", {}, 307);
 await check("private staff redirect", "/admin", {}, 307);
+await check(
+  "payment management requires staff login",
+  "/admin/payments",
+  {},
+  307,
+);
+await check(
+  "payment reconciliation is unconfigured",
+  "/api/internal/payments",
+  { method: "POST" },
+  503,
+);
+await check(
+  "payment resume rejects forged origin",
+  "/api/payments/resume",
+  {
+    method: "POST",
+    headers: {
+      origin: "https://untrusted.example",
+      "content-type": "application/json",
+    },
+    body: JSON.stringify({ orderId: "60000000-0000-4000-8000-000000000002" }),
+  },
+  403,
+);
+await check(
+  "payment resume validates order ID",
+  "/api/payments/resume",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: "{}",
+  },
+  400,
+);
+await check(
+  "payment resume requires authentication",
+  "/api/payments/resume",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: JSON.stringify({ orderId: "60000000-0000-4000-8000-000000000002" }),
+  },
+  401,
+);
 await check("tenant portal requires authentication", "/operations", {}, 307);
 const login = await check(
   "login form is safe before JavaScript loads",

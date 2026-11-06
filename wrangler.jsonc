@@ -19,6 +19,9 @@
   "vars": {
     "NEXT_PUBLIC_SUPABASE_URL": "https://skiimthwadramxdzhgoy.supabase.co",
     "PAYMENT_PROVIDER": "disabled",
+    "STRIPE_MODE": "test",
+    "STRIPE_LIVE_APPROVED": "false",
+    "COMMERCE_TERMS_VERSION": "2026-11-draft",
     "RIWAY_INTEGRATION": "disabled",
     "AUTH_PROVIDER": "supabase",
     "EMAIL_PROVIDER": "disabled",

@@ -41,6 +41,7 @@ export const checkoutSchema = z
     items: cartSchema.min(1),
     address: addressSchema,
     terms: z.literal(true),
+    termsVersion: z.string().min(3).max(128).optional(),
     idempotencyKey: z.uuid(),
   })
   .refine((v) => v.market === v.address.country, {

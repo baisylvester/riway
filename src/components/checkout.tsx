@@ -1,9 +1,25 @@
 "use client";
-import { useId, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { useStore } from "./store-provider";
 import { markets, type Market } from "@/lib/domain";
-export function Checkout({ market }: { market: Market }) {
+export function Checkout({
+  market,
+  payment = {
+    enabled: false,
+    mode: "disabled",
+    message: "Online ordering is not yet available.",
+  },
+}: {
+  market: Market;
+  payment?: {
+    enabled: boolean;
+    mode: string;
+    message: string;
+    termsVersion?: string;
+  };
+}) {
   const statusId = useId();
+  const attempt = useRef({ payload: "", key: "" });
   const { items } = useStore(),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
@@ -18,18 +34,36 @@ export function Checkout({ market }: { market: Market }) {
           f.get(k),
         ]),
       );
+      const payload = {
+        market,
+        items,
+        address: { ...address, country: market },
+        terms: f.get("terms") === "on",
+        termsVersion: payment.termsVersion,
+      };
+      const fingerprint = JSON.stringify(payload);
+      if (attempt.current.payload !== fingerprint)
+        attempt.current = { payload: fingerprint, key: crypto.randomUUID() };
       const r = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          market,
-          items,
-          address: { ...address, country: market },
-          terms: f.get("terms") === "on",
-          idempotencyKey: crypto.randomUUID(),
+          ...payload,
+          idempotencyKey: attempt.current.key,
         }),
       });
       const d = await r.json();
+      if (r.ok && typeof d.url === "string") {
+        const url = new URL(d.url, window.location.origin);
+        if (
+          (url.protocol === "https:" &&
+            url.hostname === "checkout.stripe.com") ||
+          url.origin === window.location.origin
+        ) {
+          window.location.assign(url.href);
+          return;
+        }
+      }
       setMessage(d.error?.message ?? "No payment has been taken.");
     } catch {
       setMessage("Checkout could not be reached. No payment has been taken.");
@@ -46,10 +80,7 @@ export function Checkout({ market }: { market: Market }) {
     >
       <div className="panel stack">
         <h2>Delivery details</h2>
-        <p className="muted small">
-          You can review the form. Ordering and payment are currently
-          unavailable.
-        </p>
+        <p className="muted small">{payment.message}</p>
         <div className="form-grid">
           {[
             ["full_name", "Full name"],
@@ -87,18 +118,30 @@ export function Checkout({ market }: { market: Market }) {
         <h2>Order review</h2>
         <p>{items.length} product selections</p>
         <div className="notice">
-          Sales are closed pending policy and regulatory approvals. No approved
-          therapeutic claims. No card details or payment are collected.
+          {payment.enabled
+            ? "Market approval, verified sponsor, approved pricing and stock are checked before Stripe opens. Card details are entered only on Stripe."
+            : "Sales are closed pending policy and regulatory approvals. No card details or payment are collected."}{" "}
+          No approved therapeutic claims.
         </div>
         <label className="checkbox">
           <input name="terms" type="checkbox" required />
           <span>
-            I understand ordering is unavailable and these are draft terms for
-            review.
+            {payment.enabled ? (
+              <>
+                I accept the <a href="/legal/terms">Terms of Sale</a> and{" "}
+                <a href="/legal/conduct">Code of Conduct</a>.
+              </>
+            ) : (
+              "I understand ordering is unavailable and these are draft terms for review."
+            )}
           </span>
         </label>
         <button className="button" disabled={busy || !items.length}>
-          {busy ? "Checking…" : "Check ordering availability"}
+          {busy
+            ? "Checking…"
+            : payment.enabled
+              ? "Continue to Stripe"
+              : "Check ordering availability"}
         </button>
         <p id={statusId} role="status">
           {message}

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { requireSession } from "@/lib/data";
 import { money } from "@/lib/domain";
 import { Reorder } from "@/components/reorder";
+import { OrderPayment } from "@/components/order-payment";
+import { stripeReadiness } from "@/lib/stripe-config";
 export default async function Order({
   params,
 }: {
@@ -18,6 +20,7 @@ export default async function Order({
     .eq("user_id", user.id)
     .maybeSingle();
   if (!o) notFound();
+  const payment = await client.rpc("stripe_checkout_status", { p_order: id });
   return (
     <div className="panel">
       <h2>Order {id.slice(0, 8).toUpperCase()}</h2>
@@ -40,12 +43,30 @@ export default async function Order({
         ),
       )}
       <p className="price">Total {money(o.total_minor, o.currency)}</p>
-      <Reorder items={o.order_items
-        .filter((i: { product_id: string | null }) => i.product_id)
-        .map((i: { product_id: string; quantity: number }) => ({
-          productId: i.product_id,
-          quantity: i.quantity,
-        }))} />
+      {o.payment_status !== "paid" && o.status === "awaiting_payment" && (
+        <p>
+          Your order is awaiting payment confirmation. Returning from checkout
+          does not confirm payment.
+        </p>
+      )}
+      <OrderPayment
+        orderId={id}
+        phase={payment.data?.phase}
+        mode={payment.data?.livemode}
+        enabled={
+          stripeReadiness().enabled &&
+          o.status === "awaiting_payment" &&
+          o.payment_status === "pending"
+        }
+      />
+      <Reorder
+        items={o.order_items
+          .filter((i: { product_id: string | null }) => i.product_id)
+          .map((i: { product_id: string; quantity: number }) => ({
+            productId: i.product_id,
+            quantity: i.quantity,
+          }))}
+      />
     </div>
   );
 }

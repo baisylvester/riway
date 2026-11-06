@@ -2,6 +2,12 @@
 begin;
 set local lock_timeout='5s';
 set local statement_timeout='30s';
+do $$ begin
+ if (select prosecdef from pg_proc where oid='public.stripe_checkout_status(uuid)'::regprocedure)
+  or (select prosecdef from pg_proc where oid='public.staff_stripe_payments()'::regprocedure) then
+  raise exception 'FAIL: exposed payment reads are security definer'; end if;
+ if has_function_privilege('anon','private.stripe_checkout_status(uuid)','execute') then raise exception 'FAIL: anonymous private payment read'; end if;
+end $$;
 do $$ declare u uuid:=gen_random_uuid(); d uuid:=gen_random_uuid(); p uuid:=gen_random_uuid(); p2 uuid:=gen_random_uuid(); begin
  perform set_config('stripe_qa.user',u::text,true); perform set_config('stripe_qa.product',p::text,true); perform set_config('stripe_qa.product2',p2::text,true);
  insert into auth.users(id,email) values(u,'riway-stripe-qa-'||u::text||'@example.invalid'),(d,'riway-stripe-qa-'||d::text||'@example.invalid');

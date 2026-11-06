@@ -398,6 +398,19 @@ html.lenis body {
   letter-spacing: 0.42em;
   font-size: 0.8rem;
 }
+.reference-design .nav .nav-actions {
+  display: flex;
+  align-items: center;
+  gap: clamp(16px, 3vw, 36px);
+}
+.reference-design .nav .login-link {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-size: 0.66rem;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+}
 .reference-design .nav .menu-btn {
   display: inline-flex;
   align-items: center;

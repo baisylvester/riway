@@ -261,10 +261,15 @@ export function ReferenceShell({
             <a href="/support">Contact</a>
           </li>
         </ul>
-        <button className="menu-btn" type="button" aria-label="Open menu">
-          <span>Menu</span>
-          <i />
-        </button>
+        <div className="nav-actions">
+          <a className="login-link" href="/auth/login">
+            Login
+          </a>
+          <button className="menu-btn" type="button" aria-label="Open menu">
+            <span>Menu</span>
+            <i />
+          </button>
+        </div>
       </nav>
       <div className="menu">
         <button className="close" type="button">

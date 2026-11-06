@@ -1,17 +1,21 @@
-// Supabase's SDK returns an SVG data URL, rather than bare SVG markup.
-// Encode only the SVG payload so '#' and other URL characters stay in the image.
-export function authenticatorQrSource(value: string) {
-  const input = value.trim();
-  if (/^data:image\/svg\+xml;base64,[A-Za-z0-9+/=]+$/i.test(input))
-    return input;
-  const prefix = input.match(
-    /^data:image\/svg\+xml(?:;(?:charset=)?utf-?8)?,/i,
-  );
-  const payload = prefix ? input.slice(prefix[0].length) : input;
-  const svg = payload.trimStart().startsWith("<")
-    ? payload
-    : decodeURIComponent(payload);
-  if (!/^<svg(?:\s|>)/i.test(svg.trimStart()))
-    throw new Error("Authenticator QR image is unavailable.");
-  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+import { create } from "qrcode";
+
+// Render modules directly, avoiding SVG data-URL image decoding entirely.
+export function authenticatorQr(uri: string) {
+  const url = new URL(uri);
+  const secret = url.searchParams.get("secret") ?? "";
+  if (
+    url.protocol !== "otpauth:" ||
+    url.hostname !== "totp" ||
+    !/^[A-Z2-7]+=*$/i.test(secret)
+  )
+    throw new Error("Authenticator enrollment is unavailable.");
+  const { modules } = create(uri, { errorCorrectionLevel: "M" });
+  const paths: string[] = [];
+  const quietZone = 4;
+  for (let y = 0; y < modules.size; y++)
+    for (let x = 0; x < modules.size; x++)
+      if (modules.get(y, x))
+        paths.push(`M${x + quietZone} ${y + quietZone}h1v1h-1z`);
+  return { size: modules.size + quietZone * 2, path: paths.join(""), secret };
 }

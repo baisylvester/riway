@@ -68,6 +68,8 @@ export function checkoutParameters(
     throw new Error("Payment total does not match order.");
   return {
     mode: "payment",
+    integration_identifier: "riway_checkout_ldqpnmxv",
+    automatic_tax: { enabled: false },
     adaptive_pricing: { enabled: false },
     payment_method_options: { card: { request_three_d_secure: "automatic" } },
     client_reference_id: attempt.orderId,

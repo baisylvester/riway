@@ -1,5 +1,13 @@
 # Stripe checkout integration
 
+## Planner review and latest direction
+
+The official Claude Stripe plugin was installed; project MCP configuration points to `https://mcp.stripe.com`. Stripe MCP is connected in the working chat and its implementation planner was called and accepted for hosted, browser-based, one-time physical-goods Checkout. Guide `iguide_61Vi6FkCs48l8dj0z41H3N2KvLZ5N` matches this integration. Review retained the official current SDK/API, dynamic methods, required signed webhooks, idempotent fulfillment and sandbox-first testing; a stable `integration_identifier` was added. Adaptive Pricing remains off to preserve approved market currency/totals until a compatible presentment policy is agreed.
+
+The user initially requested Payments and Tax, then explicitly said to skip Tax for now. Checkout sets `automatic_tax.enabled=false`. Read-only inspection of Riway sandbox found Tax Settings pending with head office missing, no registrations and threshold results with no computation timestamp or locations. No address, tax classification, registration, tax rate or legal obligation was invented or changed. Those observations do not determine tax obligations, and no successful tax calculation is claimed.
+
+An API key was pasted in chat. Do not copy it into source or logs. Rotate the exposed test key in Stripe and use a least-privilege restricted key for the deployed service. Server credentials belong in Cloudflare encrypted secret bindings.
+
 Stripe is the first selected payment provider. The integration uses the official `stripe@23.1.0` SDK and pinned API `2026-10-28.endive`, fetch transport and asynchronous Web Crypto signature verification for Cloudflare. Hosted Checkout collects payment details; no card field or card data is stored by RIWAY. Available methods follow the merchant account's Stripe Checkout configuration; no local wallet is claimed to be supported without account/provider acceptance.
 
 ## Implemented flow

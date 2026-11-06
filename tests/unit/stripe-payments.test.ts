@@ -129,6 +129,7 @@ describe("Stripe configuration and checkout", () => {
     const params = checkoutParameters(attempt);
     expect(params).toMatchObject({
       mode: "payment",
+      automatic_tax: { enabled: false },
       expires_at: attempt.expiresAt,
       client_reference_id: attempt.orderId,
       metadata: { checkout_id: attempt.id },

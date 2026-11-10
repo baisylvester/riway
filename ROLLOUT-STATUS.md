@@ -1,10 +1,14 @@
-# RIWAY provider rollout — 6 November 2026
+# RIWAY provider rollout — 10 November 2026
 
-## Continuation prepared - 10 November 2026
+## Latest live release - product publication and referral continuity
 
-Product publication and referral continuity changes are implemented locally; see `IMPLEMENTATION_STATUS.md`. Local TypeScript and 166 automated tests across 20 files pass, and the dependency audit reports no vulnerabilities. The pre-change live baseline passed all 35 HTTP/API checks. This phase adds seven HTTP regression cases for the new referral endpoints. No hosted schema changes or provider activation are part of this phase.
+PR #8 merged as `d4ad01c87b0d869faf563054810329e4eada0ebc`, whose tree matches tested source `de7d0045746c51e35d5d9617c390f45d8b4aff0d`. CI runs `42774327121`, `42774335080` and `42774956816` passed, including real PostgreSQL concurrency/security, 166 automated tests, TypeScript, dependency audit and Linux/OpenNext packaging. Artifact `13743077087` (19,478,689 bytes) independently matched SHA-256 `53cc0e7c0d00ab052883ee621bef87b7206672713aee7c639e64adc466b6f794` before upload. Cloudflare returned `deployment_id=7d49cc408deb42729df209f359ec9dff`.
 
-At preparation, remote `main` still matched `dd47de6`. Supabase tools were unavailable despite the user's intent to reconnect, so `20261106083403_stripe_rpc_hardening.sql` remains pending hosted application. Two Cloudflare OAuth attempts timed out without an authorization callback; do not interpret the user's approval confirmation as a successful CLI login or deployment. CI/artifact and final deployment evidence will be appended when verified. Earlier live release evidence below remains the last confirmed application deployment.
+Verified live on 10 November at approximately 15:29 Asia/Shanghai: all 42 HTTP/API cases, 45 route scenarios, 12 product publication cases across PH/SG/MY, and all 103 artifact assets passed. One asset HEAD request initially timed out; its targeted GET retry returned 200 and matched the artifact byte hash. The live referral client module `/_next/static/chunks/1a6nm935ros0g.js` matches artifact SHA-256 `223fff7aae36ecf08778a86d4893f0a4f100ba2daa1186cefea5c2c9f1214b0d`. These checks confirm the updated application is serving; no independent deployment traffic-percentage query was made. Local 42 HTTP checks and 12 market-content checks also passed. Browser interaction testing remains declined and is not counted as a pass.
+
+Product brand routes and metadata now respect published catalogue records, with neutral presentation copy, shared market notices and corrected footer anchors. Guest referral continuity uses a revalidated, host-only HttpOnly 30-day functional cookie, explicit clearing and the existing immutable user-scoped claim before checkout or after sign-in. Simultaneous anonymous first visits can race before a cookie exists; this is not distributed atomic first-touch attribution. Full approved content migration and authoritative member/compensation integration remain pending.
+
+Cloudflare login succeeded after the user completed the final authorization step. Supabase tools remain unavailable despite the user's intent to reconnect, so `20261106083403_stripe_rpc_hardening.sql` is still pending hosted application; no advisor clearance is claimed. This phase introduced no schema change, server credentials or provider activation. Runtime inspection confirms Supabase Auth/Storage, disabled payments/email and the existing minute schedule. Tax remains deferred. The sections below preserve older release evidence.
 
 ## Latest live release - Stripe Payments disabled
 

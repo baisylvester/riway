@@ -1,5 +1,13 @@
 # Implementation status
 
+## Regional calendar and commerce preparation - 10 November 2026
+
+The public regional event calendar now supports bounded month navigation, market-local dates/timezones and published global/current-market events. Homepage cards link to actual event records; empty calendars and temporary content failures are distinct. Event saves invalidate homepage and detail routes. No event records were invented.
+
+Market administrators/compliance staff with verified MFA can prepare package composition/proposed prices and scheduled percentage/fixed promotion/voucher drafts at `/admin/packages` and `/admin/promotions`. Private SQL helpers enforce roles, market boundaries, validation, server-owned metadata and revision conflicts. Only draft/review/archive states exist. Applying packages/discounts to checkout, qualifying membership packages and bonus-bottle/redemption logic remain unfinished scope. See `COMMERCE-DRAFTS.md`.
+
+Hosted migrations `20261110075101_stripe_rpc_hardening.sql` and `20261110075752_commerce_drafts.sql` are applied. Hosted Stripe and draft rollback suites passed, cleanup found no retained QA users/products/orders/reservations/drafts, and the two public-definer payment warnings cleared. The existing leaked-password-protection warning remains. Local TypeScript, 251 tests, 44 HTTP/API cases and 18 regional calendar/home cases pass. Real PostgreSQL CI passed seven suites and the competing-draft-edit check before hosted application. Final source/build/deployment evidence follows in `ROLLOUT-STATUS.md`. Payments, Tax and email remain disabled.
+
 ## Product publication and referral continuation - 10 November 2026
 
 Dedicated PURTIER and CONSCIENTIOUS pages now load published catalogue records, including metadata, instead of publishing independent hardcoded benefit, ingredient and dosage claims. The presentation imagery, stages, galleries, edition navigation and collection toggles remain. Shared market notices also appear on shop details; product saves invalidate both brand routes and shop detail pages. Product-footer copy and anchors match the remaining sections. This closes the identified publication bypass, not the full approved content migration or market-specific content model.

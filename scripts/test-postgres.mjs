@@ -123,6 +123,7 @@ try {
     "tenant_inventory.sql",
     "customer_workflows.sql",
     "stripe.sql",
+    "commerce_drafts.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
@@ -133,6 +134,43 @@ try {
  insert into public.tenant_products(id,tenant_id,product_id,sku) values('${item}','${tenant}','${product}','CONCURRENCY');
  insert into public.tenant_locations(id,tenant_id,name,market) values('${location}','${tenant}','Test location','PH');
  ${asUser} select public.mutate_tenant_stock('${tenant}','${location}','${item}','receive',5,'Test stock receipt','${randomUUID()}');`);
+  sql(
+    `insert into public.staff_roles(user_id,market,role) values('${admin}','PH','admin');`,
+  );
+  const draftDefinition = JSON.stringify({
+    components: [{ productId: product, quantity: 2 }],
+    retailMinor: null,
+    memberMinor: null,
+  });
+  const draftId = sql(
+    `${asUser} select public.save_commerce_draft(null,'package','PH','Concurrent package','draft','${draftDefinition}'::jsonb,0)->>'id';`,
+  )
+    .split("\n")
+    .at(-1);
+  assert.match(draftId, /^[0-9a-f-]{36}$/);
+  const draftRaces = await Promise.all(
+    ["First edit", "Second edit"].map((name) =>
+      parallelSql(
+        `${asUser} select public.save_commerce_draft('${draftId}','package','PH','${name}','review','${draftDefinition}'::jsonb,1);`,
+      ),
+    ),
+  );
+  assert.equal(
+    draftRaces.filter((result) => result.code === 0).length,
+    1,
+    "Exactly one competing draft edit succeeds",
+  );
+  assert.equal(
+    draftRaces.filter(
+      (result) =>
+        result.code !== 0 && result.error.includes("Commerce draft changed"),
+    ).length,
+    1,
+  );
+  assert.equal(
+    sql(`select revision from private.commerce_drafts where id='${draftId}';`),
+    "2",
+  );
   const reserve = (key) =>
     `${asUser} select public.mutate_tenant_stock('${tenant}','${location}','${item}','reserve',1,'Concurrent reservation','${key}');`;
   const races = await Promise.all(
@@ -230,7 +268,8 @@ try {
     JSON.stringify(
       {
         migrations: migrations.length,
-        securitySuites: 6,
+        securitySuites: 7,
+        parallelDraftEdits: { attempted: 2, accepted: 1, conflicts: 1 },
         parallelReservations: { attempted: 10, accepted: 5 },
         parallelIdempotentReceipts: { attempted: 10, journalEntries: 1 },
         parallelStripeEvents: {

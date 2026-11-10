@@ -68,6 +68,8 @@ await check(
 );
 await check("private account redirect", "/account", {}, 307);
 await check("private staff redirect", "/admin", {}, 307);
+await check("package draft management requires staff login", "/admin/packages", {}, 307);
+await check("promotion draft management requires staff login", "/admin/promotions", {}, 307);
 await check(
   "payment management requires staff login",
   "/admin/payments",

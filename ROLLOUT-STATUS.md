@@ -1,6 +1,16 @@
 # RIWAY provider rollout — 10 November 2026
 
-## Latest live release - product publication and referral continuity
+## Latest live release - regional calendar and commerce preparation
+
+PR #9 merged as `89c8a423ff3d3471b85591a60ebb89953d9aa9ad`; its tree `4f0cc8c935ca7c32c3add75e651a5ee992c1c11d` matches tested source `f9dc5aca78ca6f9971816d12f9c1b1248291d82f`. CI runs `42779365300`, `42779376657` and `42779957971` passed, including 252 automated tests, TypeScript, audit, seven real PostgreSQL rollback suites and competing draft edits (one accepted, one conflict), plus the existing stock/payment races. Local standalone PostgreSQL could not start under the Windows restricted token; Linux CI supplies that concurrency acceptance. Browser steps remained skipped.
+
+Artifact `13745731187` (19,513,928 bytes) independently matched SHA-256 `f4b21d502482950823f3102f5859a92adb33bed16d031676ff6f9628629aecd5` before deployment. Cloudflare returned `deployment_id=22187a3f12de47669dac96aaf4577d64`. Verified live at approximately 16:08 Asia/Shanghai on 10 November: 44 HTTP/API checks, 18 calendar/home checks across PH/SG/MY, 47 route scenarios and all 105 artifact assets pass. One image HEAD timed out; a targeted GET returned 200 and matched the artifact bytes. The draft client module `/_next/static/chunks/3t36i4uf0j9yn.js` matches artifact SHA-256 `faa71c1ab88e00f215a2f2e095b22a1c1b94fb3c0731c2b1027aea16b48d26a8`. No independent traffic-percentage query was made.
+
+Hosted history now matches all 15 local migrations, including `20261110075101_stripe_rpc_hardening` and `20261110075752_commerce_drafts`. Hosted Stripe and draft rollback tests passed; cleanup verified zero retained QA users/products, orders, reservations or drafts. Anonymous Data API calls to both draft RPCs were denied with `42501`. Direct private-table grants remain absent, public entry points are invoker wrappers, and the two payment public-definer warnings are cleared. Health advisories are empty. The pre-existing leaked-password-protection warning remains: https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection . The two INFO no-policy notices concern previously denied internal identity/notification tables.
+
+The public calendar/homepage now use actual published CMS events with market-local date handling and real detail links. Admin/compliance staff with MFA can prepare versioned package/promotion drafts. These drafts do not implement checkout package pricing, voucher redemption, bonus bottles or membership qualifications; see `COMMERCE-DRAFTS.md`. No business rules, events, prices or stock were invented. Runtime still uses Supabase Auth/Storage with payments/email disabled and Tax deferred; no provider credentials or new live transaction was introduced. Earlier sections preserve prior release evidence.
+
+## Previous live release - product publication and referral continuity
 
 PR #8 merged as `d4ad01c87b0d869faf563054810329e4eada0ebc`, whose tree matches tested source `de7d0045746c51e35d5d9617c390f45d8b4aff0d`. CI runs `42774327121`, `42774335080` and `42774956816` passed, including real PostgreSQL concurrency/security, 166 automated tests, TypeScript, dependency audit and Linux/OpenNext packaging. Artifact `13743077087` (19,478,689 bytes) independently matched SHA-256 `53cc0e7c0d00ab052883ee621bef87b7206672713aee7c639e64adc466b6f794` before upload. Cloudflare returned `deployment_id=7d49cc408deb42729df209f359ec9dff`.
 

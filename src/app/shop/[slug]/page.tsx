@@ -5,6 +5,7 @@ import { money, markets } from "@/lib/domain";
 import { ProductArt } from "@/components/product-card";
 import { ProductEditorial } from "@/components/brand/editorial";
 import { AddToBag } from "@/components/add-to-bag";
+import { ProductComplianceNotice } from "@/components/product-compliance-notice";
 export default async function ProductPage({
   params,
 }: {
@@ -41,12 +42,7 @@ export default async function ProductPage({
             <div className="price">
               {money(offer?.retail_minor ?? null, markets[market].currency)}
             </div>
-            <div className="notice">
-              Online purchasing unavailable. Market approval, official pricing
-              and approved product labels must be verified before sales open.
-              {market === "PH" &&
-                " Philippine product approval is pending according to the project brief. No approved therapeutic claims. Read the label and consult a healthcare professional."}
-            </div>
+            <ProductComplianceNotice market={market} />
             <AddToBag id={p.id} />
             {(slug === "purtier-placenta" || slug === "conscientious") && (
               <a className="rw-product-story-link" href="#collection-story">

@@ -8,6 +8,7 @@ import {
 } from "@/services/stripe-payments";
 import { NextResponse } from "next/server";
 import { stripeReadiness } from "@/lib/stripe-config";
+import { completePendingReferral } from "@/lib/referral-continuity";
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return failure("Invalid request origin", 403);
   const input = checkoutSchema.safeParse(
@@ -36,6 +37,15 @@ export async function POST(request: Request) {
       "Terms have changed. Refresh checkout and review them before continuing.",
       409,
     );
+  try {
+    const referral = await completePendingReferral(client);
+    if (referral.state === "invalid") return failure(referral.message, 409);
+  } catch {
+    return failure(
+      "Your saved distributor introduction could not be verified. Please retry before placing this order.",
+      503,
+    );
+  }
   const order = await client.rpc("create_order", {
     m: input.data.market,
     items: input.data.items,

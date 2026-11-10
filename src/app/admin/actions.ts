@@ -46,6 +46,11 @@ export async function saveProduct(_: Result, f: FormData): Promise<Result> {
     : await client.from("products").insert(data);
   revalidatePath("/admin/products");
   revalidatePath("/shop");
+  if (!error) {
+    revalidatePath("/shop/[slug]", "page");
+    revalidatePath("/purtier");
+    revalidatePath("/conscientious");
+  }
   return {
     message: error
       ? "Save failed. Check your role; publishing requires compliance approval."

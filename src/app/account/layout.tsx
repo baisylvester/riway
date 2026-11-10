@@ -4,6 +4,7 @@ import { session } from "@/lib/data";
 import { SignOut } from "@/components/auth-form";
 import { ClerkSignOut } from "@/components/provider-auth";
 import { authProvider } from "@/lib/auth-config";
+import { PendingReferral } from "@/components/referral";
 export default async function AccountLayout({
   children,
 }: {
@@ -29,6 +30,7 @@ export default async function AccountLayout({
         <Link href="/operations">Store management</Link>
         <Link href="/distributor">Distributor</Link>
       </nav>
+      <PendingReferral />
       {children}
     </section>
   );

@@ -219,7 +219,7 @@ test("WebGL failure preserves photography, readable content and navigation", asy
     "fallback",
   );
   await expect(page.locator("#hero .reference-stage-fallback")).toBeVisible();
-  await expect(page.locator("#hero h1")).toHaveText("The luxury of health.");
+  await expect(page.locator("#hero h1")).toHaveText("PURTIER PLACENTA");
   await expect(page.locator("#hero h1")).toBeVisible();
 });
 

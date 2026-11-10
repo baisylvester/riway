@@ -1,5 +1,13 @@
 # Implementation status
 
+## Product publication and referral continuation - 10 November 2026
+
+Dedicated PURTIER and CONSCIENTIOUS pages now load published catalogue records, including metadata, instead of publishing independent hardcoded benefit, ingredient and dosage claims. The presentation imagery, stages, galleries, edition navigation and collection toggles remain. Shared market notices also appear on shop details; product saves invalidate both brand routes and shop detail pages. Product-footer copy and anchors match the remaining sections. This closes the identified publication bypass, not the full approved content migration or market-specific content model.
+
+Verified distributor introductions can now be remembered for up to 30 days in a host-only HttpOnly functional cookie, revalidated on every use and completed after sign-in or before checkout through the existing user-scoped immutable-sponsor RPC. The first still-valid saved introduction is retained without extending its lifetime; visitors can clear pending data. Transient failures remain retryable. Simultaneous anonymous tabs can race before a cookie exists; this is not a distributed first-touch guarantee. RIWAY member/compensation synchronization remains pending. Privacy/cookie development notices describe the flow and still await legal approval.
+
+No database migration or provider activation is introduced by this phase. Payments, Tax and email remain deferred. The older payment-read hardening migration still requires hosted application after Supabase reconnects. Local TypeScript and the automated suite pass; CI, deployment and live checks are recorded separately in `ROLLOUT-STATUS.md` when verified. Browser interaction testing remains declined by the user.
+
 ## Stripe-first continuation - 6 November 2026
 
 The user selected Stripe first, explicitly deferred Tax, and requested deployment with credentials configured later. Hosted checkout, verified raw-body webhooks, canonical session reconciliation, service-only idempotent payment/stock transitions, payment resumption, a separate reconciliation scheduler and an admin payment view are implemented. Migration `20261106083056_stripe_checkout.sql` is applied and the hosted rollback suite passed with no retained fixtures. Local 126 tests, TypeScript and Linux verification passed; exposed payment-read wrappers are additionally hardened in the next migration. Defaults remain disabled, and all existing approval/sponsor/pricing/stock gates remain. Real provider acceptance and server credentials are pending. This does not complete the broader proposal's membership, fulfillment, tax, promotions, subscriptions, reporting and optional scope. Later release evidence in `ROLLOUT-STATUS.md` supersedes this entry.

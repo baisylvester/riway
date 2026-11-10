@@ -37,9 +37,20 @@ function timestamp(value: FormDataEntryValue | null) {
 }
 
 export async function saveCommerceDraft(
-  _: DraftResult,
+  previous: DraftResult,
   form: FormData,
 ): Promise<DraftResult> {
+  const result = await persistDraft(form);
+  // Keep the saved ID/version through a failed subsequent edit, including a
+  // newly created draft that has not yet been opened through its edit URL.
+  if (!result.ok) {
+    const saved = commerceDraftRecordSchema.safeParse(previous.saved);
+    if (saved.success) return { ...result, saved: saved.data };
+  }
+  return result;
+}
+
+async function persistDraft(form: FormData): Promise<DraftResult> {
   const access = await staffAccess();
   if (!access.allowed || !access.mfa)
     return {

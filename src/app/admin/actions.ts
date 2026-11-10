@@ -98,7 +98,7 @@ export async function saveContent(_: Result, f: FormData): Promise<Result> {
   revalidatePath("/admin/content");
   revalidatePath("/stories");
   revalidatePath("/events");
-  if (!error && data.kind === "event") {
+  if (!error) {
     revalidatePath("/");
     revalidatePath("/events/[slug]", "page");
   }

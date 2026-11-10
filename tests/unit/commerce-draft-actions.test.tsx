@@ -83,6 +83,18 @@ beforeEach(() => {
   );
 });
 describe("commerce draft server actions", () => {
+  it("retains a newly saved draft identity when a later edit fails", async () => {
+    const saved = await saveCommerceDraft({ message: "" }, form());
+    expect(saved.ok).toBe(true);
+    const edit = form();
+    edit.set("draftId", saved.saved!.id);
+    edit.set("expectedRevision", String(saved.saved!.revision));
+    f.rpc.mockResolvedValue({ data: null, error: { code: "40001" } });
+    const failed = await saveCommerceDraft(saved, edit);
+    expect(failed.saved?.id).toBe(saved.saved!.id);
+    expect(failed.saved?.revision).toBe(1);
+    expect(failed.ok).not.toBe(true);
+  });
   it("requires staff MFA before any database write", async () => {
     for (const access of [
       { allowed: false, mfa: true },

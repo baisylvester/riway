@@ -9,6 +9,8 @@ export function AdminNav() {
         ["", "Overview"],
         ["products", "Products"],
         ["pricing", "Pricing"],
+        ["packages", "Package drafts"],
+        ["promotions", "Promotion drafts"],
         ["inventory", "Inventory"],
         ["orders", "Orders"],
         ["payments", "Payments"],

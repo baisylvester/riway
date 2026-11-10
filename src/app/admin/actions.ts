@@ -98,6 +98,10 @@ export async function saveContent(_: Result, f: FormData): Promise<Result> {
   revalidatePath("/admin/content");
   revalidatePath("/stories");
   revalidatePath("/events");
+  if (!error) {
+    revalidatePath("/");
+    revalidatePath("/events/[slug]", "page");
+  }
   return {
     message: error
       ? "Save failed. Publishing requires compliance approval and market access."

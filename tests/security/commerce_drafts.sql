@@ -1,0 +1,50 @@
+begin;
+select set_config('request.jwt.claims','{}',true);
+do $$ declare a uuid:=gen_random_uuid(); c uuid:=gen_random_uuid(); e uuid:=gen_random_uuid(); o uuid:=gen_random_uuid(); u uuid:=gen_random_uuid(); p uuid:=gen_random_uuid(); begin
+ insert into auth.users(id,email) values(a,'draft-admin-'||a||'@example.invalid'),(c,'draft-compliance-'||c||'@example.invalid'),(e,'draft-editor-'||e||'@example.invalid'),(o,'draft-operations-'||o||'@example.invalid'),(u,'draft-customer-'||u||'@example.invalid');
+ insert into public.staff_roles(user_id,market,role) values(a,'PH','admin'),(c,'SG','compliance'),(e,'PH','editor'),(o,'PH','operations');
+ insert into public.products(id,slug,name,category,status) values(p,'draft-fixture-'||p,'Temporary draft product','Nutrition','draft');
+ perform set_config('commerce_qa.admin',a::text,true); perform set_config('commerce_qa.compliance',c::text,true); perform set_config('commerce_qa.editor',e::text,true); perform set_config('commerce_qa.operations',o::text,true); perform set_config('commerce_qa.customer',u::text,true);
+ perform set_config('commerce_qa.definition',jsonb_build_object('components',jsonb_build_array(jsonb_build_object('productId',p,'quantity',2)),'retailMinor',null,'memberMinor',null)::text,true);
+ perform set_config('commerce_qa.orders',(select count(*)::text from public.orders),true);
+ perform set_config('commerce_qa.markets',(select jsonb_agg(to_jsonb(m) order by code)::text from public.markets m),true);
+ if has_function_privilege('anon','public.save_commerce_draft(uuid,text,text,text,text,jsonb,integer)','execute') or has_function_privilege('anon','public.staff_commerce_drafts(text,integer)','execute') then raise exception 'FAIL: anonymous RPC grant'; end if;
+ if has_table_privilege('authenticated','private.commerce_drafts','select,insert,update,delete') then raise exception 'FAIL: direct draft table grant'; end if;
+ if exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname='public' and p.proname in ('save_commerce_draft','staff_commerce_drafts') and p.prosecdef) then raise exception 'FAIL: public definer'; end if;
+end $$;
+set local role authenticated;
+do $$ declare who text; result jsonb; d jsonb:=current_setting('commerce_qa.definition')::jsonb; begin
+ foreach who in array array['customer','editor','operations'] loop
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('commerce_qa.'||who),'role','authenticated','aal','aal2')::text,true);
+  begin perform public.save_commerce_draft(null,'package','PH','Unauthorized draft','draft',d,0); raise exception 'FAIL: unauthorized writer'; exception when insufficient_privilege then null; end;
+  begin perform public.staff_commerce_drafts('package',1); raise exception 'FAIL: unauthorized list'; exception when insufficient_privilege then null; end;
+ end loop;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('commerce_qa.admin'),'role','authenticated','aal','aal1')::text,true);
+ begin perform public.save_commerce_draft(null,'package','PH','Unverified draft','draft',d,0); raise exception 'FAIL: MFA bypass'; exception when insufficient_privilege then null; end;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('commerce_qa.admin'),'role','authenticated','aal','aal2')::text,true);
+ begin perform public.save_commerce_draft(null,'package','SG','Wrong market','draft',d,0); raise exception 'FAIL: cross-market create'; exception when insufficient_privilege then null; end;
+ result:=public.save_commerce_draft(null,'package','PH',' Temporary package ','review',d,0);
+ if result->>'name'<>'Temporary package' or result->>'currency'<>'PHP' or (result->>'revision')::int<>1 or result->>'createdBy'<>current_setting('commerce_qa.admin') then raise exception 'FAIL: save contract'; end if;
+ perform set_config('commerce_qa.draft',result->>'id',true);
+ result:=public.save_commerce_draft((result->>'id')::uuid,'package','PH','Archived package','archived',d,1);
+ if (result->>'revision')::int<>2 or result->>'status'<>'archived' then raise exception 'FAIL: archive version'; end if;
+ begin perform public.save_commerce_draft((result->>'id')::uuid,'package','PH','Stale package','draft',d,1); raise exception 'FAIL: stale save'; exception when serialization_failure then null; end;
+ begin perform public.save_commerce_draft(null,'package','PH','Forged actor','draft',d||jsonb_build_object('createdBy',current_setting('commerce_qa.customer')),0); raise exception 'FAIL: forged definition metadata'; exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
+ begin perform public.save_commerce_draft(null,'package','PH','Active package','published',d,0); raise exception 'FAIL: activation status'; exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
+ begin perform public.staff_commerce_drafts('package',0); raise exception 'FAIL: invalid page'; exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
+ begin perform 1 from private.commerce_drafts; raise exception 'FAIL: direct table read'; exception when insufficient_privilege then null; end;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('commerce_qa.compliance'),'role','authenticated','aal','aal2')::text,true);
+ begin perform public.save_commerce_draft(current_setting('commerce_qa.draft')::uuid,'package','SG','Moved package','draft',d,2); raise exception 'FAIL: cross-market update'; exception when insufficient_privilege then null; end;
+ result:=public.save_commerce_draft(null,'package','SG','Singapore package','draft',d,0);
+ if result->>'currency'<>'SGD' then raise exception 'FAIL: SG currency'; end if;
+ result:=public.staff_commerce_drafts('package',1);
+ if result->'markets'<>'["SG"]'::jsonb or exists(select 1 from jsonb_array_elements(result->'drafts') x where x->>'market'<>'SG') then raise exception 'FAIL: market list isolation'; end if;
+end $$;
+reset role;
+do $$ begin
+ if (select revision from private.commerce_drafts where id=current_setting('commerce_qa.draft')::uuid)<>2 then raise exception 'FAIL: rejected save changed revision'; end if;
+ if not exists(select 1 from public.audit_logs where entity='commerce_drafts' and entity_id=current_setting('commerce_qa.draft') and action='DRAFT_UPDATE:package:PH:2') then raise exception 'FAIL: audit metadata'; end if;
+ if (select count(*)::text from public.orders)<>current_setting('commerce_qa.orders') or (select jsonb_agg(to_jsonb(m) order by code)::text from public.markets m)<>current_setting('commerce_qa.markets') then raise exception 'FAIL: draft altered commerce gates/orders'; end if;
+end $$;
+rollback;
+select 'PASS: draft privileges, MFA, market isolation, invoker wrappers, version conflicts, archive, audit and unchanged commerce; fixtures rolled back' as result;

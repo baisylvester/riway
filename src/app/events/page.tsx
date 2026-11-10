@@ -1,15 +1,26 @@
 import Link from "next/link";
 import { content, currentMarket } from "@/lib/data";
+import { markets } from "@/lib/domain";
+import { EventCalendar } from "@/components/event-calendar";
+import {
+  eventZones,
+  formatEventDate,
+  formatEventTime,
+  upcomingEvents,
+} from "@/lib/events";
 export const metadata = { title: "Events" };
-export default async function Events() {
-  const entries = await content("event"),
-    market = await currentMarket();
-  const visible = entries.filter(
-    (e) =>
-      (!e.market || e.market === market) &&
-      e.starts_at &&
-      new Date(e.starts_at) > new Date(),
-  );
+export default async function Events({
+  searchParams,
+}: {
+  searchParams: Promise<{ month?: string | string[] }>;
+}) {
+  const [entries, market, query] = await Promise.all([
+    content("event"),
+    currentMarket(),
+    searchParams,
+  ]);
+  const now = new Date();
+  const visible = upcomingEvents(entries, market, now);
   return (
     <section className="section page-section">
       <span className="eyebrow">MOMENTS THAT CONNECT US</span>
@@ -19,17 +30,29 @@ export default async function Events() {
         Go further.
       </h1>
       <p className="lead">
-        Discover upcoming RIWAY events and community gatherings.
+        Discover approved RIWAY events and community gatherings for{" "}
+        {markets[market].name}.
+      </p>
+      <EventCalendar
+        entries={entries}
+        market={market}
+        month={query.month}
+        now={now}
+      />
+      <h2>Upcoming events</h2>
+      <p className="small muted">
+        Dates and times are shown in {eventZones[market].label}. Open an event
+        for details and registration.
       </p>
       {visible.length ? (
         <div className="cards">
           {visible.map((e) => (
             <Link className="card" key={e.id} href={`/events/${e.slug}`}>
               <span className="eyebrow">
-                {new Date(e.starts_at).toLocaleDateString("en-SG", {
-                  dateStyle: "long",
-                  timeZone: "Asia/Manila",
-                })}
+                <time dateTime={e.starts_at!}>
+                  {formatEventDate(e.starts_at!, market)} ·{" "}
+                  {formatEventTime(e.starts_at!, market)}
+                </time>
               </span>
               <h2>{e.title}</h2>
               <p>{e.excerpt}</p>

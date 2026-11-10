@@ -1,5 +1,9 @@
 # Stripe checkout integration
 
+## Hosted hardening completed - 10 November 2026
+
+The previously pending payment read-RPC hardening is applied as `20261110075101_stripe_rpc_hardening.sql`. Both public functions are invoker wrappers around private checked helpers. The hosted rollback-only Stripe suite passed, fixtures were removed by rollback, and the two authenticated public-definer warnings cleared. This does not activate Stripe or replace real provider acceptance; credentials and sandbox transactions remain deferred.
+
 ## Planner review and latest direction
 
 The official Claude Stripe plugin was installed; project MCP configuration points to `https://mcp.stripe.com`. Stripe MCP is connected in the working chat and its implementation planner was called and accepted for hosted, browser-based, one-time physical-goods Checkout. Guide `iguide_61Vi6FkCs48l8dj0z41H3N2KvLZ5N` matches this integration. Review retained the official current SDK/API, dynamic methods, required signed webhooks, idempotent fulfillment and sandbox-first testing; a stable `integration_identifier` was added. Adaptive Pricing remains off to preserve approved market currency/totals until a compatible presentment policy is agreed.

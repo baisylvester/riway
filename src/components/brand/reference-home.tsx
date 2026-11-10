@@ -1,7 +1,24 @@
 import type React from "react";
 import { ReferenceShell } from "./reference-shell";
 import { ReferenceStage } from "./reference-stage";
-export function ReferenceHome() {
+import type { Market } from "@/lib/domain";
+import {
+  eventZones,
+  formatEventDate,
+  formatEventTime,
+  upcomingEvents,
+  type EventEntry,
+} from "@/lib/events";
+export function ReferenceHome({
+  events = [],
+  market = "PH",
+  eventsUnavailable = false,
+}: {
+  events?: EventEntry[];
+  market?: Market;
+  eventsUnavailable?: boolean;
+}) {
+  const upcoming = upcomingEvents(events, market).slice(0, 4);
   return (
     <ReferenceShell>
       <section className="hero" id="hero" data-cursor="Drag">
@@ -634,38 +651,50 @@ export function ReferenceHome() {
             </h2>
           </div>
           <p className="lede">
-            Leadership training, top leaders meetings, recognition nights and
-            gala dinners, across thirteen countries.
+            Published gatherings for your selected market and global events.
+            Dates and times are shown in {eventZones[market].label}.
           </p>
         </div>
-        <div className="ev-row" id="evrow">
-          <a className="ev" href="#contact">
-            <img src="/design/riway/gala-stage.jpg" alt="" />
-            <div className="t">
-              <small>Gala dinner</small>
-              <h3 className="display">19th Anniversary</h3>
-            </div>
-          </a>
-          <a className="ev" href="#contact">
-            <img src="/design/riway/supreme-night.jpg" alt="" />
-            <div className="t">
-              <small>Team Supreme Night</small>
-              <h3 className="display">Bangkok</h3>
-            </div>
-          </a>
-          <a className="ev" href="#contact">
-            <img src="/design/riway/fire-stage.jpg" alt="" />
-            <div className="t">
-              <small>Leaders Recognition Night</small>
-              <h3 className="display">Light it up</h3>
-            </div>
-          </a>
-          <a className="ev" href="#contact">
-            <img src="/design/riway/crowd.jpg" alt="" />
-            <div className="t">
-              <small>Leadership Training Seminar</small>
-              <h3 className="display">Kuala Lumpur</h3>
-            </div>
+        <div className="ev-row" id={upcoming.length ? "evrow" : undefined}>
+          {upcoming.length ? (
+            upcoming.map((event) => (
+              <a className="ev" href={`/events/${event.slug}`} key={event.id}>
+                <img
+                  src="/design/riway/emblem-gold.jpg"
+                  alt=""
+                  loading="lazy"
+                  style={{
+                    objectFit: "contain",
+                    padding: "clamp(30px,5vw,70px)",
+                    opacity: 0.35,
+                  }}
+                />
+                <div className="t">
+                  <small>
+                    <time dateTime={event.starts_at!}>
+                      {formatEventDate(event.starts_at!, market)} ·{" "}
+                      {formatEventTime(event.starts_at!, market)}
+                    </time>
+                  </small>
+                  <h3 className="display">{event.title}</h3>
+                  <p>{event.location}</p>
+                </div>
+              </a>
+            ))
+          ) : (
+            <p
+              className="lede"
+              style={{ gridColumn: "1 / -1", padding: "40px var(--gutter)" }}
+            >
+              {eventsUnavailable
+                ? "Event details are temporarily unavailable. Please try the calendar again later."
+                : "Confirmed, approved event details will appear here. No upcoming events are currently published for this market."}
+            </p>
+          )}
+        </div>
+        <div style={{ padding: "24px var(--gutter)" }}>
+          <a className="btn magnetic" href="/events" data-cursor="Open">
+            View regional calendar
           </a>
         </div>
         <div className="marq marquee">

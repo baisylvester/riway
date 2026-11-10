@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { content, currentMarket } from "@/lib/data";
 import { EventRegistration } from "@/components/forms";
+import { eventZones, formatEventDate, formatEventTime } from "@/lib/events";
 export default async function Event({
   params,
 }: {
@@ -9,22 +10,28 @@ export default async function Event({
   const { slug } = await params,
     market = await currentMarket();
   const e = (await content("event")).find(
-    (e) => e.slug === slug && (!e.market || e.market === market),
+    (entry) =>
+      entry.slug === slug &&
+      entry.kind === "event" &&
+      entry.status === "published" &&
+      (!entry.market || entry.market === market),
   );
   if (!e) notFound();
+  const dated = e.starts_at && Number.isFinite(Date.parse(e.starts_at));
   return (
     <section className="section page-prose page-section">
       <span className="eyebrow">RIWAY EVENTS</span>
       <h1>{e.title}</h1>
       <p className="lead">{e.excerpt}</p>
       <p>
-        {e.starts_at
-          ? new Date(e.starts_at).toLocaleString("en-SG", {
-              dateStyle: "full",
-              timeStyle: "short",
-              timeZone: "Asia/Manila",
-            }) + " (Manila time)"
-          : "Date to be confirmed"}{" "}
+        {dated ? (
+          <time dateTime={e.starts_at!}>
+            {formatEventDate(e.starts_at!, market)} ·{" "}
+            {formatEventTime(e.starts_at!, market)} ({eventZones[market].label})
+          </time>
+        ) : (
+          "Date to be confirmed"
+        )}{" "}
         · {e.location}
       </p>
       <div className="content-body">{e.body}</div>

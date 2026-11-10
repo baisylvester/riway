@@ -1,0 +1,103 @@
+.calendar {
+  margin: 40px 0;
+}
+.heading {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+.heading h2 {
+  margin: 12px 0;
+}
+.monthForm {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.monthForm label {
+  display: grid;
+  gap: 8px;
+}
+.navigation {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 24px 0;
+}
+.navigation a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.scroll {
+  overflow-x: auto;
+}
+.grid {
+  width: 100%;
+  min-width: 640px;
+  table-layout: fixed;
+  border-collapse: collapse;
+}
+.grid th,
+.grid td {
+  border: 1px solid var(--line, #d3cdc2);
+  padding: 10px;
+  vertical-align: top;
+}
+.grid th {
+  text-align: center;
+  font-size: 0.75rem;
+}
+.grid abbr {
+  text-decoration: none;
+}
+.grid td {
+  height: 116px;
+}
+.grid ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+}
+.grid li + li {
+  margin-top: 8px;
+}
+.grid a {
+  display: grid;
+  gap: 4px;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.grid a time {
+  font-size: 0.7rem;
+  text-decoration: none;
+}
+.blank {
+  background: rgba(0, 0, 0, 0.025);
+}
+.day {
+  display: inline-block;
+  font-size: 0.8rem;
+}
+.day[aria-current="date"] {
+  background: var(--red, #a20d26);
+  color: white;
+  padding: 3px 7px;
+  border-radius: 50%;
+}
+.caption {
+  text-align: left;
+  padding-bottom: 12px;
+  font-size: 0.8rem;
+}
+@media (max-width: 600px) {
+  .calendar {
+    padding: 16px;
+  }
+  .navigation {
+    font-size: 0.75rem;
+  }
+}

@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
 import { ReferenceConscientious } from "@/components/brand/reference-products-conscientious";
+import {
+  productPresentation,
+  productPresentationMetadata,
+} from "@/lib/product-presentation";
 
-export const metadata: Metadata = {
-  title: "CONSCIENTIOUS — for him & for her · RIWAY",
-  description:
-    "CONSCIENTIOUS, exclusively developed by RIWAY International. Essence sprays and masks for him and for her, with gold and 27 patented ingredients.",
-};
+export const generateMetadata = () =>
+  productPresentationMetadata("conscientious");
 
-export default function Page() {
-  return <ReferenceConscientious />;
+export default async function Page() {
+  const presentation = await productPresentation("conscientious");
+  return <ReferenceConscientious {...presentation} />;
 }

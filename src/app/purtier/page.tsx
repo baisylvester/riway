@@ -1,12 +1,13 @@
-import type { Metadata } from "next";
 import { ReferencePurtier } from "@/components/brand/reference-products-purtier";
+import {
+  productPresentation,
+  productPresentationMetadata,
+} from "@/lib/product-presentation";
 
-export const metadata: Metadata = {
-  title: "PURTIER Placenta — 7th Edition · RIWAY",
-  description:
-    "PURTIER Placenta, the seventh edition. Revolutionary, cutting edge, optimal care. Fourteen ingredients, carefully selected.",
-};
+export const generateMetadata = () =>
+  productPresentationMetadata("purtier-placenta");
 
-export default function Page() {
-  return <ReferencePurtier />;
+export default async function Page() {
+  const presentation = await productPresentation("purtier-placenta");
+  return <ReferencePurtier {...presentation} />;
 }

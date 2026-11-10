@@ -7,8 +7,12 @@ const f = vi.hoisted(() => ({
   verify: vi.fn(),
   reconcile: vi.fn(),
   ready: vi.fn(),
+  referral: vi.fn(),
 }));
 vi.mock("@/lib/data", () => ({ session: f.session }));
+vi.mock("@/lib/referral-continuity", () => ({
+  completePendingReferral: f.referral,
+}));
 vi.mock("@/lib/stripe-config", () => ({ stripeReadiness: f.ready }));
 vi.mock("@/services/stripe-payments", () => ({
   paymentClients: f.clients,
@@ -62,6 +66,7 @@ beforeEach(() => {
   });
   f.clients.mockReturnValue({ config: { terms: "qa-terms-v1" } });
   f.ready.mockReturnValue({ enabled: true });
+  f.referral.mockResolvedValue({ state: "none", message: "" });
   f.start.mockResolvedValue({
     orderId,
     url: "https://checkout.stripe.com/c/pay/fixture",
@@ -112,6 +117,26 @@ describe("checkout authority boundaries", () => {
       f.clients.mock.results[0].value,
     );
     expect(r.headers.get("cache-control")).toBe("no-store");
+  });
+  it("resolves a saved introduction before order creation and preserves a retry after failure", async () => {
+    f.referral.mockRejectedValueOnce(Error("private referral failure"));
+    const failed = await checkout(request());
+    expect(failed.status).toBe(503);
+    expect(await failed.text()).not.toContain("private referral failure");
+    expect(rpc).not.toHaveBeenCalled();
+    expect(f.start).not.toHaveBeenCalled();
+    f.referral.mockResolvedValueOnce({
+      state: "invalid",
+      message: "Saved introduction cleared.",
+    });
+    expect((await checkout(request())).status).toBe(409);
+    expect(rpc).not.toHaveBeenCalled();
+    f.referral.mockResolvedValueOnce({ state: "linked", message: "Linked." });
+    expect((await checkout(request())).status).toBe(200);
+    expect(f.referral).toHaveBeenCalledWith(expect.objectContaining({ rpc }));
+    expect(f.referral.mock.invocationCallOrder.at(-1)).toBeLessThan(
+      rpc.mock.invocationCallOrder[0],
+    );
   });
   it("does not contact Stripe after a rejected order and treats network outcomes as uncertain", async () => {
     rpc.mockResolvedValue({

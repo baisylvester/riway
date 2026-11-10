@@ -15,15 +15,7 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
         <div className="cols">
           <div>
             <b>{brand === "PURTIER" ? "PURTIER Placenta" : brand}</b>
-            {brand === "PURTIER" ? (
-              <>
-                Revolutionary. Cutting edge.
-                <br />
-                Optimal care, since the first edition.
-              </>
-            ) : (
-              <>Exclusively developed by RIWAY International.</>
-            )}
+            Presentation and packaging from the collection.
           </div>
           <div>
             <b>Houses</b>
@@ -37,9 +29,7 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
             <b>This page</b>
             {brand === "PURTIER" ? (
               <>
-                <a href="#story">Our story</a>
-                <br />
-                <a href="#ingredients">Ingredients</a>
+                <a href="#product-information">Product information</a>
                 <br />
                 <a href="#editions">Editions</a>
               </>
@@ -49,7 +39,9 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
                 <br />
                 <a href="#her">For her</a>
                 <br />
-                <a href="#science">The science</a>
+                <a href="#gallery">The collection</a>
+                <br />
+                <a href="#product-information">Product information</a>
               </>
             )}
           </div>
@@ -62,9 +54,9 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
         </div>
         <div className="legal">
           <span>
-            {brand === "PURTIER"
-              ? "Distributors of RIWAY International are strictly prohibited from selling any RIWAY products via any online means."
-              : "RIWAY International does not sell products via any website or any internet platform."}
+            Online purchasing is unavailable while market approval, official
+            pricing and sales terms are being verified. Contact RIWAY for
+            approved product information.
           </span>
           <span>© RIWAY International Group</span>
         </div>

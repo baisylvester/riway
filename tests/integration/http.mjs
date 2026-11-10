@@ -288,4 +288,60 @@ assert.match(
   invalidCallback.headers.get("location"),
   /auth\/login\?error=confirmation/,
 );
+await check(
+  "referral capture rejects a forged origin",
+  "/api/referral/remember",
+  {
+    method: "POST",
+    headers: { origin: "https://untrusted.example", "content-type": "application/json" },
+    body: JSON.stringify({ code: "RIWAY-AUDIT-NOT-FOUND" }),
+  },
+  403,
+);
+await check(
+  "referral capture rejects invalid codes",
+  "/api/referral/remember",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: JSON.stringify({ code: "../untrusted" }),
+  },
+  400,
+);
+const unknownReferral = await check(
+  "unverified referral is not remembered",
+  "/api/referral/remember",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: JSON.stringify({ code: "RIWAY-AUDIT-NOT-FOUND" }),
+  },
+  404,
+);
+assert.equal(unknownReferral.headers.get("set-cookie"), null);
+await check(
+  "referral completion rejects a forged origin",
+  "/api/referral/complete",
+  { method: "POST", headers: { origin: "https://untrusted.example" } },
+  403,
+);
+await check(
+  "referral completion requires authentication",
+  "/api/referral/complete",
+  { method: "POST", headers: { origin: base } },
+  401,
+);
+await check(
+  "referral clearing rejects a forged origin",
+  "/api/referral/remember",
+  { method: "DELETE", headers: { origin: "https://untrusted.example" } },
+  403,
+);
+const clearedReferral = await check(
+  "saved introduction can be cleared",
+  "/api/referral/remember",
+  { method: "DELETE", headers: { origin: base } },
+  200,
+);
+assert.match(clearedReferral.headers.get("set-cookie"), /Max-Age=0/i);
 console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));

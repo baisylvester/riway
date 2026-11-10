@@ -1,5 +1,11 @@
 # RIWAY provider rollout — 6 November 2026
 
+## Continuation prepared - 10 November 2026
+
+Product publication and referral continuity changes are implemented locally; see `IMPLEMENTATION_STATUS.md`. Local TypeScript and 166 automated tests across 20 files pass, and the dependency audit reports no vulnerabilities. The pre-change live baseline passed all 35 HTTP/API checks. This phase adds seven HTTP regression cases for the new referral endpoints. No hosted schema changes or provider activation are part of this phase.
+
+At preparation, remote `main` still matched `dd47de6`. Supabase tools were unavailable despite the user's intent to reconnect, so `20261106083403_stripe_rpc_hardening.sql` remains pending hosted application. Two Cloudflare OAuth attempts timed out without an authorization callback; do not interpret the user's approval confirmation as a successful CLI login or deployment. CI/artifact and final deployment evidence will be appended when verified. Earlier live release evidence below remains the last confirmed application deployment.
+
 ## Latest live release - Stripe Payments disabled
 
 PR #7 merged as `6522b990faa74689bcf5b655b33c535b7b73d8d5`, with a tree identical to tested build `79ef39cc5bbcede779f7071aea5f76627204c48e`. CI runs `42189319675` and `42189327485` passed, including real PostgreSQL concurrency (one applied payment transition and nine duplicate acknowledgements), six SQL suites, 126 tests, TypeScript, audit and Linux/OpenNext packaging. Artifact `13489445790` matched SHA-256 `36908b2606053546a8439120c9b962d75332dc5af15dcd2ee35e6e37d948bd29` before deployment. Worker upload returned `deployment_id=6b44ff1d1f7a4750a43e62b1382048db`; live HTTP and client-module hashes confirm the new app is serving. The renewed OAuth scope did not allow an independent traffic-percentage query, so none is claimed from it.

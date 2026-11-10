@@ -12,71 +12,71 @@ type JarHandle = {
   ready: Promise<unknown>;
 };
 
-// The edition copy is the complete EDITIONS array from purtier.html, expressed
-// as text and an emphasis range so changing editions never injects HTML.
+// Packaging archive captions only. Ingredient and benefit claims require
+// approved catalogue content and must not be embedded in this client module.
 const editions = [
   {
     label: "I",
     small: "Edition",
-    k: "Edition I — The beginning",
-    before: "Where ",
-    em: "optimal care",
-    after: " began.",
-    p: "The first formula, and the first promise: ingredients chosen for their effect, nothing else.",
+    k: "Edition I — The archive",
+    before: "The ",
+    em: "first",
+    after: " presentation.",
+    p: "Explore the first edition's archival packaging.",
   },
   {
     label: "II",
     small: "Edition",
     k: "Edition II",
-    before: "Refined, ",
-    em: "not replaced.",
-    after: "",
-    p: "Each edition keeps what works and improves what can be improved.",
+    before: "A ",
+    em: "second",
+    after: " presentation.",
+    p: "Packaging imagery from the second edition.",
   },
   {
     label: "III",
     small: "Edition",
     k: "Edition III",
-    before: "A ",
-    em: "union",
-    after: " of ingredients.",
-    p: "The formula as a whole, where every element supports another.",
+    before: "The ",
+    em: "third",
+    after: " edition.",
+    p: "A closer look at the third edition's packaging.",
   },
   {
     label: "IV",
     small: "Edition",
     k: "Edition IV",
-    before: "Trusted ",
-    em: "around the world.",
+    before: "From the ",
+    em: "archive.",
     after: "",
-    p: "Users across Asia and Europe, with peace of mind as the measure.",
+    p: "Presentation imagery from the fourth edition.",
   },
   {
     label: "V",
     small: "Edition",
     k: "Edition V",
     before: "The ",
-    em: "technology",
-    after: " matures.",
-    p: "Nutrients processed and preserved in their most optimal condition.",
+    em: "fifth",
+    after: " presentation.",
+    p: "Explore the fifth edition's packaging details.",
   },
   {
     label: "VI",
     small: "Edition",
     k: "Edition VI",
-    before: "Closer to ",
-    em: "cutting edge.",
+    before: "In ",
+    em: "detail.",
     after: "",
-    p: "The edition that set the stage for the seventh.",
+    p: "Archival packaging from the sixth edition.",
   },
   {
     label: "VII",
-    small: "Now",
-    k: "Edition VII — Now",
-    before: "",
-    em: "Revolutionary.",
-    after: " Cutting edge.",
-    p: "The seventh edition. Every ingredient carried forward, carefully re-selected.",
+    small: "Edition",
+    k: "Edition VII — The presentation",
+    before: "The ",
+    em: "seventh",
+    after: " edition.",
+    p: "Explore the seventh edition's presentation. Confirm current availability with RIWAY for your market.",
   },
 ];
 
@@ -426,7 +426,8 @@ export function ReferenceProductsMotion({
                   const lift = { value: 0 };
                   cinemaTimeline?.scrollTrigger?.kill();
                   cinemaTimeline?.kill();
-                  cinemaTimeline = gsap.timeline({
+                  cinemaTimeline = gsap
+                    .timeline({
                       scrollTrigger: {
                         trigger: sec,
                         start: "top top",
@@ -570,12 +571,10 @@ export function ReferenceProductsMotion({
               button.setAttribute("aria-pressed", String(active));
             });
           if (scroll)
-            root
-              .querySelector(`#${side}`)
-              ?.scrollIntoView({
-                behavior: reduced ? "instant" : "smooth",
-                block: "start",
-              });
+            root.querySelector(`#${side}`)?.scrollIntoView({
+              behavior: reduced ? "instant" : "smooth",
+              block: "start",
+            });
         };
         for (const side of ["him", "her"]) {
           const panel = root.querySelector<HTMLElement>(

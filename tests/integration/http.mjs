@@ -414,4 +414,39 @@ const clearedReferral = await check(
   200,
 );
 assert.match(clearedReferral.headers.get("set-cookie"), /Max-Age=0/i);
+for (const [name, route, count] of [
+  [
+    "catalogue accepts repeated search parameters",
+    "/shop?q=purtier&q=conscientious",
+    1,
+  ],
+  [
+    "catalogue accepts repeated collection parameters",
+    "/shop?category=Skincare&category=Nutrition",
+    1,
+  ],
+  [
+    "catalogue defaults unknown collections consistently",
+    "/shop?category=unknown",
+    2,
+  ],
+  ["catalogue trims search whitespace", "/shop?q=%20PURTIER%20", 1],
+]) {
+  const response = await check(name, route, {}, 200);
+  const text = (await response.text())
+    .replace(/<script\b[^>]*>[\s\S]*?<\/script>/gi, "")
+    .replace(/<!--[\s\S]*?-->/g, "")
+    .replace(/<[^>]*>/g, " ")
+    .replace(/\s+/g, " ");
+  assert.match(
+    text,
+    new RegExp(`\\b${count} collection${count === 1 ? "" : "s"}\\b`),
+    name,
+  );
+  assert.doesNotMatch(
+    text,
+    /Something interrupted your visit|Application error|Internal Server Error/,
+    name,
+  );
+}
 console.log(JSON.stringify({ passed: checks.length, checks }, null, 2));

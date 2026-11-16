@@ -2,12 +2,21 @@ import { catalogue, currentMarket } from "@/lib/data";
 import { ProductCard } from "@/components/product-card";
 import { markets } from "@/lib/domain";
 export const metadata = { title: "Our collections" };
+const categories = ["All", "Nutrition", "Skincare", "Packages"] as const;
+const firstValue = (value: string | string[] | undefined) =>
+  (Array.isArray(value) ? value[0] : value) ?? "";
 export default async function Shop({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; category?: string }>;
+  searchParams: Promise<{
+    q?: string | string[];
+    category?: string | string[];
+  }>;
 }) {
-  const { q = "", category = "All" } = await searchParams;
+  const query = await searchParams;
+  const q = firstValue(query.q).trim();
+  const category =
+    categories.find((value) => value === firstValue(query.category)) ?? "All";
   const { products } = await catalogue();
   const market = await currentMarket();
   const filtered = products.filter(
@@ -42,7 +51,7 @@ export default async function Shop({
         <label>
           Collection
           <select name="category" defaultValue={category}>
-            {["All", "Nutrition", "Skincare", "Packages"].map((c) => (
+            {categories.map((c) => (
               <option key={c}>{c}</option>
             ))}
           </select>

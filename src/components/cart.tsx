@@ -1,9 +1,9 @@
 "use client";
 import Link from "next/link";
 import Image from "next/image";
-import { Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useStore } from "./store-provider";
+import { CartQuantity } from "./cart-quantity";
 import {
   cartSchema,
   money,
@@ -23,6 +23,8 @@ export function Cart({
 }) {
   const { items, ready, update, restore } = useStore();
   const [message, setMessage] = useState("");
+  const [pending, setPending] = useState(false);
+  const requestInFlight = useRef(false);
   const unknown = items.some(
     (i) => !products.some((p) => p.id === i.productId),
   );
@@ -34,7 +36,37 @@ export function Cart({
   const total = prices.every((x) => x.o?.retail_minor != null)
     ? prices.reduce((a, x) => a + x.o!.retail_minor! * x.i.quantity, 0)
     : null;
+  async function saveBag() {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    setPending(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/cart", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(items),
+      });
+      const data = await response.json();
+      setMessage(
+        response.ok
+          ? items.length
+            ? "Your bag was saved to your account."
+            : "Your empty bag was saved to your account."
+          : (data.error?.message ?? "Your bag could not be saved. Try again."),
+      );
+    } catch {
+      setMessage("Your bag could not be saved. Try again.");
+    } finally {
+      requestInFlight.current = false;
+      setPending(false);
+    }
+  }
   async function restoreBag() {
+    if (requestInFlight.current) return;
+    requestInFlight.current = true;
+    setPending(true);
+    setMessage("");
     try {
       const r = await fetch("/api/cart");
       const d = await r.json();
@@ -48,6 +80,9 @@ export function Cart({
       setMessage("Your saved account bag was restored.");
     } catch {
       setMessage("Your saved bag could not be restored.");
+    } finally {
+      requestInFlight.current = false;
+      setPending(false);
     }
   }
   if (!ready) return <p>Loading your bag…</p>;
@@ -60,7 +95,20 @@ export function Cart({
           Explore collections
         </Link>
         <p>
-          <button className="button button-outline" onClick={restoreBag}>
+          <button
+            className="button button-outline"
+            disabled={pending}
+            onClick={saveBag}
+          >
+            Save empty bag to account
+          </button>
+        </p>
+        <p>
+          <button
+            className="button button-outline"
+            disabled={pending}
+            onClick={restoreBag}
+          >
             Restore account bag
           </button>
         </p>
@@ -92,69 +140,27 @@ export function Cart({
                 {money(o?.retail_minor ?? null, markets[market].currency)}
               </p>
             </div>
-            <label>
-              <span className="sr-only">
-                Quantity for {p?.name ?? "unavailable product"}
-              </span>
-              <input
-                aria-label={`Quantity for ${p?.name ?? "unavailable product"}`}
-                type="number"
-                min={1}
-                max={o?.max_quantity ?? 24}
-                value={i.quantity}
-                onChange={(e) => update(i.productId, Number(e.target.value))}
-              />
-            </label>
-            <button
-              className="delete-button"
-              aria-label={`Remove ${p?.name ?? "unavailable product"}`}
-              onClick={() => update(i.productId, 0)}
-            >
-              <Trash2 size={16} />
-            </button>
+            <CartQuantity
+              productName={p?.name ?? "unavailable product"}
+              quantity={i.quantity}
+              maximum={o?.max_quantity ?? 24}
+              onCommit={(quantity) => update(i.productId, quantity)}
+              onRemove={() => update(i.productId, 0)}
+            />
           </div>
         ))}
         <div className="hero-buttons" style={{ marginTop: 25 }}>
           <button
             className="button button-outline"
-            onClick={async () => {
-              try {
-                const r = await fetch("/api/cart", {
-                  method: "PUT",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify(items),
-                });
-                const d = await r.json();
-                setMessage(
-                  r.ok
-                    ? "Your bag was saved to your account."
-                    : d.error.message,
-                );
-              } catch {
-                setMessage("Your bag could not be saved. Try again.");
-              }
-            }}
+            disabled={pending}
+            onClick={saveBag}
           >
             Save bag to account
           </button>
           <button
             className="button button-outline"
-            onClick={async () => {
-              try {
-                const r = await fetch("/api/cart");
-                const d = await r.json();
-                if (!r.ok) {
-                  setMessage(d.error.message);
-                  return;
-                }
-                const parsed = cartSchema.safeParse(d.items);
-                if (!parsed.success) throw Error();
-                restore(parsed.data);
-                setMessage("Your saved account bag was restored.");
-              } catch {
-                setMessage("Your saved bag could not be restored.");
-              }
-            }}
+            disabled={pending}
+            onClick={restoreBag}
           >
             Restore account bag
           </button>

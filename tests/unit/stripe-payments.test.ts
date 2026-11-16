@@ -13,6 +13,7 @@ import {
   verifyStripeEvent,
   type StripeAttempt,
   paymentClients,
+  stripeAttemptSchema,
 } from "../../src/services/stripe-payments";
 import { runPaymentSchedule } from "../../deployment/scheduled-payments";
 
@@ -146,6 +147,22 @@ describe("Stripe configuration and checkout", () => {
     ]);
     expect(() => checkoutParameters({ ...attempt, amount: 1 })).toThrow(
       /total/,
+    );
+  });
+  it("preserves a free eligible line with an exact positive payment total", () => {
+    const value = stripeAttemptSchema.parse({
+      ...attempt,
+      amount: 299,
+      items: [
+        { name: "Package × 3", quantity: 1, unitAmount: 299 },
+        { name: "Eligible free selection", quantity: 1, unitAmount: 0 },
+      ],
+    });
+    const params = checkoutParameters(value);
+    expect(params.line_items?.[0].price_data?.unit_amount).toBe(299);
+    expect(params.line_items?.[1].price_data?.unit_amount).toBe(0);
+    expect(stripeAttemptSchema.safeParse({ ...value, amount: 0 }).success).toBe(
+      false,
     );
   });
   it("retries ambiguous session persistence with identical parameters and idempotency key", async () => {

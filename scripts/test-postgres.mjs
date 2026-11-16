@@ -124,6 +124,7 @@ try {
     "customer_workflows.sql",
     "stripe.sql",
     "commerce_drafts.sql",
+    "commerce_checkout.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
@@ -264,11 +265,138 @@ try {
     ),
     "1",
   );
+  const voucherCode = `RACE-${randomUUID().replaceAll("-", "")}`;
+  const promotionDefinition = JSON.stringify({
+    productIds: [product],
+    discountType: "fixed",
+    discountValue: 1,
+    minimumSubtotalMinor: 0,
+    maximumDiscountMinor: null,
+    voucherCode,
+    startsAt: new Date(Date.now() - 3600000).toISOString(),
+    endsAt: new Date(Date.now() + 3600000).toISOString(),
+    audience: "all",
+    usageLimit: 1,
+  });
+  const voucherDraft = sql(
+    `${asUser} select public.save_commerce_draft(null,'promotion','PH','Disposable capacity race','review','${promotionDefinition}'::jsonb,0)->>'id';`,
+  )
+    .split("\n")
+    .at(-1);
+  const voucherOffer = sql(
+    `${asUser} select public.approve_commerce_draft('${voucherDraft}',1,null,'DISPOSABLE-QA-CAPACITY')->>'id';`,
+  )
+    .split("\n")
+    .at(-1);
+  const otherCustomer = randomUUID();
+  sql(
+    `insert into auth.users(id,email) values('${otherCustomer}','voucher-concurrency@example.invalid'); insert into public.sponsor_attributions(user_id,distributor_id) values('${otherCustomer}','${sponsor}');`,
+  );
+  const voucherOrder = (uid) =>
+    `select set_config('request.jwt.claims','{"sub":"${uid}","role":"authenticated","aal":"aal1"}',false); set role authenticated; select public.create_commerce_order('PH','[{"productId":"${product}","quantity":1}]','{"full_name":"Public fixture","phone":"0000000000","line1":"Disposable fixture address","city":"Manila","postal_code":"1000","country":"PH"}','${randomUUID()}','2026-11-draft','${voucherCode}',null);`;
+  const voucherRaces = await Promise.all(
+    [customer, otherCustomer].map((uid) => parallelSql(voucherOrder(uid))),
+  );
+  assert.equal(
+    voucherRaces.filter((result) => result.code === 0).length,
+    1,
+    "Exactly one order can reserve the last voucher redemption",
+  );
+  assert.equal(
+    voucherRaces.filter(
+      (result) =>
+        result.code !== 0 &&
+        result.error.includes("Voucher usage limit reached"),
+    ).length,
+    1,
+    "The competing order must fail on voucher capacity",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from private.commerce_redemptions where offer_id='${voucherOffer}' and state='reserved';`,
+    ),
+    "1",
+  );
+  assert.equal(
+    sql(
+      `select reserved from public.inventory where product_id='${product}' and market='PH';`,
+    ),
+    "1",
+    "Rejected voucher order must not leave reserved stock",
+  );
+  sql(
+    `update public.inventory_reservations set expires_at=now()-interval '1 minute' where order_id in (select order_id from private.commerce_redemptions where offer_id='${voucherOffer}'); set role service_role; select public.release_expired_reservations();`,
+  );
+  assert.equal(
+    sql(
+      `select count(*) from private.commerce_redemptions where offer_id='${voucherOffer}' and state='reserved';`,
+    ),
+    "0",
+    "No-attempt expiry must release voucher capacity",
+  );
+  const capacityRetry = await parallelSql(voucherOrder(otherCustomer));
+  assert.equal(capacityRetry.code, 0, "Released capacity must be reusable");
+  sql(
+    `update public.inventory_reservations set expires_at=now()-interval '1 minute' where order_id in (select order_id from private.commerce_redemptions where offer_id='${voucherOffer}'); set role service_role; select public.release_expired_reservations();`,
+  );
+  const raceOrder = sql(
+    `select set_config('request.jwt.claims','{"sub":"${customer}","role":"authenticated","aal":"aal1"}',false); set role authenticated; select public.create_order('PH','[{"productId":"${product}","quantity":1}]','{"full_name":"Public fixture","phone":"0000000000","line1":"Disposable fixture address","city":"Manila","postal_code":"1000","country":"PH"}','${randomUUID()}','2026-11-draft');`,
+  )
+    .split("\n")
+    .at(-1);
+  sql(
+    `update public.inventory_reservations set expires_at=clock_timestamp()+interval '250 milliseconds' where order_id='${raceOrder}';`,
+  );
+  const expiryRace = await Promise.all([
+    parallelSql(
+      `begin; select id from public.orders where id='${raceOrder}' for update; select pg_sleep(0.4); set local role service_role; select public.prepare_stripe_checkout('${raceOrder}','${customer}',false,'https://example.invalid'); commit;`,
+    ),
+    parallelSql(
+      "select pg_sleep(0.3); set role service_role; select public.release_expired_reservations();",
+    ),
+  ]);
+  assert.equal(
+    expiryRace[1].code,
+    0,
+    "Expiry cleanup must tolerate concurrent preparation",
+  );
+  if (expiryRace[0].code !== 0)
+    assert.match(expiryRace[0].error, /Order is closed|Reservation expired/);
+  // Drain an orphan skipped during the concurrent transaction; a committed
+  // Stripe attempt must remain protected after its original local expiry.
+  sql("set role service_role; select public.release_expired_reservations();");
+  const expiryState = JSON.parse(
+    sql(
+      `select jsonb_build_object('status',o.status,'reserved',(select count(*) from public.inventory_reservations where order_id=o.id),'attempt',(select id from private.stripe_checkouts where order_id=o.id)) from public.orders o where o.id='${raceOrder}';`,
+    ),
+  );
+  if (expiryState.attempt) {
+    assert.equal(expiryState.status, "awaiting_payment");
+    assert.equal(expiryState.reserved, 1);
+    sql(
+      `set role service_role; select public.apply_stripe_checkout_event('evt_expiry_race_${randomUUID()}','${expiryState.attempt}','${raceOrder}','cs_test_expiry_race',false,10000,'php','expired','unpaid',null);`,
+    );
+  } else {
+    assert.equal(expiryState.status, "cancelled");
+    assert.equal(expiryState.reserved, 0);
+  }
+  assert.equal(
+    sql(
+      `select reserved from public.inventory where product_id='${product}' and market='PH';`,
+    ),
+    "0",
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
-        securitySuites: 7,
+        securitySuites: 8,
+        parallelVoucherCapacity: { attempted: 2, accepted: 1, rejected: 1 },
+        voucherCapacityReusableAfterExpiry: true,
+        concurrentPrepareExpiry: {
+          protectedAttempt: !!expiryState.attempt,
+          orphanDrained: true,
+        },
         parallelDraftEdits: { attempted: 2, accepted: 1, conflicts: 1 },
         parallelReservations: { attempted: 10, accepted: 5 },
         parallelIdempotentReceipts: { attempted: 10, journalEntries: 1 },

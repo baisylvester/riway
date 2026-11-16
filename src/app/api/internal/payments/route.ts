@@ -21,6 +21,22 @@ export async function POST(request: Request) {
   } catch {
     return failure("Stripe is not configured.", 503);
   }
+  // An order can reserve stock/quota before its first Stripe attempt exists.
+  // The service-only cleanup excludes Stripe-backed reservations, whose release
+  // still requires canonical provider reconciliation.
+  let expired: number;
+  try {
+    const cleanup = await clients.database.rpc("release_expired_reservations");
+    if (
+      cleanup.error ||
+      !Number.isSafeInteger(cleanup.data) ||
+      cleanup.data < 0
+    )
+      return failure("Reservation maintenance is unavailable.", 503);
+    expired = cleanup.data;
+  } catch {
+    return failure("Reservation maintenance is unavailable.", 503);
+  }
   const batch = await clients.database.rpc("pending_stripe_checkouts", {
     p_live: clients.config.livemode,
   });
@@ -47,7 +63,7 @@ export async function POST(request: Request) {
     }
   }
   return NextResponse.json(
-    { checked, failed },
+    { expired, checked, failed },
     { status: failed ? 503 : 200, headers: { "Cache-Control": "no-store" } },
   );
 }

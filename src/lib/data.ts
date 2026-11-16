@@ -6,6 +6,7 @@ import { asMarket, type Offer, type Product } from "./domain";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import { authProvider, secondFactorVerified } from "./auth-config";
 import { cache } from "react";
+import { packageCompositionsSchema } from "./commerce-checkout";
 export async function currentMarket() {
   return asMarket((await cookies()).get("riway-market")?.value);
 }
@@ -40,6 +41,21 @@ export async function content(kind: string) {
     throw new Error("Content could not be loaded.");
   }
   return data;
+}
+
+export async function packageComposition(
+  productId: string,
+  market: import("./domain").Market,
+) {
+  const { data, error } = await (
+    await db()
+  ).rpc("catalogue_package_compositions", { m: market });
+  const parsed = packageCompositionsSchema.safeParse(data);
+  if (error || !parsed.success)
+    throw new Error(
+      "Package information could not be loaded. Please try again.",
+    );
+  return parsed.data.find((item) => item.productId === productId);
 }
 
 const previewCatalogue: { products: Product[]; offers: Offer[] } = {

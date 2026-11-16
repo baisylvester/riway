@@ -43,6 +43,16 @@ export const checkoutSchema = z
     terms: z.literal(true),
     termsVersion: z.string().min(3).max(128).optional(),
     idempotencyKey: z.uuid(),
+    promotionCode: z
+      .string()
+      .trim()
+      .toUpperCase()
+      .regex(/^[A-Z0-9-]{3,40}$/)
+      .optional(),
+    quoteHash: z
+      .string()
+      .regex(/^[a-f0-9]{64}$/)
+      .optional(),
   })
   .refine((v) => v.market === v.address.country, {
     message: "Delivery country must match the selected market.",

@@ -1,5 +1,11 @@
 # Implementation status
 
+## Manual audit fixes - 16 November 2026
+
+PR #13 is merged and deployed. Catalogue search now handles repeated query/category parameters, trims surrounding whitespace and keeps unknown-category results consistent with the All selector. Review-bag quantity editing preserves a blank draft, rejects invalid or excessive new quantities and leaves removal to the explicit control. Existing oversized saved quantities remain visible with correction feedback. Empty bags can be explicitly saved to an account; overlapping save/restore requests are guarded. No presentation redesign, migration or provider activation was introduced.
+
+Validation passed 313 unit tests, TypeScript, production builds, dependency audit, PostgreSQL concurrency CI, 53 live HTTP/API checks, 12 market/product checks, 18 calendar checks and all 105 assets. Live routes and deployed module integrity were checked. These automated checks do not complete manual UAT: browser access became unavailable before interactive post-fix retests. Existing manual evidence covers public interactions and selected customer validation/address workflows; broader scenarios remain partial or blocked. The live database has no corporate staff assignments, verified active distributors, orders or future published events, and only an owner store membership. Full multi-role, provider and order/event acceptance still needs appropriate fixtures and access. Payments/email remain disabled and Tax deferred. Exact release evidence is in `ROLLOUT-STATUS.md`.
+
 ## Original presentation restoration - 16 November 2026
 
 The original reference structure and imagery are restored on the homepage, PURTIER and CONSCIENTIOUS routes, including the event-photo row, cinematic/archive sections and collection detail grids. Published catalogue gates, approved market information, the regional calendar and the completed commerce/account/admin features remain. Unpublished event dates and unapproved product quantities/claims were not reinstated. CONSCIENTIOUS desktop scene fitting now keeps its restored headline clear of the cartons and adapts after resize.

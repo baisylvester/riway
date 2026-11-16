@@ -63,7 +63,8 @@ for (const { slug, page, metadata } of presentations) {
     const entry = product(slug);
     mocks.catalogue.mockResolvedValue({ products: [entry], offers: [] });
     const html = renderToStaticMarkup(await page());
-    expect(html).toContain(`<h1 class="display h-l">${entry.name}</h1>`);
+    expect(html).toContain(`<span>${entry.name}</span>`);
+    expect(html).toContain('<h1 class="display h-l">');
     expect(html).toContain(entry.subtitle);
     expect(html).toContain("Approved description with &lt;script&gt;");
     expect(html).not.toContain('<script>alert("unsafe")</script>');
@@ -100,6 +101,46 @@ for (const { slug, page, metadata } of presentations) {
     expect(html).toContain('id="hero"');
     expect(html).toContain('id="u3"');
     expect(html).toContain('href="#product-information"');
+  });
+
+  it(`${slug} retains the restored reference sections and approved information`, async () => {
+    mocks.catalogue.mockResolvedValue({
+      products: [product(slug)],
+      offers: [],
+    });
+    const html = renderToStaticMarkup(await page());
+    if (slug === "purtier-placenta") {
+      for (const id of [
+        "story",
+        "cinema",
+        "c0",
+        "c1",
+        "c2",
+        "benefits",
+        "ingredients",
+        "glist",
+        "editions",
+      ])
+        expect(html).toContain(`id="${id}"`);
+      expect(html.match(/class="gitem"/g)).toHaveLength(14);
+      expect(html.match(/class="ben"/g)).toHaveLength(6);
+      expect(html).toContain("/design/purtier/deer-forest.jpg");
+      expect(html).not.toMatch(/\d+\s*mg\b|eighth.*is being written/i);
+    } else {
+      for (const id of [
+        "split",
+        "toggle",
+        "him",
+        "her",
+        "science",
+        "sci",
+        "gallery",
+      ])
+        expect(html).toContain(`id="${id}"`);
+      expect(html.match(/class="claim"/g)).toHaveLength(8);
+      expect(html.match(/class="ritual"/g)).toHaveLength(2);
+    }
+    expect(html).toContain('id="product-information"');
   });
 
   it(`${slug} respects the selected market in its approval notice`, async () => {

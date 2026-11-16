@@ -222,6 +222,16 @@ describe("event page and homepage content", () => {
       "No upcoming events are currently published for this market.",
     );
     expect(html).toContain("View regional calendar");
+    expect(html).toContain("The photographs above are from the archive.");
+    for (const image of [
+      "gala-stage.jpg",
+      "supreme-night.jpg",
+      "fire-stage.jpg",
+      "crowd.jpg",
+    ])
+      expect(html).toContain(`/design/riway/${image}`);
+    expect(html).toContain('id="evrow"');
+    expect(html).not.toContain("19th Anniversary");
   });
   it("event detail displays the selected-market timezone and keeps registration on its existing workflow", async () => {
     mocks.currentMarket.mockResolvedValue("MY");

@@ -83,13 +83,21 @@ export function ReferenceStage({
       }
     };
     void start();
+    let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+    const resize = () => {
+      clearTimeout(resizeTimer);
+      resizeTimer = setTimeout(() => void start(), 150);
+    };
     motion.addEventListener("change", start);
-    layout.addEventListener("change", start);
+    if (kind === "conscientious") window.addEventListener("resize", resize);
+    else layout.addEventListener("change", start);
     return () => {
       dead = true;
       generation++;
       motion.removeEventListener("change", start);
       layout.removeEventListener("change", start);
+      window.removeEventListener("resize", resize);
+      clearTimeout(resizeTimer);
       destroy?.();
       restore();
     };

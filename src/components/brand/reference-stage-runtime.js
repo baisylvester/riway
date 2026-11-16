@@ -400,7 +400,7 @@ export function mountReferenceStage(host, kind, options = {}) {
         );
       } else if (kind === "jar") {
         stage = createScene({
-          fov: section.matches('.cinema') ? 30 : 26,
+          fov: section.matches(".cinema") ? 30 : 26,
           exposure: 1.08,
           far: 100,
           lookAt: false,
@@ -806,6 +806,17 @@ function createUnboxSequences(RW) {
     const sHer = ConscPack.sachet(THREE, { variant: "her", RB: opts.RB });
     product.add(sHim.group, sHer.group);
 
+    // Reserve the original headline's column. The paired cartons are wider
+    // than a single jar, so centred desktop framing covers the restored copy.
+    const copyBounds = $(".u0")?.getBoundingClientRect();
+    const copyRight = copyBounds?.right ?? canvas.clientWidth * 0.35;
+    const gutter = copyBounds?.left ?? 32;
+    const copySpace = canvas.clientWidth - copyRight - gutter - 32;
+    const desktopScale = Math.min(
+      1,
+      Math.max(0.32, copySpace / (canvas.clientHeight * 0.9)),
+    );
+
     const F = mob
       ? {
           camA: [0, 8.2, 8.4],
@@ -838,12 +849,13 @@ function createUnboxSequences(RW) {
           pxC: 1.0,
           pxD: -1.0,
           sachet: { x: 1.42, y: 1.6, z: -0.9, s: 1 },
-          scaleA: 1,
+          scaleA: desktopScale,
           scaleC: 1,
         };
     camera.position.set(...F.camA);
     target.set(...F.tgtA);
     product.scale.setScalar(F.scaleA);
+    product.position.x = mob ? 0 : 1.1;
     sHim.group.rotation.set(0, 0.3, 0.05);
     sHer.group.rotation.set(0, -0.3, -0.05);
     sHim.group.scale.setScalar(F.sachet.s);
@@ -881,6 +893,7 @@ function createUnboxSequences(RW) {
     });
     tl.to($(".u0"), { autoAlpha: 0, y: -20, duration: 0.08 }, 0.08)
       // B: lids lift, the essences appear in their cradles
+      .to(product.position, { x: mob ? 0 : -1.1, duration: 0.2 }, 0.1)
       .to(
         lid,
         {

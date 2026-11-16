@@ -19,6 +19,28 @@ export function ReferenceHome({
   eventsUnavailable?: boolean;
 }) {
   const upcoming = upcomingEvents(events, market).slice(0, 4);
+  const moments = [
+    {
+      image: "gala-stage.jpg",
+      label: "Gala dinner",
+      title: "Celebrating together",
+    },
+    {
+      image: "supreme-night.jpg",
+      label: "Team Supreme Night",
+      title: "Shared achievements",
+    },
+    {
+      image: "fire-stage.jpg",
+      label: "Leaders Recognition Night",
+      title: "Moments of recognition",
+    },
+    {
+      image: "crowd.jpg",
+      label: "Leadership Training Seminar",
+      title: "Learning together",
+    },
+  ];
   return (
     <ReferenceShell>
       <section className="hero" id="hero" data-cursor="Drag">
@@ -651,48 +673,54 @@ export function ReferenceHome({
             </h2>
           </div>
           <p className="lede">
-            Published gatherings for your selected market and global events.
-            Dates and times are shown in {eventZones[market].label}.
+            Leadership training, top leaders meetings, recognition nights and
+            gala dinners. Explore the regional calendar for confirmed
+            gatherings.
           </p>
         </div>
-        <div className="ev-row" id={upcoming.length ? "evrow" : undefined}>
-          {upcoming.length ? (
-            upcoming.map((event) => (
-              <a className="ev" href={`/events/${event.slug}`} key={event.id}>
-                <img
-                  src="/design/riway/emblem-gold.jpg"
-                  alt=""
-                  loading="lazy"
-                  style={{
-                    objectFit: "contain",
-                    padding: "clamp(30px,5vw,70px)",
-                    opacity: 0.35,
-                  }}
-                />
-                <div className="t">
-                  <small>
-                    <time dateTime={event.starts_at!}>
-                      {formatEventDate(event.starts_at!, market)} ·{" "}
-                      {formatEventTime(event.starts_at!, market)}
-                    </time>
-                  </small>
-                  <h3 className="display">{event.title}</h3>
-                  <p>{event.location}</p>
-                </div>
-              </a>
-            ))
-          ) : (
-            <p
-              className="lede"
-              style={{ gridColumn: "1 / -1", padding: "40px var(--gutter)" }}
-            >
-              {eventsUnavailable
-                ? "Event details are temporarily unavailable. Please try the calendar again later."
-                : "Confirmed, approved event details will appear here. No upcoming events are currently published for this market."}
-            </p>
-          )}
+        <div className="ev-row" id="evrow">
+          {upcoming.length
+            ? upcoming.map((event, index) => (
+                <a className="ev" href={`/events/${event.slug}`} key={event.id}>
+                  <img
+                    src={`/design/riway/${moments[index].image}`}
+                    alt=""
+                    loading="lazy"
+                  />
+                  <div className="t">
+                    <small>
+                      <time dateTime={event.starts_at!}>
+                        {formatEventDate(event.starts_at!, market)} ·{" "}
+                        {formatEventTime(event.starts_at!, market)}
+                      </time>
+                    </small>
+                    <h3 className="display">{event.title}</h3>
+                    <p>{event.location}</p>
+                  </div>
+                </a>
+              ))
+            : moments.map((moment) => (
+                <a className="ev" href="/events" key={moment.image}>
+                  <img
+                    src={`/design/riway/${moment.image}`}
+                    alt=""
+                    loading="lazy"
+                  />
+                  <div className="t">
+                    <small>From the archive · {moment.label}</small>
+                    <h3 className="display">{moment.title}</h3>
+                  </div>
+                </a>
+              ))}
         </div>
         <div style={{ padding: "24px var(--gutter)" }}>
+          <p className="lede" style={{ marginBottom: 24 }}>
+            {upcoming.length
+              ? `Published event dates and times are shown in ${eventZones[market].label}.`
+              : eventsUnavailable
+                ? "Event details are temporarily unavailable. Please try the calendar again later."
+                : "The photographs above are from the archive. No upcoming events are currently published for this market."}
+          </p>
           <a className="btn magnetic" href="/events" data-cursor="Open">
             View regional calendar
           </a>

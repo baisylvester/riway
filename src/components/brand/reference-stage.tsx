@@ -124,7 +124,6 @@ export function ReferenceStage({
         }}
       />
       <canvas
-        id={kind === "jar" ? "heroJar" : undefined}
         aria-hidden="true"
         style={{
           position: "absolute",

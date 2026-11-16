@@ -19,7 +19,7 @@ export const stripeAttemptSchema = z.object({
       z.object({
         name: z.string().min(1).max(120),
         quantity: z.number().int().min(1).max(24),
-        unitAmount: z.number().int().positive(),
+        unitAmount: z.number().int().nonnegative(),
       }),
     )
     .min(1)

@@ -1,9 +1,12 @@
-import { CommerceDraftsPanel } from "@/components/commerce-drafts-panel";
+import {
+  CommerceDraftsPanel,
+  type CommerceDraftQuery,
+} from "@/components/commerce-drafts-panel";
 export const metadata = { title: "Promotion drafts" };
 export default async function Promotions({
   searchParams,
 }: {
-  searchParams: Promise<{ edit?: string; page?: string }>;
+  searchParams: Promise<CommerceDraftQuery>;
 }) {
   return <CommerceDraftsPanel kind="promotion" query={await searchParams} />;
 }

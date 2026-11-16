@@ -68,8 +68,73 @@ await check(
 );
 await check("private account redirect", "/account", {}, 307);
 await check("private staff redirect", "/admin", {}, 307);
-await check("package draft management requires staff login", "/admin/packages", {}, 307);
-await check("promotion draft management requires staff login", "/admin/promotions", {}, 307);
+await check("quote rejects unsupported reads", "/api/checkout/quote", {}, 405);
+await check(
+  "quote rejects a forged origin",
+  "/api/checkout/quote",
+  {
+    method: "POST",
+    headers: {
+      origin: "https://untrusted.example",
+      "content-type": "application/json",
+    },
+    body: "{}",
+  },
+  403,
+);
+await check(
+  "quote validates bag input",
+  "/api/checkout/quote",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: "{}",
+  },
+  400,
+);
+await check(
+  "quote requires authentication",
+  "/api/checkout/quote",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: JSON.stringify({
+      market: "PH",
+      items: [
+        { productId: "73000000-0000-4000-8000-000000000001", quantity: 1 },
+      ],
+    }),
+  },
+  401,
+);
+await check(
+  "quote rejects invalid voucher input",
+  "/api/checkout/quote",
+  {
+    method: "POST",
+    headers: { origin: base, "content-type": "application/json" },
+    body: JSON.stringify({
+      market: "PH",
+      items: [
+        { productId: "73000000-0000-4000-8000-000000000001", quantity: 1 },
+      ],
+      promotionCode: "../invalid",
+    }),
+  },
+  400,
+);
+await check(
+  "package draft management requires staff login",
+  "/admin/packages",
+  {},
+  307,
+);
+await check(
+  "promotion draft management requires staff login",
+  "/admin/promotions",
+  {},
+  307,
+);
 await check(
   "payment management requires staff login",
   "/admin/payments",
@@ -295,7 +360,10 @@ await check(
   "/api/referral/remember",
   {
     method: "POST",
-    headers: { origin: "https://untrusted.example", "content-type": "application/json" },
+    headers: {
+      origin: "https://untrusted.example",
+      "content-type": "application/json",
+    },
     body: JSON.stringify({ code: "RIWAY-AUDIT-NOT-FOUND" }),
   },
   403,

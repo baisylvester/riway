@@ -1,0 +1,41 @@
+import { money } from "@/lib/domain";
+import type { CommerceQuote } from "@/lib/commerce-checkout";
+export function CheckoutQuote({ quote }: { quote: CommerceQuote }) {
+  return (
+    <div className="stack" aria-label="Current order total">
+      {quote.items.map((item) => (
+        <div className="order-row" key={item.productId}>
+          <span>
+            {item.name} × {item.quantity}
+            {item.packageOfferId && <small> · Package</small>}
+          </span>
+          <span>
+            {money(item.netMinor, quote.currency)}
+            {item.discountMinor > 0 && (
+              <small>
+                {" "}
+                · Discount {money(item.discountMinor, quote.currency)}
+              </small>
+            )}
+          </span>
+        </div>
+      ))}
+      <div className="order-row">
+        <span>Subtotal</span>
+        <span>{money(quote.subtotalMinor, quote.currency)}</span>
+      </div>
+      {quote.promotion && (
+        <div className="order-row">
+          <span>
+            {quote.promotion.name} · {quote.promotion.code}
+          </span>
+          <span>−{money(quote.discountMinor, quote.currency)}</span>
+        </div>
+      )}
+      <p className="price">Total {money(quote.totalMinor, quote.currency)}</p>
+      <p className="small muted">
+        Prices, offer eligibility and stock are checked again when you continue.
+      </p>
+    </div>
+  );
+}

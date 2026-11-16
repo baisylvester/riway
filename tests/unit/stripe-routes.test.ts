@@ -39,6 +39,7 @@ const input = {
   terms: true,
   termsVersion: "qa-terms-v1",
   idempotencyKey: orderId,
+  quoteHash: "a".repeat(64),
 };
 const request = (
   body: unknown = input,
@@ -79,6 +80,23 @@ beforeEach(() => {
   f.reconcile.mockResolvedValue("paid");
 });
 describe("checkout authority boundaries", () => {
+  it("preserves a retryable outcome for uncertain database commits", async () => {
+    for (const error of [
+      { code: "", message: "private transport detail" },
+      { code: "08006" },
+      { code: "XX000" },
+    ]) {
+      rpc.mockResolvedValueOnce({ data: null, error });
+      const response = await checkout(request());
+      expect(response.status).toBe(503);
+      expect(await response.text()).not.toContain("private transport detail");
+    }
+    rpc.mockResolvedValueOnce({ data: null, error: null });
+    expect((await checkout(request())).status).toBe(503);
+    rpc.mockRejectedValueOnce(Error("private transport failure"));
+    expect((await checkout(request())).status).toBe(503);
+    expect(f.start).not.toHaveBeenCalled();
+  });
   it("rejects origin, invalid input and unauthenticated requests before order creation", async () => {
     expect(
       (await checkout(request(input, "https://evil.invalid"))).status,
@@ -104,12 +122,14 @@ describe("checkout authority boundaries", () => {
       request({ ...input, total: 1, currency: "usd", sponsor_id: "forged" }),
     );
     expect(r.status).toBe(200);
-    expect(rpc).toHaveBeenCalledWith("create_order", {
+    expect(rpc).toHaveBeenCalledWith("create_commerce_order", {
       m: "PH",
       items: input.items,
       delivery: input.address,
       key: input.idempotencyKey,
       terms: "qa-terms-v1",
+      promotion_code: null,
+      quote_hash: input.quoteHash,
     });
     expect(f.start).toHaveBeenCalledWith(
       orderId,
@@ -141,7 +161,7 @@ describe("checkout authority boundaries", () => {
   it("does not contact Stripe after a rejected order and treats network outcomes as uncertain", async () => {
     rpc.mockResolvedValue({
       data: null,
-      error: { message: "Market not ready" },
+      error: { code: "P0001", message: "Market not ready" },
     });
     expect((await checkout(request())).status).toBe(409);
     expect(f.start).not.toHaveBeenCalled();

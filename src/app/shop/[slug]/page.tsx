@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { catalogue, currentMarket } from "@/lib/data";
+import { catalogue, currentMarket, packageComposition } from "@/lib/data";
 import { money, markets } from "@/lib/domain";
 import { ProductArt } from "@/components/product-card";
 import { ProductEditorial } from "@/components/brand/editorial";
@@ -16,6 +16,10 @@ export default async function ProductPage({
   const p = products.find((p) => p.slug === slug);
   if (!p) notFound();
   const market = await currentMarket();
+  const composition =
+    p.category === "Packages"
+      ? await packageComposition(p.id, market)
+      : undefined;
   const offer = offers.find(
     (o) => o.product_id === p.id && o.market === market,
   );
@@ -43,7 +47,26 @@ export default async function ProductPage({
               {money(offer?.retail_minor ?? null, markets[market].currency)}
             </div>
             <ProductComplianceNotice market={market} />
-            <AddToBag id={p.id} />
+            {composition && (
+              <div className="panel">
+                <h2>In this package</h2>
+                <ul>
+                  {composition.components.map((item) => (
+                    <li key={item.productId}>
+                      {item.name} × {item.quantity}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {p.category !== "Packages" || composition ? (
+              <AddToBag id={p.id} />
+            ) : (
+              <p className="notice">
+                This package is awaiting an approved configuration for your
+                market.
+              </p>
+            )}
             {(slug === "purtier-placenta" || slug === "conscientious") && (
               <a className="rw-product-story-link" href="#collection-story">
                 Explore the presentation & packaging ↓

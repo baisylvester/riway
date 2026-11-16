@@ -9,6 +9,7 @@ import {
 import { NextResponse } from "next/server";
 import { stripeReadiness } from "@/lib/stripe-config";
 import { completePendingReferral } from "@/lib/referral-continuity";
+import { commerceFailureStatus } from "@/lib/commerce-errors";
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return failure("Invalid request origin", 403);
   const input = checkoutSchema.safeParse(
@@ -37,6 +38,11 @@ export async function POST(request: Request) {
       "Terms have changed. Refresh checkout and review them before continuing.",
       409,
     );
+  if (!input.data.quoteHash)
+    return failure(
+      "Review the current total before continuing to payment.",
+      409,
+    );
   try {
     const referral = await completePendingReferral(client);
     if (referral.state === "invalid") return failure(referral.message, 409);
@@ -46,17 +52,31 @@ export async function POST(request: Request) {
       503,
     );
   }
-  const order = await client.rpc("create_order", {
-    m: input.data.market,
-    items: input.data.items,
-    delivery: input.data.address,
-    key: input.data.idempotencyKey,
-    terms: clients.config.terms,
-  });
-  if (order.error || typeof order.data !== "string")
+  const order = await Promise.resolve(
+    client.rpc("create_commerce_order", {
+      m: input.data.market,
+      items: input.data.items,
+      delivery: input.data.address,
+      key: input.data.idempotencyKey,
+      terms: clients.config.terms,
+      promotion_code: input.data.promotionCode ?? null,
+      quote_hash: input.data.quoteHash,
+    }),
+  ).catch(() => ({ data: null, error: { code: "TRANSPORT" } }));
+  if (order.error?.code === "40001")
+    return failure(
+      "Prices or offers have changed. Review the current total before continuing.",
+      409,
+    );
+  if (order.error && commerceFailureStatus(order.error.code) === 409)
     return failure(
       "Ordering is unavailable. Check market approval, verified sponsor, current prices and stock.",
       409,
+    );
+  if (order.error || typeof order.data !== "string")
+    return failure(
+      "Your order could not be confirmed. Retry with the same bag or check your orders before starting again.",
+      503,
     );
   try {
     return NextResponse.json(

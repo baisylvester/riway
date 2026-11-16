@@ -33,14 +33,27 @@ export default async function Order({
           product_name: string;
           quantity: number;
           unit_minor: number;
+          discount_minor?: number;
+          net_minor?: number;
         }) => (
           <div key={i.id} className="order-row">
             <span>
               {i.product_name} × {i.quantity}
             </span>
-            <span>{money(i.unit_minor * i.quantity, o.currency)}</span>
+            <span>
+              {money(i.net_minor ?? i.unit_minor * i.quantity, o.currency)}
+              {!!i.discount_minor && (
+                <small> · Discount {money(i.discount_minor, o.currency)}</small>
+              )}
+            </span>
           </div>
         ),
+      )}
+      {!!o.discount_minor && (
+        <p>
+          Subtotal {money(o.subtotal_minor, o.currency)} · Discount{" "}
+          {money(o.discount_minor, o.currency)}
+        </p>
       )}
       <p className="price">Total {money(o.total_minor, o.currency)}</p>
       {o.payment_status !== "paid" && o.status === "awaiting_payment" && (

@@ -2,6 +2,13 @@
 import { useId, useRef, useState, type FormEvent } from "react";
 import { useStore } from "./store-provider";
 import { markets, type Market } from "@/lib/domain";
+import {
+  commerceQuoteSchema,
+  quoteFingerprint,
+  quoteSelection,
+  type CommerceQuote,
+} from "@/lib/commerce-checkout";
+import { CheckoutQuote } from "./checkout-quote";
 export function Checkout({
   market,
   payment = {
@@ -23,8 +30,58 @@ export function Checkout({
   const { items } = useStore(),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
+  const [code, setCode] = useState("");
+  const [quoted, setQuoted] = useState<{
+    fingerprint: string;
+    quote: CommerceQuote;
+  } | null>(null);
+  const quoteRequest = useRef(0);
+  const fingerprint = quoteFingerprint(market, items, code);
+  const currentQuote =
+    quoted?.fingerprint === fingerprint ? quoted.quote : null;
+  async function review() {
+    const sequence = ++quoteRequest.current;
+    const selected = quoteSelection(market, items, code);
+    const selectedFingerprint = JSON.stringify(selected);
+    setBusy(true);
+    setMessage("");
+    try {
+      const response = await fetch("/api/checkout/quote", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(selected),
+      });
+      const body = await response.json();
+      if (!response.ok)
+        throw Error(
+          body.error?.message ?? "The current total could not be reviewed.",
+        );
+      const result = commerceQuoteSchema.safeParse(body);
+      if (!result.success || result.data.market !== market)
+        throw Error("The order review could not be verified.");
+      if (sequence === quoteRequest.current) {
+        setQuoted({ fingerprint: selectedFingerprint, quote: result.data });
+        setMessage("Review the current total before continuing to payment.");
+      }
+    } catch (error) {
+      if (sequence === quoteRequest.current) {
+        setQuoted(null);
+        setMessage(
+          error instanceof Error
+            ? error.message
+            : "Order review could not be reached. Please try again.",
+        );
+      }
+    } finally {
+      if (sequence === quoteRequest.current) setBusy(false);
+    }
+  }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (payment.enabled && !currentQuote) {
+      await review();
+      return;
+    }
     setBusy(true);
     const f = new FormData(e.currentTarget);
     try {
@@ -40,6 +97,8 @@ export function Checkout({
         address: { ...address, country: market },
         terms: f.get("terms") === "on",
         termsVersion: payment.termsVersion,
+        promotionCode: quoteSelection(market, items, code).promotionCode,
+        quoteHash: currentQuote?.quoteHash,
       };
       const fingerprint = JSON.stringify(payload);
       if (attempt.current.payload !== fingerprint)
@@ -64,9 +123,15 @@ export function Checkout({
           return;
         }
       }
-      setMessage(d.error?.message ?? "No payment has been taken.");
+      setMessage(
+        d.error?.message ??
+          "Payment is not confirmed here. Check your orders before trying again.",
+      );
+      if (payment.enabled && r.status === 409) setQuoted(null);
     } catch {
-      setMessage("Checkout could not be reached. No payment has been taken.");
+      setMessage(
+        "Checkout could not be reached. Check your orders before trying again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -117,6 +182,34 @@ export function Checkout({
       <aside className="panel stack">
         <h2>Order review</h2>
         <p>{items.length} product selections</p>
+        <label>
+          Voucher code (optional)
+          <input
+            name="promotionCode"
+            value={code}
+            onChange={(event) => setCode(event.target.value)}
+            maxLength={40}
+            disabled={busy}
+            autoComplete="off"
+          />
+        </label>
+        <p className="small muted">
+          One eligible voucher can be used per order.
+        </p>
+        <button
+          type="button"
+          className="button button-outline"
+          disabled={busy || !items.length}
+          onClick={() => void review()}
+        >
+          Review current total
+        </button>
+        {currentQuote && <CheckoutQuote quote={currentQuote} />}
+        {!currentQuote && quoted && (
+          <p className="notice">
+            Your selection changed. Review the current total again.
+          </p>
+        )}
         <div className="notice">
           {payment.enabled
             ? "Market approval, verified sponsor, approved pricing and stock are checked before Stripe opens. Card details are entered only on Stripe."

@@ -205,10 +205,13 @@ describe("commerce draft management page", () => {
     }
   });
   it("renders a verified empty list and rejects unscoped or malformed edit selection", async () => {
-    f.rpc.mockResolvedValue({
-      data: { drafts: [], markets: ["PH"], hasMore: false, page: 1 },
+    f.rpc.mockImplementation(async (name: string) => ({
+      data:
+        name === "staff_commerce_offers"
+          ? { offers: [], markets: ["PH"], hasMore: false, page: 1 }
+          : { drafts: [], markets: ["PH"], hasMore: false, page: 1 },
       error: null,
-    });
+    }));
     const html = renderToStaticMarkup(
       await CommerceDraftsPanel({ kind: "package", query: {} }),
     );

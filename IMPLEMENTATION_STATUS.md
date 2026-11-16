@@ -1,5 +1,11 @@
 # Implementation status
 
+## Original presentation restoration - 16 November 2026
+
+The original reference structure and imagery are restored on the homepage, PURTIER and CONSCIENTIOUS routes, including the event-photo row, cinematic/archive sections and collection detail grids. Published catalogue gates, approved market information, the regional calendar and the completed commerce/account/admin features remain. Unpublished event dates and unapproved product quantities/claims were not reinstated. CONSCIENTIOUS desktop scene fitting now keeps its restored headline clear of the cartons and adapts after resize.
+
+PRs #11 and #12 are merged and the final verified build is live. Final CI passed 292 tests, TypeScript, audit, eight PostgreSQL rollback/concurrency suites and production packaging. Live checks passed 49 HTTP/API cases, 12 product/market cases, 18 calendar cases and all 105 assets. Forty-seven route scenarios showed no server errors; missing-record paths retain documented streamed not-found responses. Focused public presentation browser checks were performed for this visual restoration; authenticated customer/staff and real-provider acceptance remain pending. No database or provider settings changed. Exact source, artifact, deployment and screenshot evidence is recorded in `ROLLOUT-STATUS.md`.
+
 ## Approved package and voucher checkout - 16 November 2026
 
 Editable drafts now have separate immutable approvals and withdrawal history. Customers can review an authoritative quote and submit its fingerprint; stale prices/configurations are rejected for review while uncertain outcomes retain the same order retry key. Package SKUs reserve aggregated physical components, and exact line discounts/net totals are preserved in order history and Stripe billing snapshots. Version-one vouchers support one code per order, eligible-product subtotal/minimum, fixed or percentage discounts, audience/window/cap checks and transactional usage capacity. See `COMMERCE-CHECKOUT.md` for precise semantics and remaining scope.

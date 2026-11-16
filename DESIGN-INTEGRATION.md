@@ -1,5 +1,11 @@
 # RIWAY integration working checklist
 
+## Presentation restoration (16 November 2026)
+- Restored the original event imagery/cards, italic product hero headlines, PURTIER manifesto/cinema/detail/visual-archive sections and CONSCIENTIOUS detail/ritual/science-grid structure after the user requested the earlier design.
+- Retained published catalogue/metadata gates, live product descriptions, market notices and the regional calendar. Empty calendar photography is explicitly archival; actual upcoming cards still link to published records. Visual archive images do not establish formula, dosage or therapeutic claims.
+- Kept checkout, account, referral, admin and inventory features. Removed duplicate jar canvas IDs. Reserved the caption column in CONSCIENTIOUS opening/next-frame scenes and re-fit after debounced resizing.
+- Verified 292 automated tests, production builds, final Linux CI/PostgreSQL suites, local/live HTTP regression and focused public desktop/tablet/mobile rendering. Detailed release evidence is in `ROLLOUT-STATUS.md`; authenticated/provider acceptance remains separate.
+
 ## Baseline / routes and protected behavior
 - /shop: catalogue() published products + offers; q text, category, result count/empty state; currentMarket cookie PH/SG/MY.
 - /shop/[slug]: notFound unknown; live name/subtitle/description/offers; review add uses existing StoreProvider. Confirmed slugs purtier-placenta, conscientious.

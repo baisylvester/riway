@@ -1,5 +1,13 @@
 # Implementation status
 
+## Approved package and voucher checkout - 16 November 2026
+
+Editable drafts now have separate immutable approvals and withdrawal history. Customers can review an authoritative quote and submit its fingerprint; stale prices/configurations are rejected for review while uncertain outcomes retain the same order retry key. Package SKUs reserve aggregated physical components, and exact line discounts/net totals are preserved in order history and Stripe billing snapshots. Version-one vouchers support one code per order, eligible-product subtotal/minimum, fixed or percentage discounts, audience/window/cap checks and transactional usage capacity. See `COMMERCE-CHECKOUT.md` for precise semantics and remaining scope.
+
+Hosted migration `20261116030711_approved_commerce_checkout.sql` is applied. The rollback-only commerce acceptance suite passed with zero retained approved configurations, orders, redemptions, physical snapshots or reservations; all market sales/payment gates remain false. Anonymous quote/order execution is denied and no new public definer or security-advisor warning appeared. Local 290 tests, TypeScript and 49 HTTP cases pass. Real PostgreSQL CI passed eight suites, last-voucher concurrency, reuse after expiry and preparation/expiry protection after correcting an invalid lowercase test fixture. Final deployment evidence is recorded separately in `ROLLOUT-STATUS.md`.
+
+Legacy orders/open Stripe snapshots are covered by upgrade tests. A private backfill marker preserves historical literal package-SKU stock; new packages always use approved component composition. Maintenance drains up to 50 expired no-attempt orders per run, rechecks after order locking and retains open-Stripe protections. Payments, Tax and email remain disabled. Real provider and signed-in browser acceptance remain pending; automatic/stacked promotions, bonus bottles, membership qualification and zero-total whole orders are not implemented by this phase.
+
 ## Regional calendar and commerce preparation - 10 November 2026
 
 The public regional event calendar now supports bounded month navigation, market-local dates/timezones and published global/current-market events. Homepage cards link to actual event records; empty calendars and temporary content failures are distinct. Event saves invalidate homepage and detail routes. No event records were invented.

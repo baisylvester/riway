@@ -265,7 +265,7 @@ try {
     ),
     "1",
   );
-  const voucherCode = `RACE-${randomUUID().replaceAll("-", "")}`;
+  const voucherCode = `RACE-${randomUUID().replaceAll("-", "").toUpperCase()}`;
   const promotionDefinition = JSON.stringify({
     productIds: [product],
     discountType: "fixed",

@@ -7,6 +7,8 @@ import { OrderPayment } from "@/components/order-payment";
 import { stripeReadiness } from "@/lib/stripe-config";
 import { orderFulfilmentSchema, orderStatusLabels } from "@/lib/fulfilment";
 import { FulfilmentTimeline } from "@/components/fulfilment-timeline";
+import { orderCancellationSchema } from "@/lib/cancellation";
+import { CancelOrderForm } from "@/components/cancel-order-form";
 export default async function Order({
   params,
 }: {
@@ -31,11 +33,19 @@ export default async function Order({
           (await client.rpc("order_fulfilment", { p_order: id })).data,
         )
       : null;
+  // Cancellation state; a missing or unexpected response omits the section.
+  const cancellation = ["awaiting_payment", "cancelled"].includes(o.status)
+    ? orderCancellationSchema.safeParse(
+        (await client.rpc("order_cancellation", { p_order: id })).data,
+      )
+    : null;
   return (
     <div className="panel">
       <h2>Order {id.slice(0, 8).toUpperCase()}</h2>
       <p>
-        <span className="status">{orderStatusLabels[o.status] ?? o.status}</span>{" "}
+        <span className="status">
+          {orderStatusLabels[o.status] ?? o.status}
+        </span>{" "}
         Payment: {o.payment_status}
       </p>
       {fulfilment?.success && fulfilment.data.orderId === id && (
@@ -86,6 +96,16 @@ export default async function Order({
           o.payment_status === "pending"
         }
       />
+      {cancellation?.success && cancellation.data.orderId === id && (
+        <CancelOrderForm cancellation={cancellation.data} />
+      )}
+      {o.payment_status === "paid" &&
+        ["paid", "fulfilling"].includes(o.status) && (
+          <p className="muted">
+            Need to cancel a paid order? Contact RIWAY support before it is
+            dispatched.
+          </p>
+        )}
       <Reorder
         items={o.order_items
           .filter((i: { product_id: string | null }) => i.product_id)

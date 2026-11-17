@@ -5,11 +5,20 @@ import { money } from "@/lib/domain";
 import { orderFulfilmentSchema, orderStatusLabels } from "@/lib/fulfilment";
 import { FulfilmentTimeline } from "./fulfilment-timeline";
 import { FulfilmentForm } from "./fulfilment-form";
+import { CancelOrderForm } from "./cancel-order-form";
+import { orderCancellationSchema } from "@/lib/cancellation";
 
 type Address = Partial<
-  Record<"full_name" | "phone" | "line1" | "city" | "postal_code" | "country", string>
+  Record<
+    "full_name" | "phone" | "line1" | "city" | "postal_code" | "country",
+    string
+  >
 >;
-type Line = { product_name: string; quantity: number; net_minor: number | null };
+type Line = {
+  product_name: string;
+  quantity: number;
+  net_minor: number | null;
+};
 
 // Staff order view. Row-level security limits the order to market
 // administrators and operations staff; the fulfilment RPC rechecks that scope.
@@ -26,6 +35,11 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
   if (!order) notFound();
   const result = await client.rpc("order_fulfilment", { p_order: orderId });
   const fulfilment = orderFulfilmentSchema.safeParse(result.data);
+  const cancellation = ["awaiting_payment", "cancelled"].includes(order.status)
+    ? orderCancellationSchema.safeParse(
+        (await client.rpc("order_cancellation", { p_order: orderId })).data,
+      )
+    : null;
   const address = (order.address ?? {}) as Address;
   return (
     <>
@@ -55,7 +69,9 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
               </span>
             </div>
           ))}
-          <p className="price">Total {money(order.total_minor, order.currency)}</p>
+          <p className="price">
+            Total {money(order.total_minor, order.currency)}
+          </p>
           <h3>Deliver to</h3>
           <address style={{ fontStyle: "normal", overflowWrap: "anywhere" }}>
             {address.full_name}
@@ -68,6 +84,9 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
           </address>
         </div>
         <div className="stack">
+          {cancellation?.success && cancellation.data.orderId === orderId && (
+            <CancelOrderForm cancellation={cancellation.data} staff />
+          )}
           {fulfilment.success ? (
             <>
               <FulfilmentTimeline fulfilment={fulfilment.data} />

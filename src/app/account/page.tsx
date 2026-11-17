@@ -44,8 +44,14 @@ export default async function Account() {
           <h2>Every journey is personal.</h2>
           <p className="muted">
             Your website account is separate from RIWAY’s authoritative
-            membership records. Membership and sponsor verification will become
-            available when the approved integration is connected.
+            membership records. Review qualifying purchases and recorded consent
+            in your membership details. Member pricing requires a confirmed
+            RIWAY membership.
+          </p>
+          <p>
+            <Link className="text-link" href="/account/membership">
+              Your membership details →
+            </Link>
           </p>
           <Link className="text-link" href="/support">
             Contact support →

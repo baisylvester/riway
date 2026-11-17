@@ -11,6 +11,7 @@ export function AdminNav() {
         ["pricing", "Pricing"],
         ["packages", "Package drafts"],
         ["promotions", "Promotion drafts"],
+        ["memberships", "Membership"],
         ["inventory", "Inventory"],
         ["orders", "Orders"],
         ["payments", "Payments"],

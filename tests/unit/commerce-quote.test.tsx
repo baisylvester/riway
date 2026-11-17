@@ -178,4 +178,18 @@ describe("quote HTTP authority", () => {
     expect(r.status).toBe(409);
     expect(await r.text()).not.toContain("private fixture");
   });
+  it("explains the one-membership-package rule instead of a generic refusal", async () => {
+    f.rpc.mockResolvedValue({
+      data: null,
+      error: {
+        code: "P0001",
+        message: "Choose one qualifying membership package per order",
+      },
+    });
+    const r = await POST(request());
+    expect(r.status).toBe(409);
+    expect(await r.text()).toContain(
+      "Choose one qualifying membership package per order",
+    );
+  });
 });

@@ -9,6 +9,7 @@ import {
   type CommerceQuote,
 } from "@/lib/commerce-checkout";
 import { CheckoutQuote } from "./checkout-quote";
+import { MembershipConsentFields } from "./membership-consent";
 export function Checkout({
   market,
   payment = {
@@ -45,6 +46,7 @@ export function Checkout({
     const selectedFingerprint = JSON.stringify(selected);
     setBusy(true);
     setMessage("");
+    setQuoted(null);
     try {
       const response = await fetch("/api/checkout/quote", {
         method: "POST",
@@ -99,6 +101,14 @@ export function Checkout({
         termsVersion: payment.termsVersion,
         promotionCode: quoteSelection(market, items, code).promotionCode,
         quoteHash: currentQuote?.quoteHash,
+        membershipConsent: currentQuote?.membership
+          ? {
+              ruleId: currentQuote.membership.ruleId,
+              termsVersion: currentQuote.membership.termsVersion,
+              codeVersion: currentQuote.membership.codeVersion,
+              accepted: f.get("membershipConsent") === "on",
+            }
+          : undefined,
       };
       const fingerprint = JSON.stringify(payload);
       if (attempt.current.payload !== fingerprint)
@@ -205,6 +215,12 @@ export function Checkout({
           Review current total
         </button>
         {currentQuote && <CheckoutQuote quote={currentQuote} />}
+        {currentQuote?.membership && (
+          <MembershipConsentFields
+            key={currentQuote.quoteHash}
+            qualification={currentQuote.membership}
+          />
+        )}
         {!currentQuote && quoted && (
           <p className="notice">
             Your selection changed. Review the current total again.

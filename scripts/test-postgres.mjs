@@ -125,6 +125,7 @@ try {
     "stripe.sql",
     "commerce_drafts.sql",
     "commerce_checkout.sql",
+    "membership.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
@@ -386,11 +387,185 @@ try {
     ),
     "0",
   );
+  // Different qualifying packages have different physical stock rows. This
+  // forces the membership user lock, rather than a shared stock lock, to
+  // serialize the two canonical payment settlements.
+  const memberCustomer = randomUUID();
+  sql(`insert into auth.users(id,email) values('${memberCustomer}','membership-race@example.invalid');
+    insert into public.sponsor_attributions(user_id,distributor_id) values('${memberCustomer}','${sponsor}');`);
+  const memberIdentity = `select set_config('request.jwt.claims','{"sub":"${memberCustomer}","role":"authenticated","aal":"aal1"}',false); set role authenticated;`;
+  const memberFixtures = [];
+  for (let index = 0; index < 2; index++) {
+    const physical = randomUUID(),
+      packageSku = randomUUID();
+    sql(`insert into public.products(id,slug,name,category,status) values
+      ('${physical}','membership-physical-${index}','Disposable membership physical ${index}','Nutrition','published'),
+      ('${packageSku}','membership-package-${index}','Disposable membership package ${index}','Packages','published');
+      insert into public.product_offers(product_id,market,currency,retail_minor,regulatory_approved,approval_reference,max_quantity)
+      values('${physical}','PH','PHP',6000,true,'DISPOSABLE-MEMBERSHIP-ONLY',24);
+      insert into public.inventory(product_id,market,on_hand) values('${physical}','PH',10);`);
+    const definition = JSON.stringify({
+      components: [{ productId: physical, quantity: 1 }],
+      retailMinor: 5000,
+      memberMinor: 4000,
+    });
+    const draft = sql(
+      `${asUser} select public.save_commerce_draft(null,'package','PH','Disposable membership package ${index}','review','${definition}'::jsonb,0)->>'id';`,
+    )
+      .split("\n")
+      .at(-1);
+    const offerId = sql(
+      `${asUser} select public.approve_commerce_draft('${draft}',1,'${packageSku}','DISPOSABLE-MEMBERSHIP-PACKAGE')->>'id';`,
+    )
+      .split("\n")
+      .at(-1);
+    assert.match(offerId, /^[0-9a-f-]{36}$/);
+    sql(
+      `update public.product_offers set regulatory_approved=true,approval_reference='DISPOSABLE-MEMBERSHIP-ONLY' where product_id='${packageSku}' and market='PH';`,
+    );
+    const rule = JSON.parse(
+      sql(
+        `${asUser} select public.approve_membership_rule('${offerId}','SAMPLE_RACE','Sample concurrency tier',1,'SAMPLE-TERMS-1','Sample terms for disposable membership concurrency testing only.','SAMPLE-CODE-1','Sample conduct for disposable membership concurrency testing only.','DISPOSABLE-MEMBERSHIP-RULE');`,
+      )
+        .split("\n")
+        .at(-1),
+    );
+    const selection = JSON.stringify([{ productId: packageSku, quantity: 1 }]);
+    const quote = JSON.parse(
+      sql(
+        `${memberIdentity} select public.quote_commerce_checkout('PH','${selection}'::jsonb,null);`,
+      )
+        .split("\n")
+        .at(-1),
+    );
+    assert.equal(quote.membership.ruleId, rule.id);
+    const consent = JSON.stringify({
+      ruleId: rule.id,
+      termsVersion: "SAMPLE-TERMS-1",
+      codeVersion: "SAMPLE-CODE-1",
+      accepted: true,
+    });
+    const order = sql(
+      `${memberIdentity} select public.create_membership_commerce_order('PH','${selection}'::jsonb,'{"full_name":"Disposable member","phone":"0000000000","line1":"Disposable fixture address","city":"Manila","postal_code":"1000","country":"PH"}'::jsonb,'${randomUUID()}','2026-11-draft',null,'${quote.quoteHash}','${consent}'::jsonb);`,
+    )
+      .split("\n")
+      .at(-1);
+    assert.match(order, /^[0-9a-f-]{36}$/);
+    const attempt = JSON.parse(
+      sql(
+        `set role service_role; select public.prepare_stripe_checkout('${order}','${memberCustomer}',false,'https://example.invalid');`,
+      )
+        .split("\n")
+        .at(-1),
+    );
+    memberFixtures.push({ physical, order, attempt });
+  }
+  const memberPaymentRaces = await Promise.all(
+    memberFixtures.map(({ order, attempt }, index) =>
+      parallelSql(
+        `set statement_timeout='10s'; set role service_role; select public.apply_stripe_checkout_event('evt_membership_${randomUUID()}','${attempt.id}','${order}','cs_test_membership_${index}',false,5000,'php','complete','paid','pi_membership${index}');`,
+      ),
+    ),
+  );
+  assert(
+    memberPaymentRaces.every((result) => result.code === 0),
+    "Both independent paid membership orders must settle without deadlock",
+  );
+  const memberState = JSON.parse(
+    sql(`select jsonb_build_object(
+    'pending',(select count(*) from private.membership_enrollments where user_id='${memberCustomer}' and status='pending_verification'),
+    'notApplied',(select count(*) from private.membership_enrollments where user_id='${memberCustomer}' and status='not_applied'),
+    'members',(select count(*) from public.memberships where user_id='${memberCustomer}'),
+    'requests',(select count(*) from private.notification_jobs where user_id='${memberCustomer}' and kind='membership_requested'),
+    'paidOrders',(select count(*) from public.orders where user_id='${memberCustomer}' and status='paid' and payment_status='paid'));`),
+  );
+  assert.deepEqual(memberState, {
+    pending: 1,
+    notApplied: 1,
+    members: 0,
+    requests: 1,
+    paidOrders: 2,
+  });
+  for (const fixture of memberFixtures) {
+    assert.deepEqual(
+      JSON.parse(
+        sql(
+          `select jsonb_build_object('onHand',on_hand,'reserved',reserved) from public.inventory where product_id='${fixture.physical}' and market='PH';`,
+        ),
+      ),
+      { onHand: 9, reserved: 0 },
+    );
+  }
+  const memberEnrollment = sql(
+    `select id from private.membership_enrollments where user_id='${memberCustomer}' and status='pending_verification';`,
+  );
+  const memberConfirmRaces = await Promise.all(
+    [0, 1].map((index) =>
+      parallelSql(`${asUser}
+    set statement_timeout='10s'; select public.confirm_membership_enrollment('${memberEnrollment}','SAMPLE-RACE-${index}-${memberCustomer}','DISPOSABLE-CONFIRMATION-${index}');`),
+    ),
+  );
+  assert.equal(
+    memberConfirmRaces.filter((result) => result.code === 0).length,
+    1,
+    "Only one conflicting external membership confirmation may succeed",
+  );
+  assert.equal(
+    memberConfirmRaces.filter(
+      (result) =>
+        result.code !== 0 &&
+        result.error.includes("already confirmed with different data"),
+    ).length,
+    1,
+  );
+  const memberConfirmed = JSON.parse(
+    sql(
+      `select jsonb_build_object('externalId',external_member_id,'reference',confirmation_reference) from private.membership_enrollments where id='${memberEnrollment}';`,
+    ),
+  );
+  const memberConfirmReplays = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      parallelSql(`${asUser}
+    set statement_timeout='10s'; select public.confirm_membership_enrollment('${memberEnrollment}','${memberConfirmed.externalId}','${memberConfirmed.reference}');`),
+    ),
+  );
+  assert(
+    memberConfirmReplays.every((result) => result.code === 0),
+    "Identical confirmed membership retries must be acknowledged",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from public.memberships where user_id='${memberCustomer}' and external_member_id='${memberConfirmed.externalId}' and status='active';`,
+    ),
+    "1",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from private.notification_jobs where user_id='${memberCustomer}' and kind='membership_confirmed';`,
+    ),
+    "1",
+    "Confirmation retries must not duplicate welcome notifications",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from public.audit_logs where entity='membership_enrollments' and entity_id='${memberEnrollment}' and action='MEMBERSHIP_CONFIRM:PH';`,
+    ),
+    "1",
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
-        securitySuites: 8,
+        securitySuites: 9,
+        parallelMembershipPayments: memberState,
+        parallelMembershipConfirmations: {
+          attempted: 2,
+          accepted: 1,
+          conflicts: 1,
+          identicalReplays: memberConfirmReplays.length,
+          confirmedMemberships: 1,
+          confirmationNotifications: 1,
+        },
         parallelVoucherCapacity: { attempted: 2, accepted: 1, rejected: 1 },
         voucherCapacityReusableAfterExpiry: true,
         concurrentPrepareExpiry: {

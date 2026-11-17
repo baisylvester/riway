@@ -12,8 +12,17 @@ export default function Membership() {
         Explore RIWAY membership and the people who make our community.
       </p>
       <div className="notice">
-        Online enrolment is not yet available. A website account does not confer
-        RIWAY membership or a distributor role.
+        Real enrolment requires approved package rules, verified payment and
+        confirmation against RIWAY’s member records. A website account does not
+        confer RIWAY membership or a distributor role.
+      </div>
+      <div className="hero-buttons">
+        <Link className="button" href="/membership/demo">
+          Try the sample journey
+        </Link>
+        <Link className="text-link" href="/account/membership">
+          Your membership →
+        </Link>
       </div>
       <div className="cards">
         {[
@@ -39,9 +48,12 @@ export default function Membership() {
       <div className="page-prose">
         <h2>A considered decision.</h2>
         <p>
-          Package qualification rules, tier assignments and membership terms
-          will be published once confirmed by RIWAY. Commission calculations and
-          payouts remain in RIWAY’s existing compensation system.
+          Approved qualifying packages identify their proposed tier and display
+          the enrolment Terms and Code of Conduct during checkout. Your account
+          records the qualifying purchase and document versions. Real package
+          rules and terms still require RIWAY approval; the sample journey uses
+          demonstration data. Commission calculations and payouts remain in
+          RIWAY’s existing compensation system.
         </p>
         <p>
           Income is not guaranteed. Individual outcomes vary and depend on many

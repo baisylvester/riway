@@ -1,6 +1,16 @@
 # RIWAY provider rollout — 17 November 2026
 
-## Latest live release - sales report channel breakdown
+## Latest live release - cross-sell and package upsell
+
+PR #25 merged as `2977b11f23e4bfb54c86c81be46043508b49e230`. PR CI runs `44039521408` and `44039530657`, and merge CI run `44039788841`, passed the `verify` and `postgres-concurrency` jobs, including the new `recommendations.sql` suite.
+
+Hosted migration `20261117073214_product_recommendations.sql` was applied before the merge. Beforehand, the migration and `tests/security/recommendations.sql` ran on the hosted database inside one rolled-back transaction and passed; a follow-up query found no table, QA users or QA products retained. Security advisors show only the pre-existing leaked-password-protection warning and the two documented INFO no-policy notices.
+
+Artifact `14307894289` (19,624,466 bytes) matched SHA-256 `3e3da296ed4e54b881bf4623964100be1340ba96035f6f0e5ca045a5df62a26c` before extraction and upload. Cloudflare returned deployment `232f799ba6db43d5b232bca2488519e9`, etag `8b968a2f2f54958325ca23ea17cf898e6c24e411a447a7842b3bc3c61483ef21`; the notification schedule was reapplied. Live checks on 17 November passed 53 HTTP/API cases. `/shop/purtier-placenta` and `/shop/conscientious` return 200 without a suggestion section, because no curated links or approved packages exist yet; signed-out `/admin/products` redirects to login.
+
+Scope: admin, editor or compliance staff with verified MFA curate up to four "pairs well with" products per product, and product pages list approved packages in the visitor's market that contain the product. Nothing is recommended automatically. The signed-in staff form was not checked in a browser.
+
+## Previous live release - sales report channel breakdown
 
 PR #23 merged as `c34ca06f71bb458eda3cfc27f428afb1e7de9330`. PR CI runs `44038065671` and `44038073008`, and merge CI run `44038316873`, passed the `verify` and `postgres-concurrency` jobs.
 

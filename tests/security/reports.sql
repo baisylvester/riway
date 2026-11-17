@@ -113,6 +113,17 @@ do $$ declare b jsonb:=current_setting('reports_qa.baseline')::jsonb; r jsonb; m
  if (x->>'units')::int<>1 or (x->>'netMinor')::bigint<>500 or x->>'name'<>'Report package' then raise exception 'FAIL: package totals %',x; end if;
  select e into x from jsonb_array_elements(r->'byDistributor') e where e->>'distributorId'=current_setting('reports_qa.sponsor');
  if (x->>'orders')::int<>2 or (x->>'totalMinor')::bigint<>700 or x->>'name'<>'Report sponsor PH' then raise exception 'FAIL: distributor totals %',x; end if;
+ -- The new customer's two settled orders: one first purchase, one repeat; no enrolment.
+ declare first_now int; first_was int; repeat_now int; repeat_was int; begin
+  select coalesce(sum((e->>'orders')::int),0) into first_now from jsonb_array_elements(r->'byChannel') e where e->>'market'='PH' and e->>'channel'='first_purchase';
+  select coalesce(sum((e->>'orders')::int),0) into first_was from jsonb_array_elements(coalesce(b->'byChannel','[]'::jsonb)) e where e->>'market'='PH' and e->>'channel'='first_purchase';
+  select coalesce(sum((e->>'orders')::int),0) into repeat_now from jsonb_array_elements(r->'byChannel') e where e->>'market'='PH' and e->>'channel'='repeat_purchase';
+  select coalesce(sum((e->>'orders')::int),0) into repeat_was from jsonb_array_elements(coalesce(b->'byChannel','[]'::jsonb)) e where e->>'market'='PH' and e->>'channel'='repeat_purchase';
+  if first_now-first_was<>1 or repeat_now-repeat_was<>1 then raise exception 'FAIL: channel split first %->% repeat %->%',first_was,first_now,repeat_was,repeat_now; end if;
+  if (select sum((e->>'orders')::int) from jsonb_array_elements(r->'byChannel') e where e->>'market'='PH')<>(m->>'orders')::int then raise exception 'FAIL: channel orders differ from market orders'; end if;
+  if (select sum((e->>'totalMinor')::bigint) from jsonb_array_elements(r->'byChannel') e where e->>'market'='PH')<>(m->>'totalMinor')::bigint then raise exception 'FAIL: channel totals differ from market totals'; end if;
+  if exists(select 1 from jsonb_array_elements(r->'byChannel') e where e->>'market'<>'PH') then raise exception 'FAIL: other-market channel leaked'; end if;
+ end;
  if jsonb_array_length(public.staff_sales_report(current_date-30,current_date-20)->'byProduct')<>0
   and exists(select 1 from jsonb_array_elements(public.staff_sales_report(current_date-30,current_date-20)->'byProduct') e where e->>'productId'=current_setting('reports_qa.physical'))
   then raise exception 'FAIL: date range ignored'; end if;
@@ -125,5 +136,5 @@ do $$ declare b jsonb:=current_setting('reports_qa.baseline')::jsonb; r jsonb; m
 end $$;
 reset role;
 
-select 'PASS: sales report role/market/MFA scope, settled-only totals by market, product, package and distributor, per-currency amounts and date range; fixtures rolled back' as result;
+select 'PASS: sales report role/market/MFA scope, settled-only totals by market, channel, product, package and distributor, per-currency amounts and date range; fixtures rolled back' as result;
 rollback;

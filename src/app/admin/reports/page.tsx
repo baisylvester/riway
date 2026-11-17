@@ -2,13 +2,22 @@ import { session } from "@/lib/data";
 import { money } from "@/lib/domain";
 import {
   reportRange,
+  salesChannelLabels,
   salesReportSchema,
   type ReportKind,
 } from "@/lib/sales-report";
 
 export const metadata = { title: "Sales reports" };
 
-function CsvLink({ kind, from, to }: { kind: ReportKind; from: string; to: string }) {
+function CsvLink({
+  kind,
+  from,
+  to,
+}: {
+  kind: ReportKind;
+  from: string;
+  to: string;
+}) {
   const query = new URLSearchParams({ kind, from, to });
   return (
     <a className="button button-outline" href={`/api/admin/reports?${query}`}>
@@ -93,6 +102,48 @@ export default async function SalesReports({
                         <td>{r.market}</td>
                         <td>{r.orders}</td>
                         <td>{money(r.subtotalMinor, r.currency)}</td>
+                        <td>{money(r.discountMinor, r.currency)}</td>
+                        <td>{money(r.totalMinor, r.currency)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <Empty />
+            )}
+          </section>
+          <section className="stack">
+            <div className="admin-actions">
+              <h2>By channel</h2>
+              <CsvLink kind="channel" from={range.from} to={range.to} />
+            </div>
+            <p className="muted">
+              Online orders on this platform, all introduced by a distributor. A
+              repeat purchase follows an earlier settled order by the same
+              customer. Offline and service-centre sales are recorded in
+              RIWAY&apos;s own systems and are not included.
+            </p>
+            {report.data.byChannel.length ? (
+              <div className="table-scroll">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Market</th>
+                      <th>Channel</th>
+                      <th>Orders</th>
+                      <th>With voucher</th>
+                      <th>Discounts</th>
+                      <th>Total</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {report.data.byChannel.map((r) => (
+                      <tr key={`${r.market}:${r.channel}`}>
+                        <td>{r.market}</td>
+                        <td>{salesChannelLabels[r.channel]}</td>
+                        <td>{r.orders}</td>
+                        <td>{r.voucherOrders}</td>
                         <td>{money(r.discountMinor, r.currency)}</td>
                         <td>{money(r.totalMinor, r.currency)}</td>
                       </tr>

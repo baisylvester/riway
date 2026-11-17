@@ -105,6 +105,8 @@ export type Notification =
   | { type: "inventory_alert"; reference: string }
   | { type: "membership_requested"; reference: string }
   | { type: "membership_confirmed"; reference: string }
+  | { type: "order_shipped"; reference: string }
+  | { type: "order_delivered"; reference: string }
   | {
       type: "store_owner_onboarding";
       reference: string;
@@ -153,6 +155,34 @@ export function reportDate(now: Date, timezone = "Asia/Shanghai", hour = 9) {
 }
 
 export function notificationContent(notification: Notification) {
+  if (
+    notification.type === "order_shipped" ||
+    notification.type === "order_delivered"
+  ) {
+    const origin = new URL(
+      process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
+    );
+    if (
+      !["http:", "https:"].includes(origin.protocol) ||
+      origin.username ||
+      origin.password
+    )
+      throw new Error("Invalid notification site URL");
+    // Tracking details stay in the signed-in account rather than in email.
+    const link = new URL("/account/orders", origin.origin).href;
+    const shipped = notification.type === "order_shipped";
+    const subject = shipped
+      ? "Your RIWAY order is on its way"
+      : "Your RIWAY order has been delivered";
+    const body = shipped
+      ? "Your order has been dispatched. Sign in to your account to see the carrier, tracking details or collection information."
+      : "Your order has been marked as delivered. If anything is missing or damaged, contact RIWAY support from your account.";
+    return {
+      subject,
+      text: `${body}\n\nYour orders: ${link}`,
+      html: `<p>${escaped(body)}</p><p><a href="${escaped(link)}">View your orders</a></p>`,
+    };
+  }
   if (
     notification.type === "membership_requested" ||
     notification.type === "membership_confirmed"

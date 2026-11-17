@@ -5,6 +5,8 @@ import { money } from "@/lib/domain";
 import { Reorder } from "@/components/reorder";
 import { OrderPayment } from "@/components/order-payment";
 import { stripeReadiness } from "@/lib/stripe-config";
+import { orderFulfilmentSchema, orderStatusLabels } from "@/lib/fulfilment";
+import { FulfilmentTimeline } from "@/components/fulfilment-timeline";
 export default async function Order({
   params,
 }: {
@@ -21,12 +23,24 @@ export default async function Order({
     .maybeSingle();
   if (!o) notFound();
   const payment = await client.rpc("stripe_checkout_status", { p_order: id });
+  // Delivery progress appears once payment is confirmed; a missing or
+  // unexpected response simply omits it rather than breaking the order page.
+  const fulfilment =
+    o.payment_status === "paid"
+      ? orderFulfilmentSchema.safeParse(
+          (await client.rpc("order_fulfilment", { p_order: id })).data,
+        )
+      : null;
   return (
     <div className="panel">
       <h2>Order {id.slice(0, 8).toUpperCase()}</h2>
       <p>
-        <span className="status">{o.status}</span> Payment: {o.payment_status}
+        <span className="status">{orderStatusLabels[o.status] ?? o.status}</span>{" "}
+        Payment: {o.payment_status}
       </p>
+      {fulfilment?.success && fulfilment.data.orderId === id && (
+        <FulfilmentTimeline fulfilment={fulfilment.data} />
+      )}
       {o.order_items.map(
         (i: {
           id: string;

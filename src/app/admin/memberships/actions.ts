@@ -6,6 +6,7 @@ import {
   membershipApprovalSchema,
   membershipConfirmationSchema,
   membershipEnrollmentSchema,
+  membershipRejectionSchema,
   membershipRuleSchema,
   membershipWithdrawalSchema,
 } from "@/lib/membership";
@@ -217,6 +218,56 @@ export async function confirmMembershipEnrollment(
   } catch {
     return {
       message: "Membership verification could not be reached. Please retry.",
+    };
+  }
+}
+
+export async function rejectMembershipEnrollment(
+  _: MembershipActionResult,
+  form: FormData,
+): Promise<MembershipActionResult> {
+  try {
+    const current = await writer();
+    if (!current)
+      return {
+        message: "Staff access and authenticator verification are required.",
+      };
+    const parsed = membershipRejectionSchema.safeParse({
+      enrollmentId: form.get("enrollmentId"),
+      reference: form.get("reference"),
+      acknowledged: form.get("acknowledged") === "on",
+    });
+    if (!parsed.success)
+      return {
+        message:
+          "Enter a review reference and confirm that RIWAY could not verify this application.",
+      };
+    const input = parsed.data;
+    const { data, error } = await current.client.rpc(
+      "reject_membership_enrollment",
+      { p_enrollment: input.enrollmentId, p_reference: input.reference },
+    );
+    if (error) return { message: problem(error.code) };
+    const enrollment = membershipEnrollmentSchema.safeParse(data);
+    if (
+      !enrollment.success ||
+      enrollment.data.id !== input.enrollmentId ||
+      enrollment.data.status !== "rejected" ||
+      !enrollment.data.rejectedAt
+    )
+      return {
+        message:
+          "The review response could not be confirmed. Reload before trying again.",
+      };
+    refresh();
+    return {
+      ok: true,
+      message:
+        "Application marked as not confirmed. The customer may apply again with a new qualifying purchase. The paid order was not refunded or cancelled.",
+    };
+  } catch {
+    return {
+      message: "Membership review could not be reached. Please retry.",
     };
   }
 }

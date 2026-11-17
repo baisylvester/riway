@@ -126,6 +126,7 @@ try {
     "commerce_drafts.sql",
     "commerce_checkout.sql",
     "membership.sql",
+    "fulfilment.sql",
     "reports.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));

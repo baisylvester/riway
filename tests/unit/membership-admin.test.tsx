@@ -19,6 +19,7 @@ vi.mock("next/cache", () => ({ revalidatePath: f.revalidate }));
 import {
   approveMembershipRule,
   confirmMembershipEnrollment,
+  rejectMembershipEnrollment,
   withdrawMembershipRule,
 } from "../../src/app/admin/memberships/actions";
 import MembershipAdministration from "../../src/app/admin/memberships/page";
@@ -26,6 +27,7 @@ import AccountMembership from "../../src/app/account/membership/page";
 import {
   MembershipApprovalForm,
   MembershipConfirmationForm,
+  MembershipRejectionForm,
 } from "../../src/components/membership-admin-forms";
 import { MembershipDocuments } from "../../src/components/membership-admin-records";
 
@@ -272,6 +274,60 @@ describe("membership administration actions", () => {
       p_external_member_id: "EXTERNAL-TEST-ID",
       p_reference: "TEST-VERIFICATION",
     });
+  });
+
+  it("rejects an unverifiable application only after acknowledgement and a verified result", async () => {
+    const rejection = () =>
+      form({ enrollmentId, reference: "TEST-REVIEW", acknowledged: "on" });
+    const unchecked = rejection();
+    unchecked.delete("acknowledged");
+    await rejectMembershipEnrollment({ message: "" }, unchecked);
+    const short = rejection();
+    short.set("reference", "no");
+    await rejectMembershipEnrollment({ message: "" }, short);
+    expect(f.rpc).not.toHaveBeenCalled();
+    f.rpc.mockResolvedValueOnce({ data: enrollment(), error: null });
+    expect(
+      (await rejectMembershipEnrollment({ message: "" }, rejection())).ok,
+    ).not.toBe(true);
+    f.rpc.mockResolvedValueOnce({
+      data: {
+        ...enrollment(),
+        status: "rejected",
+        rejectedAt: timestamp,
+        rejectionReference: "TEST-REVIEW",
+      },
+      error: null,
+    });
+    const result = await rejectMembershipEnrollment(
+      { message: "" },
+      rejection(),
+    );
+    expect(result.ok).toBe(true);
+    expect(result.message).toContain("not refunded");
+    expect(f.rpc).toHaveBeenLastCalledWith("reject_membership_enrollment", {
+      p_enrollment: enrollmentId,
+      p_reference: "TEST-REVIEW",
+    });
+    f.access.mockResolvedValue({ user: { id: userId }, allowed: true, mfa: false });
+    f.rpc.mockClear();
+    expect(
+      (await rejectMembershipEnrollment({ message: "" }, rejection())).ok,
+    ).not.toBe(true);
+    expect(f.rpc).not.toHaveBeenCalled();
+  });
+
+  it("shows the rejection control only for paid applications awaiting verification", () => {
+    const pending = renderToStaticMarkup(
+      <MembershipRejectionForm enrollment={enrollment()} />,
+    );
+    expect(pending).toContain("does not refund or cancel the paid order");
+    for (const status of ["pending_payment", "confirmed", "rejected"] as const)
+      expect(
+        renderToStaticMarkup(
+          <MembershipRejectionForm enrollment={{ ...enrollment(), status }} />,
+        ),
+      ).toBe("");
   });
 
   it("returns retryable feedback after a transport failure without claiming success", async () => {

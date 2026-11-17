@@ -10,16 +10,23 @@ import {
 } from "@/components/admin-forms";
 import { money, type Product } from "@/lib/domain";
 import { pageNumber } from "@/lib/pagination";
+import { orderStatusLabels } from "@/lib/fulfilment";
+import { OrderFulfilmentAdmin } from "@/components/order-fulfilment-admin";
+import { z } from "zod";
 export default async function AdminSection({
   params,
   searchParams,
 }: {
   params: Promise<{ section: string }>;
-  searchParams: Promise<{ edit?: string; page?: string }>;
+  searchParams: Promise<{ edit?: string; page?: string; order?: string }>;
 }) {
   const { section } = await params;
-  const { edit, page: rawPage } = await searchParams;
+  const { edit, page: rawPage, order } = await searchParams;
   const page = pageNumber(rawPage);
+  if (section === "orders" && order !== undefined) {
+    if (!z.uuid().safeParse(order).success) notFound();
+    return <OrderFulfilmentAdmin orderId={order} />;
+  }
   const { client } = await session();
   const { data: products } = await client
     .from("products")
@@ -238,11 +245,15 @@ export default async function AdminSection({
             <tbody>
               {rows.map((r) => (
                 <tr key={r.id}>
-                  <td>{r.id.slice(0, 8).toUpperCase()}</td>
+                  <td>
+                    <Link href={`/admin/orders?order=${r.id}`}>
+                      {r.id.slice(0, 8).toUpperCase()}
+                    </Link>
+                  </td>
                   <td>{r.market}</td>
                   <td>{money(r.total_minor, r.currency)}</td>
                   <td>{r.payment_status}</td>
-                  <td>{r.status}</td>
+                  <td>{orderStatusLabels[r.status] ?? r.status}</td>
                 </tr>
               ))}
             </tbody>

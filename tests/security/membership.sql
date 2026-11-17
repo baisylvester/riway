@@ -160,6 +160,52 @@ do $$ declare e private.membership_enrollments; j private.notification_jobs; beg
  if not private.notification_authorized(j.id,j.lease) then raise exception 'FAIL: valid requested notification denied'; end if;
 end $$;
 
+-- Rejection runs inside a rolled-back subtransaction, so the confirmation checks
+-- below still start from the same pending enrolment.
+set local role authenticated;
+do $$ declare who text; r jsonb; second_cart jsonb:=jsonb_build_array(jsonb_build_object('productId',current_setting('membership_qa.package2'),'quantity',1)); begin
+ foreach who in array array['customer','editor','wrong'] loop
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.'||who),'role','authenticated','aal','aal2')::text,true);
+  begin
+   perform public.reject_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'ROLLBACK-REJECT');
+   raise exception 'FAIL: unauthorized membership rejection';
+  exception when insufficient_privilege then null; end;
+ end loop;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.admin'),'role','authenticated','aal','aal1')::text,true);
+ begin
+  perform public.reject_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'ROLLBACK-REJECT');
+  raise exception 'FAIL: rejection without MFA';
+ exception when insufficient_privilege then null; end;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.admin'),'role','authenticated','aal','aal2')::text,true);
+ begin
+  perform public.reject_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'no');
+  raise exception 'FAIL: rejection without reference';
+ exception when raise_exception then if SQLERRM<>'A review reference is required' then raise; end if; end;
+ begin
+  r:=public.reject_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,' ROLLBACK-REJECT ');
+  if r->>'status'<>'rejected' or r->>'rejectionReference'<>'ROLLBACK-REJECT' or r->>'rejectedAt' is null then raise exception 'FAIL: membership rejection'; end if;
+  if public.reject_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'ROLLBACK-REJECT')->>'status'<>'rejected' then raise exception 'FAIL: rejection replay'; end if;
+  begin
+   perform public.reject_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'DIFFERENT-REJECT');
+   raise exception 'FAIL: conflicting rejection replay';
+  exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
+  begin
+   perform public.confirm_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-REJECTED','ROLLBACK-CONFIRM');
+   raise exception 'FAIL: rejected enrolment confirmed';
+  exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
+  if (select count(*) from public.audit_logs where action='MEMBERSHIP_REJECT:PH' and entity_id=current_setting('membership_qa.enrollment'))<>1 then raise exception 'FAIL: rejection audit'; end if;
+  -- A rejected applicant may apply again with another qualifying purchase.
+  perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.customer'),'role','authenticated','aal','aal1')::text,true);
+  if public.quote_commerce_checkout('PH',second_cart)->'membership'->>'ruleId' is distinct from current_setting('membership_qa.rule2') then raise exception 'FAIL: rejected customer cannot re-apply'; end if;
+  if public.my_memberships()->'membership'<>'null'::jsonb then raise exception 'FAIL: rejection granted membership'; end if;
+  raise exception 'ROLLBACK_REJECTION';
+ exception when raise_exception then if SQLERRM<>'ROLLBACK_REJECTION' then raise; end if; end;
+ -- After the rollback the enrolment is pending again, which still blocks a second application.
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.customer'),'role','authenticated','aal','aal1')::text,true);
+ if public.quote_commerce_checkout('PH',second_cart)->'membership'<>'null'::jsonb then raise exception 'FAIL: pending enrolment allowed a second application'; end if;
+end $$;
+reset role;
+
 set local role authenticated;
 do $$ declare who text; r jsonb; begin
  foreach who in array array['customer','editor','wrong'] loop
@@ -180,6 +226,11 @@ do $$ declare who text; r jsonb; begin
  perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.customer'),'role','authenticated','aal','aal1')::text,true);
  if public.my_memberships()->'membership'->>'status'<>'active' or public.my_memberships()->'membership'->>'tier'<>'Sample tier 1'
  or public.quote_commerce_checkout('PH',current_setting('membership_qa.cart')::jsonb)->'membership'<>'null'::jsonb then raise exception 'FAIL: confirmed membership summary'; end if;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.admin'),'role','authenticated','aal','aal2')::text,true);
+ begin
+  perform public.reject_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'ROLLBACK-REJECT');
+  raise exception 'FAIL: confirmed enrolment rejected';
+ exception when raise_exception then if SQLERRM<>'Only an enrolment awaiting RIWAY confirmation can be rejected' then raise; end if; end;
 end $$;
 reset role;
 do $$ declare j private.notification_jobs; begin

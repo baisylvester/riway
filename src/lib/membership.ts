@@ -11,7 +11,14 @@ const tierCode = z
   .regex(/^[A-Z0-9_-]{2,40}$/);
 const tierName = z.string().trim().min(2).max(80);
 const timestamp = z.string().datetime({ offset: true });
-const reference = z.string().trim().min(5).max(200);
+const reference = z
+  .string()
+  .trim()
+  .min(5)
+  .max(200)
+  .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), {
+    message: "Remove unsupported characters from the reference.",
+  });
 
 export const membershipQualificationSchema = z.object({
   ruleId: z.uuid(),
@@ -65,6 +72,7 @@ export const membershipEnrollmentSchema = z.object({
     "confirmed",
     "not_applied",
     "cancelled",
+    "rejected",
   ]),
   packageName: z.string().min(1).max(120),
   quantity: z.number().int().min(1).max(24),
@@ -81,6 +89,8 @@ export const membershipEnrollmentSchema = z.object({
   codeText: documentText,
   externalMemberId: z.string().min(1).max(128).nullable().optional(),
   confirmationReference: reference.nullable().optional(),
+  rejectedAt: timestamp.nullable().optional(),
+  rejectionReference: reference.nullable().optional(),
 });
 export type MembershipEnrollment = z.infer<typeof membershipEnrollmentSchema>;
 
@@ -129,6 +139,11 @@ export const membershipConfirmationSchema = z.object({
   reference,
   verified: z.literal(true),
 });
+export const membershipRejectionSchema = z.object({
+  enrollmentId: z.uuid(),
+  reference,
+  acknowledged: z.literal(true),
+});
 
 export const membershipStatusLabels = {
   pending_payment: "Awaiting payment",
@@ -136,4 +151,5 @@ export const membershipStatusLabels = {
   confirmed: "Confirmed by RIWAY",
   not_applied: "Not applied - existing membership or request",
   cancelled: "Payment cancelled",
+  rejected: "Not confirmed by RIWAY",
 } as const;

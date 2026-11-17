@@ -7,6 +7,7 @@ import {
   ContentForm,
   StockForm,
   OfferForm,
+  RecommendationForm,
 } from "@/components/admin-forms";
 import { money, type Product } from "@/lib/domain";
 import { pageNumber } from "@/lib/pagination";
@@ -33,6 +34,19 @@ export default async function AdminSection({
     .select("*")
     .order("name");
   const ps = (products ?? []) as Product[];
+  const editing = edit ? ps.find((p) => p.id === edit) : undefined;
+  const recommended =
+    section === "products" && editing
+      ? (
+          (
+            await client
+              .from("product_recommendations")
+              .select("recommended_id,position")
+              .eq("product_id", editing.id)
+              .order("position")
+          ).data ?? []
+        ).map((r: { recommended_id: string }) => r.recommended_id)
+      : [];
   if (section === "products")
     return (
       <>
@@ -43,7 +57,16 @@ export default async function AdminSection({
           </Link>
         </div>
         {edit ? (
-          <ProductForm product={ps.find((p) => p.id === edit)} />
+          <>
+            <ProductForm product={editing} />
+            {editing && (
+              <RecommendationForm
+                product={editing}
+                products={ps}
+                current={recommended}
+              />
+            )}
+          </>
         ) : (
           <div className="table-scroll">
             <table>

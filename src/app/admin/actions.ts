@@ -3,6 +3,7 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { session, staffAccess } from "@/lib/data";
 import { eventDateSchema, marketSchema } from "@/lib/domain";
+import { recommendationRequestSchema } from "@/lib/recommendations";
 type Result = { message: string; ok?: boolean };
 export async function resolveSupport(id: string) {
   if (!z.uuid().safeParse(id).success || !(await staff())) return;
@@ -56,6 +57,42 @@ export async function saveProduct(_: Result, f: FormData): Promise<Result> {
       ? "Save failed. Check your role; publishing requires compliance approval."
       : "Product saved.",
     ok: !error,
+  };
+}
+export async function saveRecommendations(
+  _: Result,
+  f: FormData,
+): Promise<Result> {
+  if (!(await staff())) return { message: "Staff access and MFA required." };
+  const v = recommendationRequestSchema.safeParse({
+    productId: f.get("productId"),
+    picks: f
+      .getAll("pick")
+      .map((value) => (typeof value === "string" ? value : "")),
+  });
+  if (!v.success)
+    return { message: v.error.issues[0]?.message ?? "Check the selections." };
+  const { client } = await session();
+  const { error } = await client.rpc("set_product_recommendations", {
+    p_product: v.data.productId,
+    p_recommended: v.data.picks,
+  });
+  if (error)
+    return {
+      message:
+        error.code === "42501"
+          ? "Admin, editor or compliance access with verified MFA is required."
+          : ["PGRST202", "42883", "42P01"].includes(error.code ?? "")
+            ? "Product recommendations are not available yet."
+            : "Recommendations could not be saved. Reload and try again.",
+    };
+  revalidatePath("/shop/[slug]", "page");
+  revalidatePath("/admin/products");
+  return {
+    ok: true,
+    message: v.data.picks.length
+      ? "Recommendations saved."
+      : "Recommendations cleared.",
   };
 }
 export async function saveContent(_: Result, f: FormData): Promise<Result> {

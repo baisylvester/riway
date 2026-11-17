@@ -1,6 +1,16 @@
 # RIWAY provider rollout — 17 November 2026
 
-## Latest live release - cross-sell and package upsell
+## Latest live release - scheduled sales report emails
+
+PR #27 merged as `4d59e03cb9f715c4b8a9e466171829ab259039b6`. PR CI runs `44041063559` and `44041072119`, and merge CI run `44041326003`, passed the `verify` and `postgres-concurrency` jobs, including the new `scheduled_reports.sql` suite.
+
+Hosted migration `20261117074357_scheduled_sales_reports.sql` was applied before the merge. It replaces `private.notification_authorized` to add a `sales_report` case; the hosted function body was compared with the repository version first and matched. Beforehand, the migration and `tests/security/scheduled_reports.sql` ran on the hosted database inside one rolled-back transaction and passed; a follow-up query found no table, QA users or function change retained. Security advisors show only the pre-existing leaked-password-protection warning and the two documented INFO no-policy notices.
+
+Artifact `14309387829` (19,634,245 bytes) matched SHA-256 `97d262223c5d232881b0db24c9c9828459eca3bfab76c230b25694b343d194e2` before extraction and upload. Cloudflare returned deployment `d426e53c795149e59825a9a88dc14473`, etag `5448df16418c17dd2e2e599f60c175c5967c890d1f19682619022751ae33c4a7`; the notification schedule was reapplied. Live checks on 17 November passed 53 HTTP/API cases; signed-out `/admin/reports` redirects to login, and the notification worker still returns 503 (not configured) because email delivery is off.
+
+Scope: market admin/operations staff with verified MFA subscribe themselves per market to weekly (Mondays, previous Monday–Sunday) or monthly (1st, previous month) sales summary emails. Reports are queued at the existing daily report hour, deduplicated per period, and rechecked against the subscription and role at delivery. Nothing is sent until RIWAY enables email. Real delivery and the signed-in panel were not tested.
+
+## Previous live release - cross-sell and package upsell
 
 PR #25 merged as `2977b11f23e4bfb54c86c81be46043508b49e230`. PR CI runs `44039521408` and `44039530657`, and merge CI run `44039788841`, passed the `verify` and `postgres-concurrency` jobs, including the new `recommendations.sql` suite.
 

@@ -1296,3 +1296,42 @@ th {
     flex-wrap: wrap;
   }
 }
+/* Cookie consent: shown only when optional measurement is configured. */
+.consent-banner {
+  position: fixed;
+  z-index: 1000;
+  right: 16px;
+  bottom: 16px;
+  left: 16px;
+  max-width: 560px;
+  margin-left: auto;
+  padding: 20px;
+  border: 1px solid var(--border);
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 0 12px 40px rgb(20 20 22 / 18%);
+}
+.consent-banner h2 {
+  margin: 0 0 8px;
+  font-size: 20px;
+}
+.consent-banner p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.5;
+}
+.consent-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+.link-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}

@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { analyticsConfig, measurementCspOrigins } from "./src/lib/consent";
 function configuredOrigin(value?: string) {
   if (!value) return "";
   const url = new URL(value);
@@ -16,12 +17,15 @@ const r2Origin =
   process.env.R2_ACCOUNT_ID && /^[a-f0-9]{32}$/.test(process.env.R2_ACCOUNT_ID)
     ? `https://${process.env.R2_ACCOUNT_ID}.r2.cloudflarestorage.com`
     : "";
+// Measurement providers are allowed only when their IDs are set at build time;
+// the scripts themselves still load only after the visitor consents.
+const measurement = measurementCspOrigins(analyticsConfig(process.env));
 const policy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${clerkOrigin ? `${clerkOrigin} https://challenges.cloudflare.com https://*.protect.clerk.com` : ""}`,
+  `script-src 'self' 'unsafe-inline' ${clerkOrigin ? `${clerkOrigin} https://challenges.cloudflare.com https://*.protect.clerk.com` : ""} ${measurement.script.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: https://static.wixstatic.com https://skiimthwadramxdzhgoy.supabase.co ${r2Origin} ${clerkOrigin ? "https://img.clerk.com" : ""}`,
-  `connect-src 'self' https://skiimthwadramxdzhgoy.supabase.co ${clerkOrigin ? `${clerkOrigin} https://*.protect.clerk.com:*` : ""}`,
+  `img-src 'self' data: https://static.wixstatic.com https://skiimthwadramxdzhgoy.supabase.co ${r2Origin} ${clerkOrigin ? "https://img.clerk.com" : ""} ${measurement.img.join(" ")}`,
+  `connect-src 'self' https://skiimthwadramxdzhgoy.supabase.co ${clerkOrigin ? `${clerkOrigin} https://*.protect.clerk.com:*` : ""} ${measurement.connect.join(" ")}`,
   `frame-src 'self' ${clerkOrigin ? "https://challenges.cloudflare.com https://*.protect.clerk.com" : ""}`,
   "worker-src 'self' blob:",
   "font-src 'self'",

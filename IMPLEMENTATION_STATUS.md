@@ -83,7 +83,7 @@ Updated 2026-11-02. Live Cloudflare deployment is verified at https://riway-plat
 | Courier / email / SMS / CRM                                         | Awaiting provider contract                                   | Not connected                                                                                 |
 | Cross-sell / upsell                                                 | Implemented; migration `20261117073214` applied              | Staff-curated "pairs well with" (up to 4, admin/editor/compliance with MFA) and approved packages containing the product; shown only when published and priced in the visitor's market |
 | Promotions / subscriptions / automated reorders                     | Deferred pending business rules                              | Not implemented as official RIWAY policies                                                    |
-| SEO migration / translations / consented analytics                  | Sitemap + hreflang built; rest pending content/domain plan   | `/sitemap.xml` with en + x-default hreflang; noindex until `SEARCH_INDEXING=enabled`; no tracking |
+| SEO migration / translations / consented analytics                  | Sitemap + hreflang built; rest pending content/domain plan   | `/sitemap.xml` with en + x-default hreflang; noindex until `SEARCH_INDEXING=enabled`. GA4 / Meta Pixel built behind opt-in consent; inactive until RIWAY's IDs are set as `NEXT_PUBLIC_GA4_MEASUREMENT_ID` / `NEXT_PUBLIC_META_PIXEL_ID` repository variables |
 | Backups / restore / load / accessibility / monitoring               | Runbooks and health endpoint prepared                        | Operational setup and acceptance tests remain                                                 |
 
 ## Database changes

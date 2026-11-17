@@ -1,5 +1,6 @@
 "use client";
 import Link from "next/link";
+import { CookieSettingsButton } from "./consent-manager";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowUpRight,
@@ -222,6 +223,7 @@ export function Footer() {
         <span>Development preview · Online purchasing unavailable</span>
         <Link href="/legal/privacy">Privacy</Link>
         <Link href="/legal/cookies">Cookies</Link>
+        <CookieSettingsButton />
       </div>
     </footer>
   );

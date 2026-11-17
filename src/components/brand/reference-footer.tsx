@@ -1,3 +1,5 @@
+import { CookieSettingsButton } from "../consent-manager";
+
 export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
   if (brand !== "RIWAY")
     return (
@@ -59,6 +61,7 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
             approved product information.
           </span>
           <span>© RIWAY International Group</span>
+          <CookieSettingsButton />
         </div>
       </footer>
     );
@@ -101,6 +104,7 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
           prohibited from selling any RIWAY products via any online means.
         </span>
         <span>© RIWAY International Group</span>
+        <CookieSettingsButton />
       </div>
     </footer>
   );

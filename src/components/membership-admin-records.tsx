@@ -5,7 +5,10 @@ import {
   type MembershipEnrollment,
   type MembershipRule,
 } from "@/lib/membership";
-import { MembershipConfirmationForm } from "./membership-admin-forms";
+import {
+  MembershipConfirmationForm,
+  MembershipRejectionForm,
+} from "./membership-admin-forms";
 
 function date(value: string) {
   return `${new Date(value).toLocaleString("en-SG", {
@@ -56,6 +59,8 @@ const explanations = {
     "A membership or earlier application already exists. This purchase did not create another membership.",
   cancelled:
     "The qualifying payment was cancelled. This application did not create a membership.",
+  rejected:
+    "RIWAY could not verify this application against its member records. No membership was created. You may apply again with a new qualifying purchase, or contact RIWAY support.",
 };
 
 export function MembershipEnrollmentRecord({
@@ -138,12 +143,25 @@ export function MembershipEnrollmentRecord({
             <dd>{enrollment.confirmationReference}</dd>
           </>
         )}
+        {enrollment.rejectedAt && (
+          <>
+            <dt>Reviewed, not confirmed</dt>
+            <dd>{date(enrollment.rejectedAt)}</dd>
+          </>
+        )}
+        {staff && enrollment.rejectionReference && (
+          <>
+            <dt>Review reference</dt>
+            <dd>{enrollment.rejectionReference}</dd>
+          </>
+        )}
       </dl>
       <MembershipDocuments
         record={enrollment}
         consentedAt={enrollment.consentedAt}
       />
       {staff && <MembershipConfirmationForm enrollment={enrollment} />}
+      {staff && <MembershipRejectionForm enrollment={enrollment} />}
     </article>
   );
 }

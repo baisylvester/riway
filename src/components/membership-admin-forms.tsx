@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import {
   approveMembershipRule,
   confirmMembershipEnrollment,
+  rejectMembershipEnrollment,
   withdrawMembershipRule,
 } from "@/app/admin/memberships/actions";
 import type { CommerceOffer } from "@/lib/commerce-offers";
@@ -219,6 +220,50 @@ export function MembershipConfirmationForm({
           </label>
           <button className="button">
             {pending ? "Confirming…" : "Confirm verified RIWAY record"}
+          </button>
+        </fieldset>
+        <p role="status">{state.message}</p>
+      </form>
+    </details>
+  );
+}
+
+export function MembershipRejectionForm({
+  enrollment,
+}: {
+  enrollment: MembershipEnrollment;
+}) {
+  const [state, action, pending] = useActionState(rejectMembershipEnrollment, {
+    message: "",
+  });
+  if (enrollment.status !== "pending_verification") return null;
+  return (
+    <details>
+      <summary>Could not verify against RIWAY records</summary>
+      <form action={action} className="stack" aria-busy={pending}>
+        <input type="hidden" name="enrollmentId" value={enrollment.id} />
+        <p>
+          Use this only when this customer cannot be matched to a RIWAY member
+          record. The customer may apply again with a new qualifying purchase.
+          This does not refund or cancel the paid order.
+        </p>
+        <fieldset
+          className="stack"
+          disabled={pending || !!state.ok}
+          style={{ border: 0, margin: 0, padding: 0 }}
+        >
+          <label>
+            Review reference
+            <input name="reference" required minLength={5} maxLength={200} />
+          </label>
+          <label className="checkbox">
+            <input name="acknowledged" type="checkbox" required />
+            <span>
+              I checked RIWAY’s records and could not verify this application.
+            </span>
+          </label>
+          <button className="button button-outline">
+            {pending ? "Saving…" : "Mark as not confirmed"}
           </button>
         </fieldset>
         <p role="status">{state.message}</p>

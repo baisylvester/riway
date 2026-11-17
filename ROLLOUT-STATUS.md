@@ -1,6 +1,16 @@
 # RIWAY provider rollout — 17 November 2026
 
-## Latest live release - sitemap, hreflang and launch-gated indexing
+## Latest live release - unpaid order cancellation
+
+PR #21 merged as `d1f9f03784d7c486b1a56f6e136c1c047fc3df5d`. PR CI runs `44036606120` and `44036614183`, and merge CI run `44036875205`, passed the `verify` and `postgres-concurrency` jobs; the PostgreSQL job loaded all 20 migrations and ran the new `cancellation.sql` suite.
+
+Hosted migration `20261117070936_order_cancellation.sql` was applied before the merge. Beforehand, the migration and `tests/security/cancellation.sql` ran on the hosted database inside one rolled-back transaction and passed; a follow-up query found no cancellation table, QA users or QA products retained and PH online sales still closed. Security advisors show only the pre-existing leaked-password-protection warning and the two documented INFO no-policy notices.
+
+Artifact `14306919697` (19,616,218 bytes) matched SHA-256 `ec3fcce68ad1400bcbac95360cc91b714f84ed23a864a6af69c7ae888977ee1c` before extraction and upload. Cloudflare returned deployment `8ac15f8945fd436a9238502f815d593f`, etag `f9eae1cd78ca37e56b78852d2c0a2e796c5eaaf55dc0a4897af8a1d53e73959b`; the notification schedule was reapplied. Live checks on 17 November passed 53 HTTP/API cases; signed-out `/account/orders/<id>` and `/admin/orders?order=<id>` redirect to login.
+
+Scope: the owner, or market admin/operations staff with verified MFA and a reason, can cancel an unpaid order that has no payment attempt. The stock hold, reserved voucher use and pending membership enrolment are released, and the cancellation is recorded and audited. Paid orders and orders with a started payment are refused; refunds remain deferred. Signed-in customer and staff browser flows were not tested: no live session was available and closed markets mean there are no live orders.
+
+## Previous live release - sitemap, hreflang and launch-gated indexing
 
 PR #19 merged as `fe78547566d362b49e1eaea716fadd114f1dd6bc`. PR CI and merge CI run `44035269496` passed the `verify` and `postgres-concurrency` jobs. No migration or provider change.
 

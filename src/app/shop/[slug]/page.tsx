@@ -1,6 +1,13 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { catalogue, currentMarket, packageComposition } from "@/lib/data";
+import {
+  catalogue,
+  currentMarket,
+  packageCompositions,
+  productRecommendations,
+} from "@/lib/data";
+import { packagesContaining, pairsWith } from "@/lib/recommendations";
+import { ProductSuggestions } from "@/components/product-suggestions";
 import { money, markets } from "@/lib/domain";
 import { ProductArt } from "@/components/product-card";
 import { ProductEditorial } from "@/components/brand/editorial";
@@ -16,10 +23,22 @@ export default async function ProductPage({
   const p = products.find((p) => p.slug === slug);
   if (!p) notFound();
   const market = await currentMarket();
+  // A package page needs its composition; elsewhere compositions only feed
+  // optional suggestions, so a lookup failure just hides them.
+  const compositions =
+    p.category === "Packages"
+      ? await packageCompositions(market)
+      : await packageCompositions(market).catch(() => []);
   const composition =
     p.category === "Packages"
-      ? await packageComposition(p.id, market)
+      ? compositions.find((item) => item.productId === p.id)
       : undefined;
+  const rows = await productRecommendations(p.id);
+  const pairs = pairsWith(p.id, rows, products, offers, market, compositions);
+  const packages =
+    p.category === "Packages"
+      ? []
+      : packagesContaining(p.id, compositions, products, offers, market);
   const offer = offers.find(
     (o) => o.product_id === p.id && o.market === market,
   );
@@ -91,6 +110,11 @@ export default async function ProductPage({
           </div>
         </div>
       </section>
+      <ProductSuggestions
+        productName={p.name}
+        packages={packages}
+        pairs={pairs}
+      />
       <div id="collection-story">
         <ProductEditorial slug={slug} href="#product-review" />
       </div>

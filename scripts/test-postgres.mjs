@@ -129,6 +129,7 @@ try {
     "fulfilment.sql",
     "reports.sql",
     "cancellation.sql",
+    "recommendations.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');

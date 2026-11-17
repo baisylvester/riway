@@ -7,6 +7,7 @@ import { auth, currentUser } from "@clerk/nextjs/server";
 import { authProvider, secondFactorVerified } from "./auth-config";
 import { cache } from "react";
 import { packageCompositionsSchema } from "./commerce-checkout";
+import { recommendationRowSchema } from "./recommendations";
 export async function currentMarket() {
   return asMarket((await cookies()).get("riway-market")?.value);
 }
@@ -43,10 +44,7 @@ export async function content(kind: string) {
   return data;
 }
 
-export async function packageComposition(
-  productId: string,
-  market: import("./domain").Market,
-) {
+export async function packageCompositions(market: import("./domain").Market) {
   const { data, error } = await (
     await db()
   ).rpc("catalogue_package_compositions", { m: market });
@@ -55,7 +53,35 @@ export async function packageComposition(
     throw new Error(
       "Package information could not be loaded. Please try again.",
     );
-  return parsed.data.find((item) => item.productId === productId);
+  return parsed.data;
+}
+
+export async function packageComposition(
+  productId: string,
+  market: import("./domain").Market,
+) {
+  return (await packageCompositions(market)).find(
+    (item) => item.productId === productId,
+  );
+}
+
+// Staff-curated cross-sell rows. Optional page content: any failure (including
+// a database without the table yet) returns no suggestions.
+export async function productRecommendations(productId: string) {
+  try {
+    const { data, error } = await (
+      await db()
+    )
+      .from("product_recommendations")
+      .select("product_id,recommended_id,position")
+      .eq("product_id", productId)
+      .order("position")
+      .limit(4);
+    const parsed = recommendationRowSchema.array().safeParse(data);
+    return error || !parsed.success ? [] : parsed.data;
+  } catch {
+    return [];
+  }
 }
 
 const previewCatalogue: { products: Product[]; offers: Offer[] } = {

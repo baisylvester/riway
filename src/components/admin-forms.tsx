@@ -5,6 +5,7 @@ import {
   saveContent,
   adjustStock,
   saveOffer,
+  saveRecommendations,
 } from "@/app/admin/actions";
 import { markets, type Product } from "@/lib/domain";
 export function ProductForm({ product }: { product?: Product }) {
@@ -70,6 +71,53 @@ export function ProductForm({ product }: { product?: Product }) {
       </p>
       <button className="button" disabled={p}>
         Save product
+      </button>
+      <p role="status">{s.message}</p>
+    </form>
+  );
+}
+// Staff-curated cross-sell. Shoppers only see picks that are published and
+// priced in their market; leave a slot empty to remove it.
+export function RecommendationForm({
+  product,
+  products,
+  current,
+}: {
+  product: Product;
+  products: Product[];
+  current: string[];
+}) {
+  const [s, a, p] = useActionState(saveRecommendations, { message: "" });
+  const options = products.filter(
+    (o) => o.id !== product.id && o.status !== "archived",
+  );
+  return (
+    <form className="panel stack" action={a}>
+      <h2>Pairs well with</h2>
+      <p className="small muted">
+        Up to four products shown on this product&apos;s page, in this order.
+        Only published products with an approved price in the shopper&apos;s
+        market appear.
+      </p>
+      <input type="hidden" name="productId" value={product.id} />
+      <div className="form-grid">
+        {[0, 1, 2, 3].map((slot) => (
+          <label key={slot}>
+            Suggestion {slot + 1}
+            <select name="pick" defaultValue={current[slot] ?? ""}>
+              <option value="">None</option>
+              {options.map((o) => (
+                <option key={o.id} value={o.id}>
+                  {o.name}
+                  {o.status === "published" ? "" : ` (${o.status})`}
+                </option>
+              ))}
+            </select>
+          </label>
+        ))}
+      </div>
+      <button className="button" disabled={p}>
+        Save suggestions
       </button>
       <p role="status">{s.message}</p>
     </form>

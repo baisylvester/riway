@@ -25,6 +25,18 @@ export async function POST(request: Request) {
     }),
   ).catch(() => ({ data: null, error: { code: "TRANSPORT" } }));
   if (error) {
+    // A fixed, non-sensitive rule refusal: tell the shopper what to change.
+    if (
+      "message" in error &&
+      typeof error.message === "string" &&
+      error.message.includes(
+        "Choose one qualifying membership package per order",
+      )
+    )
+      return failure(
+        "Choose one qualifying membership package per order. Remove the other package to continue.",
+        409,
+      );
     if (["PGRST202", "42883", "42P01"].includes(error.code))
       return failure("Order review is awaiting configuration.", 503);
     if (commerceFailureStatus(error.code) === 503)

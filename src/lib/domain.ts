@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { membershipConsentSchema } from "./membership-consent";
 export const markets = {
   PH: { name: "Philippines", currency: "PHP" },
   SG: { name: "Singapore", currency: "SGD" },
@@ -53,6 +54,7 @@ export const checkoutSchema = z
       .string()
       .regex(/^[a-f0-9]{64}$/)
       .optional(),
+    membershipConsent: membershipConsentSchema.optional(),
   })
   .refine((v) => v.market === v.address.country, {
     message: "Delivery country must match the selected market.",

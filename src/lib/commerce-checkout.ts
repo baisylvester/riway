@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { membershipQualificationSchema } from "./membership";
 import {
   cartSchema,
   marketSchema,
@@ -53,6 +54,7 @@ export const commerceQuoteSchema = z
         code: promotionCodeSchema,
       })
       .nullable(),
+    membership: membershipQualificationSchema.nullable().optional(),
     quoteHash: z.string().regex(/^[a-f0-9]{64}$/),
   })
   .superRefine((quote, ctx) => {
@@ -74,7 +76,15 @@ export const commerceQuoteSchema = z
         quote.items.reduce((sum, item) => sum + item.netMinor, 0) ||
       quote.totalMinor !== quote.subtotalMinor - quote.discountMinor ||
       (quote.promotion === null && quote.discountMinor !== 0);
-    if (invalid)
+    const invalidMembership =
+      quote.membership != null &&
+      !quote.items.some(
+        (item) =>
+          item.productId === quote.membership!.productId &&
+          item.packageOfferId === quote.membership!.packageOfferId &&
+          item.quantity >= quote.membership!.minimumQuantity,
+      );
+    if (invalid || invalidMembership)
       ctx.addIssue({
         code: "custom",
         message: "The quote amounts could not be verified.",

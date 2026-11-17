@@ -122,7 +122,7 @@ describe("checkout authority boundaries", () => {
       request({ ...input, total: 1, currency: "usd", sponsor_id: "forged" }),
     );
     expect(r.status).toBe(200);
-    expect(rpc).toHaveBeenCalledWith("create_commerce_order", {
+    expect(rpc).toHaveBeenCalledWith("create_membership_commerce_order", {
       m: "PH",
       items: input.items,
       delivery: input.address,
@@ -130,6 +130,7 @@ describe("checkout authority boundaries", () => {
       terms: "qa-terms-v1",
       promotion_code: null,
       quote_hash: input.quoteHash,
+      membership_consent: null,
     });
     expect(f.start).toHaveBeenCalledWith(
       orderId,

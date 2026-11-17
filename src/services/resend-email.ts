@@ -103,6 +103,8 @@ export type Notification =
   | { type: "support_received"; reference: string }
   | { type: "event_registered"; reference: string }
   | { type: "inventory_alert"; reference: string }
+  | { type: "membership_requested"; reference: string }
+  | { type: "membership_confirmed"; reference: string }
   | {
       type: "store_owner_onboarding";
       reference: string;
@@ -151,6 +153,33 @@ export function reportDate(now: Date, timezone = "Asia/Shanghai", hour = 9) {
 }
 
 export function notificationContent(notification: Notification) {
+  if (
+    notification.type === "membership_requested" ||
+    notification.type === "membership_confirmed"
+  ) {
+    const origin = new URL(
+      process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
+    );
+    if (
+      !["http:", "https:"].includes(origin.protocol) ||
+      origin.username ||
+      origin.password
+    )
+      throw new Error("Invalid notification site URL");
+    const link = new URL("/account/membership", origin.origin).href;
+    const confirmed = notification.type === "membership_confirmed";
+    const subject = confirmed
+      ? "Your RIWAY membership is confirmed"
+      : "Your RIWAY membership application was received";
+    const body = confirmed
+      ? "Welcome. Your qualifying purchase has been linked to a verified RIWAY member record. Visit your account to review your membership and package history."
+      : "Your qualifying payment was recorded. Your membership application awaits confirmation against RIWAY's records. It does not yet activate member pricing.";
+    return {
+      subject,
+      text: `${body}\n\nYour membership: ${link}`,
+      html: `<p>${escaped(body)}</p><p><a href="${escaped(link)}">View your membership</a></p>`,
+    };
+  }
   if (
     notification.type === "store_owner_onboarding" ||
     notification.type === "low_inventory_report"

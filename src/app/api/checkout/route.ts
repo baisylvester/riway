@@ -53,7 +53,7 @@ export async function POST(request: Request) {
     );
   }
   const order = await Promise.resolve(
-    client.rpc("create_commerce_order", {
+    client.rpc("create_membership_commerce_order", {
       m: input.data.market,
       items: input.data.items,
       delivery: input.data.address,
@@ -61,6 +61,7 @@ export async function POST(request: Request) {
       terms: clients.config.terms,
       promotion_code: input.data.promotionCode ?? null,
       quote_hash: input.data.quoteHash,
+      membership_consent: input.data.membershipConsent ?? null,
     }),
   ).catch(() => ({ data: null, error: { code: "TRANSPORT" } }));
   if (order.error?.code === "40001")

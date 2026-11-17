@@ -24,6 +24,7 @@ export default async function AccountLayout({
       <p className="small muted">{user.email}</p>
       <nav className="tab-links" aria-label="Account navigation">
         <Link href="/account">Overview</Link>
+        <Link href="/account/membership">Membership</Link>
         <Link href="/account/orders">Orders</Link>
         <Link href="/account/addresses">Addresses</Link>
         <Link href="/account/security">Security</Link>

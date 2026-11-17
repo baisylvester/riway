@@ -127,6 +127,7 @@ try {
     "commerce_checkout.sql",
     "membership.sql",
     "fulfilment.sql",
+    "reports.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');

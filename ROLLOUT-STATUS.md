@@ -1,6 +1,14 @@
 # RIWAY provider rollout — 17 November 2026
 
-## Latest live release - membership enrolment and Next.js 16.4.6
+## Latest live release - sitemap, hreflang and launch-gated indexing
+
+PR #19 merged as `fe78547566d362b49e1eaea716fadd114f1dd6bc`. PR CI and merge CI run `44035269496` passed the `verify` and `postgres-concurrency` jobs. No migration or provider change.
+
+Artifact `14306538391` (19,608,932 bytes) matched SHA-256 `977987aaf926292bdc2505e3172a4ac1570f1ffcf1e15f66b77f4d657026439c` before extraction and upload with `scripts/deploy-cloudflare-artifact.mjs`. The first upload attempt failed with Cloudflare 401 at the Worker upload step after assets were sent; an immediate retry succeeded. Cloudflare returned deployment `9a692d7441ec486992105b7b1d822412`, etag `20e771c75ca5ddd735b87828ed171c34841eb5c9bb038391d0b5230e4ea389d1`; the notification schedule was reapplied.
+
+Live checks on 17 November passed 53 HTTP/API cases. `/robots.txt` still returns `Disallow: /` and pages still carry `noindex, nofollow`, because `SEARCH_INDEXING` is not set. `/sitemap.xml` returns 17 URLs with `en` and `x-default` hreflang alternates. Setting `SEARCH_INDEXING=enabled` after RIWAY approves launch opens public pages, keeps private/staff/checkout/distributor-link paths disallowed and advertises the sitemap; that path was verified on a local production build only. Per-locale hreflang awaits localized URLs.
+
+## Previous live release - membership enrolment and Next.js 16.4.6
 
 PR #15 merged as `28aefffa4e1265f4af4d1508a62317c303bcb6f8` from tested head `6fe628c`. Merge CI run `44004935400` passed the `verify` and `postgres-concurrency` jobs.
 

@@ -1,7 +1,28 @@
 import { z } from "zod";
 
 // Mirrors private.staff_sales_report. Dates are inclusive UTC calendar days.
-export const reportKinds = ["market", "product", "package", "distributor"] as const;
+export const reportKinds = [
+  "market",
+  "channel",
+  "product",
+  "package",
+  "distributor",
+] as const;
+
+// Channels of this online platform, derived in SQL from recorded order facts.
+export const salesChannels = [
+  "membership_enrolment",
+  "first_purchase",
+  "repeat_purchase",
+] as const;
+export const salesChannelLabels: Record<
+  (typeof salesChannels)[number],
+  string
+> = {
+  membership_enrolment: "Membership enrolment",
+  first_purchase: "First purchase",
+  repeat_purchase: "Repeat purchase",
+};
 export type ReportKind = (typeof reportKinds)[number];
 
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
@@ -16,9 +37,12 @@ function parseDay(value: unknown) {
 /** Valid inclusive range of at most 367 days; otherwise the last 30 days. */
 export function reportRange(from: unknown, to: unknown, now = new Date()) {
   const end = parseDay(to) ?? day(now);
-  const fallbackStart = day(new Date(Date.parse(`${end}T00:00:00Z`) - 29 * 864e5));
+  const fallbackStart = day(
+    new Date(Date.parse(`${end}T00:00:00Z`) - 29 * 864e5),
+  );
   const start = parseDay(from) ?? fallbackStart;
-  const span = (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 864e5;
+  const span =
+    (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 864e5;
   if (span < 0 || span > 366)
     return { from: fallbackStart, to: end, adjusted: true };
   return { from: start, to: end, adjusted: false };
@@ -43,6 +67,20 @@ export const salesReportSchema = z.object({
       totalMinor: amount,
     }),
   ),
+  // Absent before the channel migration; an empty list keeps the page usable.
+  byChannel: z
+    .array(
+      z.object({
+        market,
+        currency,
+        channel: z.enum(salesChannels),
+        orders: count,
+        voucherOrders: count,
+        discountMinor: amount,
+        totalMinor: amount,
+      }),
+    )
+    .default([]),
   byProduct: z.array(
     z.object({
       market,
@@ -81,22 +119,101 @@ export type SalesReport = z.infer<typeof salesReportSchema>;
 export function reportRows(report: SalesReport, kind: ReportKind) {
   if (kind === "market")
     return {
-      columns: ["market", "currency", "orders", "subtotal_minor", "discount_minor", "total_minor"],
-      rows: report.byMarket.map((r) => [r.market, r.currency, r.orders, r.subtotalMinor, r.discountMinor, r.totalMinor]),
+      columns: [
+        "market",
+        "currency",
+        "orders",
+        "subtotal_minor",
+        "discount_minor",
+        "total_minor",
+      ],
+      rows: report.byMarket.map((r) => [
+        r.market,
+        r.currency,
+        r.orders,
+        r.subtotalMinor,
+        r.discountMinor,
+        r.totalMinor,
+      ]),
+    };
+  if (kind === "channel")
+    return {
+      columns: [
+        "market",
+        "currency",
+        "channel",
+        "orders",
+        "voucher_orders",
+        "discount_minor",
+        "total_minor",
+      ],
+      rows: report.byChannel.map((r) => [
+        r.market,
+        r.currency,
+        r.channel,
+        r.orders,
+        r.voucherOrders,
+        r.discountMinor,
+        r.totalMinor,
+      ]),
     };
   if (kind === "product")
     return {
-      columns: ["market", "currency", "product_id", "product", "units", "net_minor"],
-      rows: report.byProduct.map((r) => [r.market, r.currency, r.productId, r.name, r.units, r.netMinor]),
+      columns: [
+        "market",
+        "currency",
+        "product_id",
+        "product",
+        "units",
+        "net_minor",
+      ],
+      rows: report.byProduct.map((r) => [
+        r.market,
+        r.currency,
+        r.productId,
+        r.name,
+        r.units,
+        r.netMinor,
+      ]),
     };
   if (kind === "package")
     return {
-      columns: ["market", "currency", "package_offer_id", "package", "units", "net_minor"],
-      rows: report.byPackage.map((r) => [r.market, r.currency, r.packageOfferId, r.name, r.units, r.netMinor]),
+      columns: [
+        "market",
+        "currency",
+        "package_offer_id",
+        "package",
+        "units",
+        "net_minor",
+      ],
+      rows: report.byPackage.map((r) => [
+        r.market,
+        r.currency,
+        r.packageOfferId,
+        r.name,
+        r.units,
+        r.netMinor,
+      ]),
     };
   return {
-    columns: ["market", "currency", "distributor_id", "distributor_code", "distributor", "orders", "total_minor"],
-    rows: report.byDistributor.map((r) => [r.market, r.currency, r.distributorId, r.code, r.name, r.orders, r.totalMinor]),
+    columns: [
+      "market",
+      "currency",
+      "distributor_id",
+      "distributor_code",
+      "distributor",
+      "orders",
+      "total_minor",
+    ],
+    rows: report.byDistributor.map((r) => [
+      r.market,
+      r.currency,
+      r.distributorId,
+      r.code,
+      r.name,
+      r.orders,
+      r.totalMinor,
+    ]),
   };
 }
 

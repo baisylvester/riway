@@ -24,6 +24,10 @@ const report = () => ({
   byMarket: [
     { market: "PH", currency: "PHP", orders: 2, subtotalMinor: 75000, discountMinor: 5000, totalMinor: 70000 },
   ],
+  byChannel: [
+    { market: "PH", currency: "PHP", channel: "first_purchase", orders: 1, voucherOrders: 1, discountMinor: 5000, totalMinor: 20000 },
+    { market: "PH", currency: "PHP", channel: "repeat_purchase", orders: 1, voucherOrders: 0, discountMinor: 0, totalMinor: 50000 },
+  ],
   byProduct: [
     { market: "PH", currency: "PHP", productId, name: "=HYPERLINK(\"x\")", units: 3, netMinor: 70000 },
   ],
@@ -75,6 +79,18 @@ describe("report CSV", () => {
     expect(columns).toContain("total_minor");
     expect(rows[0]).toEqual(["PH", "PHP", 2, 75000, 5000, 70000]);
   });
+  it("exports channel rows and rejects unknown channels", () => {
+    const { columns, rows } = reportRows(salesReportSchema.parse(report()), "channel");
+    expect(columns).toEqual(["market", "currency", "channel", "orders", "voucher_orders", "discount_minor", "total_minor"]);
+    expect(rows[0]).toEqual(["PH", "PHP", "first_purchase", 1, 1, 5000, 20000]);
+    const bad = report();
+    bad.byChannel[0].channel = "offline";
+    expect(salesReportSchema.safeParse(bad).success).toBe(false);
+  });
+  it("treats a report without channels as empty", () => {
+    const { byChannel: _omit, ...older } = report();
+    expect(salesReportSchema.parse(older).byChannel).toEqual([]);
+  });
   it("requires staff MFA, a breakdown and a bounded range", async () => {
     f.access.mockResolvedValueOnce({ user: { id: "u" }, allowed: true, mfa: false });
     expect((await GET(request("kind=market"))).status).toBe(403);
@@ -114,8 +130,11 @@ describe("reports page", () => {
         searchParams: Promise.resolve({ from: "2026-11-01", to: "2026-11-17" }),
       }),
     );
-    for (const heading of ["By market", "By product", "By package", "By distributor"])
+    for (const heading of ["By market", "By channel", "By product", "By package", "By distributor"])
       expect(html).toContain(heading);
+    expect(html).toContain("First purchase");
+    expect(html).toContain("Repeat purchase");
+    expect(html).toContain("kind=channel");
     expect(html).toContain("&lt;b&gt;Fixture&lt;/b&gt;");
     expect(html).toContain("₱700.00");
     expect(html).toContain("₱50.00");

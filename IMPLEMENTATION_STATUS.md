@@ -1,5 +1,13 @@
 # Implementation status
 
+## Membership enrolment at checkout - 17 November 2026
+
+PR #15 is merged and deployed. Approved qualifying packages carry an immutable membership rule. Checkout shows the enrolment Terms and Code of Conduct and stores the accepted versions, consent hash and sponsor (including the sponsor's RIWAY member ID). A paid order moves the enrolment to awaiting RIWAY confirmation; staff with market admin/compliance roles and MFA then confirm it against a verified RIWAY member record, which creates the membership and tier. Payment alone never grants member pricing. New routes: `/account/membership`, `/admin/memberships` and a client-only sample journey at `/membership/demo`. Next.js is upgraded from 16.4.3 to 16.4.6 after its build check flagged 16.4.3 as affected by a known vulnerability.
+
+Hosted migration `20261117021010_membership_enrollment.sql` is applied (the repository file was renamed to the hosted version). All 28 functions it creates or replaces match a locally migrated database by body hash and security mode. The rollback-only membership acceptance suite passed on the hosted database with zero retained users, products, rules, enrolments, orders or payment events; all market sales/payment gates remain false. No new security-advisor warning appeared. Local validation passed 365 tests and TypeScript; push/PR/merge CI passed. Signed-in account/staff membership pages were not exercised against the live database.
+
+Open design points: membership is created by staff confirmation, not automatically on payment as the proposal describes; and an enrolment awaiting confirmation has no reject/release path, so an unmatched customer cannot enrol again without a database change. Payments, Tax and email remain disabled. Exact release evidence is in `ROLLOUT-STATUS.md`.
+
 ## Manual audit fixes - 16 November 2026
 
 PR #13 is merged and deployed. Catalogue search now handles repeated query/category parameters, trims surrounding whitespace and keeps unknown-category results consistent with the All selector. Review-bag quantity editing preserves a blank draft, rejects invalid or excessive new quantities and leaves removal to the explicit control. Existing oversized saved quantities remain visible with correction feedback. Empty bags can be explicitly saved to an account; overlapping save/restore requests are guarded. No presentation redesign, migration or provider activation was introduced.

@@ -15,6 +15,7 @@ export function AdminNav() {
         ["inventory", "Inventory"],
         ["orders", "Orders"],
         ["payments", "Payments"],
+        ["reports", "Sales reports"],
         ["content", "Content"],
         ["media", "Media library"],
         ["support", "Support requests"],

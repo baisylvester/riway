@@ -1,6 +1,22 @@
 # RIWAY provider rollout — 17 November 2026
 
-## Latest live release - scheduled sales report emails
+## Latest live release - GA4 / Meta Pixel behind opt-in consent
+
+PR #29 merged as `c62f969acacad74fef24770e756c10124acd42b9`. PR CI runs `44042601148` and `44042609567`, and merge CI run `44042810327`, passed the `verify` and `postgres-concurrency` jobs. No migration.
+
+Artifact `14309962630` (19,641,642 bytes) matched SHA-256 `4a20714677879ffd5c43b8a1d2e043d2f446e7f15670b61d661c470891445c0d` before extraction and upload. Cloudflare returned deployment `51cf189c5df048c1b60e483521eeefcc`, etag `308069bca8ea19fae28ce45943eef725780c096b9470088363a1ce0caa58365c`; the notification schedule was reapplied. Live checks on 17 November passed 53 HTTP/API cases. No measurement IDs are configured, so the live CSP lists no Google or Meta origin, pages contain no tag, Pixel or banner markup, and the cookie notice still states that no analytics or advertising cookies are enabled.
+
+A local production build with placeholder IDs was checked in a browser:
+- **CSP:** the header added only the Google and Meta origins.
+- **First visit:** the banner showed with no scripts loaded.
+- **Necessary only:** nothing loaded.
+- **Analytics only:** GA4 loaded with consent mode all denied by default, then only analytics granted.
+- **Withdraw:** the page reloaded and the planted `_ga` cookies were removed.
+- **Allow all at 375px:** GA4 and Meta Pixel loaded with ad signals granted; no overflow or console errors.
+
+Activation needs RIWAY's IDs as the `NEXT_PUBLIC_GA4_MEASUREMENT_ID` / `NEXT_PUBLIC_META_PIXEL_ID` repository variables, a rebuild, and legal approval of the notices. Real data receipt was not tested.
+
+## Previous live release - scheduled sales report emails
 
 PR #27 merged as `4d59e03cb9f715c4b8a9e466171829ab259039b6`. PR CI runs `44041063559` and `44041072119`, and merge CI run `44041326003`, passed the `verify` and `postgres-concurrency` jobs, including the new `scheduled_reports.sql` suite.
 

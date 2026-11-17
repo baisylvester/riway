@@ -7,6 +7,7 @@ import { SiteChrome } from "@/components/site-chrome";
 import { currentMarket } from "@/lib/data";
 import { ClerkProvider } from "@clerk/nextjs";
 import { authProvider } from "@/lib/auth-config";
+import { searchIndexingEnabled, siteOrigin } from "@/lib/seo";
 export const metadata: Metadata = {
   title: {
     default: "RIWAY International · A world of possibilities",
@@ -14,7 +15,10 @@ export const metadata: Metadata = {
   },
   description:
     "Discover the world of RIWAY International, our collections, community and shared vision.",
-  robots: { index: false, follow: false },
+  metadataBase: new URL(siteOrigin()),
+  robots: searchIndexingEnabled()
+    ? { index: true, follow: true }
+    : { index: false, follow: false },
 };
 export default async function RootLayout({
   children,

@@ -80,7 +80,7 @@ Updated 2026-11-02. Live Cloudflare deployment is verified at https://riway-plat
 | RIWAY membership/compensation, SSO                                  | Awaiting client API                                          | Interfaces prepared; no endpoints or commission rules invented                                |
 | Courier / email / SMS / CRM                                         | Awaiting provider contract                                   | Not connected                                                                                 |
 | Promotions / subscriptions / automated reorders                     | Deferred pending business rules                              | Not implemented as official RIWAY policies                                                    |
-| SEO migration / translations / consented analytics                  | Pending final content/domain plan                            | Development is noindex; no tracking enabled                                                   |
+| SEO migration / translations / consented analytics                  | Sitemap + hreflang built; rest pending content/domain plan   | `/sitemap.xml` with en + x-default hreflang; noindex until `SEARCH_INDEXING=enabled`; no tracking |
 | Backups / restore / load / accessibility / monitoring               | Runbooks and health endpoint prepared                        | Operational setup and acceptance tests remain                                                 |
 
 ## Database changes

@@ -1,6 +1,16 @@
 # RIWAY provider rollout — 17 November 2026
 
-## Latest live release - unpaid order cancellation
+## Latest live release - sales report channel breakdown
+
+PR #23 merged as `c34ca06f71bb458eda3cfc27f428afb1e7de9330`. PR CI runs `44038065671` and `44038073008`, and merge CI run `44038316873`, passed the `verify` and `postgres-concurrency` jobs.
+
+Hosted migration `20261117072057_sales_report_channels.sql` replaces `private.staff_sales_report` and adds `byChannel`; the other breakdowns are unchanged. Beforehand, the migration and the extended `tests/security/reports.sql` ran on the hosted database inside one rolled-back transaction and passed; a follow-up query found no QA users retained and every market still closed. Repeat-purchase lookups use the existing `orders_user_created_idx`.
+
+Artifact `14308795579` (19,617,421 bytes) matched SHA-256 `142c05eb5581806e7ee8413ab138ee5ad7d99b93ce40ab5c26b5cb6364607654` before extraction and upload. Cloudflare returned deployment `9e79cbeffe364d13a5c7f88068aa456a`, etag `aef84b2f1b761331d5ecd08866334c17f7971a26f18889e839e102562ca14d6e`; the notification schedule was reapplied. Live checks on 17 November passed 53 HTTP/API cases; signed-out `/admin/reports` redirects to login and `/api/admin/reports?kind=channel` returns 403.
+
+Channel definition, pending RIWAY confirmation: every online order is distributor-attributed, so settled online orders are split into membership enrolment, first purchase and repeat purchase, with voucher-order counts. Offline and service-centre sales stay in RIWAY's systems. The signed-in staff report page was not checked in a browser.
+
+## Previous live release - unpaid order cancellation
 
 PR #21 merged as `d1f9f03784d7c486b1a56f6e136c1c047fc3df5d`. PR CI runs `44036606120` and `44036614183`, and merge CI run `44036875205`, passed the `verify` and `postgres-concurrency` jobs; the PostgreSQL job loaded all 20 migrations and ran the new `cancellation.sql` suite.
 

@@ -6,6 +6,8 @@ import {
   salesReportSchema,
   type ReportKind,
 } from "@/lib/sales-report";
+import { reportSubscriptionsSchema } from "@/lib/report-subscriptions";
+import { ReportSubscriptionForm } from "@/components/report-subscription-form";
 
 export const metadata = { title: "Sales reports" };
 
@@ -43,6 +45,10 @@ export default async function SalesReports({
     p_to: range.to,
   });
   const report = salesReportSchema.safeParse(data);
+  // Optional section: hidden if scheduling is unavailable or access is denied.
+  const subscriptions = reportSubscriptionsSchema.safeParse(
+    (await client.rpc("my_report_subscriptions")).data,
+  );
   return (
     <>
       <h1>Sales reports</h1>
@@ -62,6 +68,12 @@ export default async function SalesReports({
         </label>
         <button className="button">Update report</button>
       </form>
+      {subscriptions.success && (
+        <ReportSubscriptionForm
+          subscriptions={subscriptions.data}
+          emailEnabled={process.env.EMAIL_PROVIDER === "resend"}
+        />
+      )}
       {range.adjusted && (
         <p className="notice">
           Reports cover up to 366 days, so the last 30 days are shown instead.

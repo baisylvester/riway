@@ -75,4 +75,23 @@ describe("notification worker preflight", () => {
     expect(mocks.rpc).toHaveBeenCalledWith("claim_notifications");
     expect(await response.json()).toMatchObject({ processed: 0, sent: 0 });
   });
+  it("queues due sales reports for the report day before claiming", async () => {
+    await POST(request());
+    expect(mocks.rpc).toHaveBeenCalledWith("queue_sales_reports", {
+      report_day: "2026-11-06",
+    });
+    const names = mocks.rpc.mock.calls.map(([name]) => name);
+    expect(names.indexOf("queue_sales_reports")).toBeLessThan(
+      names.indexOf("claim_notifications"),
+    );
+  });
+  it("keeps jobs unclaimed when the sales report queue fails", async () => {
+    mocks.rpc.mockImplementation(async (name: string) =>
+      name === "queue_sales_reports"
+        ? { data: null, error: { code: "42883" } }
+        : { data: name === "claim_notifications" ? [] : 0, error: null },
+    );
+    expect((await POST(request())).status).toBe(503);
+    expect(mocks.rpc).not.toHaveBeenCalledWith("claim_notifications");
+  });
 });

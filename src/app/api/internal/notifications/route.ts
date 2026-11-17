@@ -60,6 +60,9 @@ export async function POST(request: Request) {
     });
     if (reports.error)
       return failure("Inventory report queue is unavailable.", 503);
+    // Due weekly/monthly sales reports for subscribed staff; idempotent per period.
+    const sales = await client.rpc("queue_sales_reports", { report_day: day });
+    if (sales.error) return failure("Sales report queue is unavailable.", 503);
   }
   const { data: jobs, error } = await client.rpc("claim_notifications");
   if (error || !Array.isArray(jobs))

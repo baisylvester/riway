@@ -107,6 +107,7 @@ export type Notification =
   | { type: "membership_confirmed"; reference: string }
   | { type: "order_shipped"; reference: string }
   | { type: "order_delivered"; reference: string }
+  | { type: "sales_report"; reference: string; context: unknown }
   | {
       type: "store_owner_onboarding";
       reference: string;
@@ -154,7 +155,65 @@ export function reportDate(now: Date, timezone = "Asia/Shanghai", hour = 9) {
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
 
+const salesReportContext = z.object({
+  market: z.enum(["PH", "SG", "MY"]),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  frequency: z.enum(["weekly", "monthly"]),
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  orders: z.number().int().nonnegative(),
+  subtotalMinor: z.number().int(),
+  discountMinor: z.number().int(),
+  totalMinor: z.number().int(),
+  topProducts: z
+    .array(
+      z.object({
+        name: z.string().max(120),
+        units: z.number().int().nonnegative(),
+        netMinor: z.number().int(),
+      }),
+    )
+    .max(5),
+});
+
+function minorAmount(minor: number, currency: string) {
+  return new Intl.NumberFormat("en", { style: "currency", currency }).format(
+    minor / 100,
+  );
+}
+
 export function notificationContent(notification: Notification) {
+  if (notification.type === "sales_report") {
+    const r = salesReportContext.parse(notification.context);
+    const origin = new URL(
+      process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
+    );
+    if (
+      !["http:", "https:"].includes(origin.protocol) ||
+      origin.username ||
+      origin.password
+    )
+      throw new Error("Invalid notification site URL");
+    const link = new URL(
+      `/admin/reports?${new URLSearchParams({ from: r.from, to: r.to })}`,
+      origin.origin,
+    ).href;
+    const label = r.frequency === "weekly" ? "Weekly" : "Monthly";
+    const money = (minor: number) => minorAmount(minor, r.currency);
+    const summary = `${r.orders} settled order${r.orders === 1 ? "" : "s"} · total ${money(r.totalMinor)} (subtotal ${money(r.subtotalMinor)}, discounts ${money(r.discountMinor)})`;
+    const lines = r.topProducts.map(
+      (p) => `${p.name} | ${p.units} units | ${money(p.netMinor)}`,
+    );
+    return {
+      subject: `RIWAY ${label.toLowerCase()} sales report · ${r.market} · ${r.from} to ${r.to}`,
+      text: `${label} sales report for ${r.market}, ${r.from} to ${r.to} (UTC order dates, settled orders only).\n${summary}\n\n${lines.length ? `Top products:\n${lines.join("\n")}` : "No product sales in this period."}\n\nFull report, channel breakdown and CSV (sign-in and authenticator required): ${link}`,
+      html: `<h1>${label} sales report · ${r.market}</h1><p>${r.from} to ${r.to} · UTC order dates · settled orders only</p><p>${escaped(summary)}</p>${
+        lines.length
+          ? `<table><thead><tr><th>Product</th><th>Units</th><th>Net sales</th></tr></thead><tbody>${r.topProducts.map((p) => `<tr><td>${escaped(p.name)}</td><td>${p.units}</td><td>${escaped(money(p.netMinor))}</td></tr>`).join("")}</tbody></table>`
+          : "<p>No product sales in this period.</p>"
+      }<p><a href="${escaped(link)}">Open the full report</a> (sign-in and authenticator required)</p>`,
+    };
+  }
   if (
     notification.type === "order_shipped" ||
     notification.type === "order_delivered"

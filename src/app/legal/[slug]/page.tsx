@@ -1,11 +1,32 @@
 import { notFound } from "next/navigation";
+import { analyticsConfig } from "@/lib/consent";
+
+// Describes optional measurement as actually built: off entirely without IDs,
+// otherwise opt-in through the cookie choices.
+const measurement = analyticsConfig({
+  NEXT_PUBLIC_GA4_MEASUREMENT_ID: process.env.NEXT_PUBLIC_GA4_MEASUREMENT_ID,
+  NEXT_PUBLIC_META_PIXEL_ID: process.env.NEXT_PUBLIC_META_PIXEL_ID,
+});
+const tools = [
+  measurement.ga4 && "Google Analytics (analytics)",
+  measurement.pixel && "Meta Pixel (advertising measurement)",
+].filter(Boolean);
+const measurementText = tools.length
+  ? {
+      privacy: `With your permission we use ${tools.join(" and ")}. They stay off unless you allow them, and you can withdraw consent at any time under Cookie settings.`,
+      cookies: `Optional ${tools.join(" and ")} cookies are set only if you allow them in the cookie choices. They are off by default, and you can change or withdraw consent at any time under Cookie settings in the footer; withdrawing removes their cookies from this site.`,
+    }
+  : {
+      privacy: "Analytics and advertising trackers have not been enabled.",
+      cookies: "No analytics or advertising cookies are enabled.",
+    };
 const notices: Record<string, { title: string; paragraphs: string[] }> = {
   privacy: {
     title: "Privacy notice",
     paragraphs: [
       "This is a development platform. Use test information until RIWAY approves production data handling, retention, hosting locations and processor agreements.",
       "Account authentication is handled by Supabase Auth. Profile details, addresses, support requests and saved bags are stored in the designated RIWAY Supabase project. The current project region is Ireland (eu-west-1). No payment card details are collected.",
-      "Marketing preferences are optional and may be changed in your account. Analytics and advertising trackers have not been enabled. Contact RIWAY through its official channels for privacy requests. Retention schedules, deletion workflows and the designated privacy contact must be approved before launch.",
+      "Marketing preferences are optional and may be changed in your account. MEASUREMENT_PRIVACY Contact RIWAY through its official channels for privacy requests. Retention schedules, deletion workflows and the designated privacy contact must be approved before launch.",
       "When you open a verified distributor introduction, this browser can remember that introduction for up to 30 days and link it when you sign in. A saved introduction does not replace an existing sponsor or establish membership, placement or commission rights. You can clear a saved introduction on the introduction page; a sponsor already linked to an account remains governed by RIWAY’s records.",
     ],
   },
@@ -22,7 +43,7 @@ const notices: Record<string, { title: string; paragraphs: string[] }> = {
     paragraphs: [
       "The platform uses necessary authentication cookies to maintain your signed-in session and a country-preference cookie to remember your selected market.",
       "Opening a verified distributor introduction uses a first-party functional cookie to remember the first valid saved introduction for up to 30 days. The server rechecks the distributor before linking it to your signed-in account. The cookie is removed after completion or when you choose Clear saved introduction. It is not an advertising cookie and does not replace an existing account sponsor.",
-      "Your bag is stored in local browser storage and can be explicitly saved to your account. No analytics or advertising cookies are enabled.",
+      "Your bag is stored in local browser storage and can be explicitly saved to your account. MEASUREMENT_COOKIES",
       "You may remove cookies and browser storage in your browser settings. Doing so may sign you out, reset your selected market, clear a pending introduction or remove an unsaved bag.",
     ],
   },
@@ -53,9 +74,12 @@ export default async function Notice({
     <section className="section page-prose page-section">
       <span className="eyebrow">DEVELOPMENT NOTICE · PENDING APPROVAL</span>
       <h1>{n.title}</h1>
-      {n.paragraphs.map((p) => (
-        <p key={p}>{p}</p>
-      ))}
+      {n.paragraphs.map((p) => {
+        const text = p
+          .replace("MEASUREMENT_PRIVACY", measurementText.privacy)
+          .replace("MEASUREMENT_COOKIES", measurementText.cookies);
+        return <p key={text}>{text}</p>;
+      })}
     </section>
   );
 }

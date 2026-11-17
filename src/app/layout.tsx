@@ -8,6 +8,7 @@ import { currentMarket } from "@/lib/data";
 import { ClerkProvider } from "@clerk/nextjs";
 import { authProvider } from "@/lib/auth-config";
 import { searchIndexingEnabled, siteOrigin } from "@/lib/seo";
+import { ConsentManager } from "@/components/consent-manager";
 export const metadata: Metadata = {
   title: {
     default: "RIWAY International · A world of possibilities",
@@ -32,6 +33,7 @@ export default async function RootLayout({
         Skip to content
       </a>
       <SiteChrome market={market}>{children}</SiteChrome>
+      <ConsentManager />
     </StoreProvider>
   );
   return (

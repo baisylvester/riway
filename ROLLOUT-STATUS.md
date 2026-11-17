@@ -1,6 +1,14 @@
-# RIWAY provider rollout — 16 November 2026
+# RIWAY provider rollout — 17 November 2026
 
-## Latest live release - manual audit catalogue and bag fixes
+## Latest live release - membership enrolment and Next.js 16.4.6
+
+PR #15 merged as `28aefffa4e1265f4af4d1508a62317c303bcb6f8` from tested head `6fe628c`. Merge CI run `44004935400` passed the `verify` and `postgres-concurrency` jobs.
+
+Hosted migration `20261117021010_membership_enrollment.sql` was applied before the merge. The rollback-only `tests/security/membership.sql` suite passed on the hosted database; a follow-up count found zero retained QA users or products, membership rules, enrolments, memberships, orders, reservations, membership notification jobs, Stripe events, commerce offers or staff roles. PH/SG/MY sales and payment gates remain false. Security advisors show only the pre-existing leaked-password-protection warning and the two documented INFO no-policy notices.
+
+Artifact `14293693155` (19,563,865 bytes) matched SHA-256 `729bf1748d7cd37b8a76b0295ae76664fffe110fe60d12b2da6b8e6ec4afa929` before extraction and upload with `scripts/deploy-cloudflare-artifact.mjs`. Cloudflare returned deployment `3ba00f75d67c4d328af02a1a91e59069`, etag `26f2d0544fc8b629dc3a90082c5effc450e72cb3aabc5ef3e863ddd8755466c9`; the notification schedule was reapplied. Live checks on 17 November passed 53 HTTP/API cases and all 106 bundled static assets. `/membership` and `/membership/demo` serve the new content; `/account/membership` and `/admin/memberships` redirect signed-out visitors to login. Signed-in account and staff membership pages were not tested: the browser had no live session and the user chose to skip that test. No independent traffic-percentage query was made.
+
+## Previous live release - manual audit catalogue and bag fixes
 
 PR #13 is merged and published. Tested source `d0ac3d1d06482534cc6cf2a1c64e4bea26711471` and merge `efce884dc3018690e9c41a4a9d7c4a234c91b28d` have identical trees. Live browser checks reproduced repeated-query crashes, repeated/unknown collection selector mismatches, blank quantity edits removing products and quantities exceeding a market maximum. The release normalizes catalogue parameters, preserves quantity drafts, validates whole quantities against the offer limit, and keeps removal explicit. Existing oversized saved selections remain visible with correction feedback. Empty selections can now be explicitly saved to an account, and save/restore actions cannot overlap. The restored presentation remains unchanged.
 

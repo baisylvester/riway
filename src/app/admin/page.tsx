@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { session } from "@/lib/data";
+export const metadata = { title: "Staff console" };
 export default async function Admin() {
   const { client } = await session();
   const [orders, products, content, stock] = await Promise.all([

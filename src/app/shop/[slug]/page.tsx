@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { cache } from "react";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   catalogue,
@@ -13,13 +15,24 @@ import { ProductArt } from "@/components/product-card";
 import { ProductEditorial } from "@/components/brand/editorial";
 import { AddToBag } from "@/components/add-to-bag";
 import { ProductComplianceNotice } from "@/components/product-compliance-notice";
+// One catalogue read per request, shared by the title and the page.
+const loadCatalogue = cache(catalogue);
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const p = (await loadCatalogue()).products.find((p) => p.slug === slug);
+  return p ? { title: p.name, description: p.subtitle || undefined } : {};
+}
 export default async function ProductPage({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const { products, offers } = await catalogue();
+  const { products, offers } = await loadCatalogue();
   const p = products.find((p) => p.slug === slug);
   if (!p) notFound();
   const market = await currentMarket();

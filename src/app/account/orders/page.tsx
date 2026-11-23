@@ -2,6 +2,7 @@ import Link from "next/link";
 import { requireSession } from "@/lib/data";
 import { money } from "@/lib/domain";
 import { pageNumber } from "@/lib/pagination";
+export const metadata = { title: "Your orders" };
 export default async function Orders({
   searchParams,
 }: {

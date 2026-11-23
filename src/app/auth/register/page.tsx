@@ -1,4 +1,5 @@
 import { AuthPanel } from "@/components/auth-panel";
+export const metadata = { title: "Create your account" };
 export default function Register() {
   return (
     <section className="auth-container">

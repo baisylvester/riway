@@ -1,4 +1,5 @@
 import { AuthPanel } from "@/components/auth-panel";
+export const metadata = { title: "Choose a new password" };
 export default function Update() {
   return (
     <section className="auth-container">

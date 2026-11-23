@@ -1,3 +1,4 @@
+import { configuredGateways } from "./xendit-config";
 type Environment = Record<string, string | undefined>;
 
 export function stripeConfiguration(env: Environment = process.env) {
@@ -44,7 +45,7 @@ export function stripeConfiguration(env: Environment = process.env) {
 }
 
 export function stripeReadiness(env: Environment = process.env) {
-  if (env.PAYMENT_PROVIDER !== "stripe")
+  if (!configuredGateways(env).has("stripe"))
     return {
       enabled: false,
       mode: "disabled",

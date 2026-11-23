@@ -1,12 +1,22 @@
 type PaymentEnvironment = {
   PAYMENT_PROVIDER?: string;
+  PAYMENT_PROVIDERS?: string;
   STRIPE_SECRET_KEY?: string;
+  XENDIT_SECRET_KEY?: string;
   PAYMENT_WORKER_SECRET?: string;
   NEXT_PUBLIC_SITE_URL?: string;
   WORKER_SELF_REFERENCE?: { fetch(request: Request): Promise<Response> };
 };
 export async function runPaymentSchedule(env: PaymentEnvironment) {
-  if (env.PAYMENT_PROVIDER !== "stripe" && !env.STRIPE_SECRET_KEY) return;
+  const gateways = `${env.PAYMENT_PROVIDERS ?? ""},${env.PAYMENT_PROVIDER ?? ""}`;
+  // Keep reconciling while any gateway still has credentials, even after new
+  // checkout is switched off, so open payments settle.
+  if (
+    !/stripe|xendit/i.test(gateways) &&
+    !env.STRIPE_SECRET_KEY &&
+    !env.XENDIT_SECRET_KEY
+  )
+    return;
   if (
     !env.PAYMENT_WORKER_SECRET ||
     env.PAYMENT_WORKER_SECRET.length < 32 ||

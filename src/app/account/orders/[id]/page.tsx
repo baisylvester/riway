@@ -5,16 +5,22 @@ import { money } from "@/lib/domain";
 import { Reorder } from "@/components/reorder";
 import { OrderPayment } from "@/components/order-payment";
 import { stripeReadiness } from "@/lib/stripe-config";
+import { xenditReadiness } from "@/lib/xendit-config";
+import { catalogueChannel, eligibleChannels } from "@/lib/xendit-channels";
+import { asMarket } from "@/lib/domain";
 import { orderFulfilmentSchema, orderStatusLabels } from "@/lib/fulfilment";
 import { FulfilmentTimeline } from "@/components/fulfilment-timeline";
 import { orderCancellationSchema } from "@/lib/cancellation";
 import { CancelOrderForm } from "@/components/cancel-order-form";
 export default async function Order({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams?: Promise<{ payment?: string }>;
 }) {
   const { id } = await params;
+  const returned = (await searchParams)?.payment === "return";
   if (!z.uuid().safeParse(id).success) notFound();
   const { client, user } = await requireSession();
   const { data: o } = await client
@@ -24,7 +30,27 @@ export default async function Order({
     .eq("user_id", user.id)
     .maybeSingle();
   if (!o) notFound();
-  const payment = await client.rpc("stripe_checkout_status", { p_order: id });
+  const stripe = await client.rpc("stripe_checkout_status", { p_order: id });
+  const xendit = await client.rpc("xendit_payment_status", { p_order: id });
+  const gateway = !xendit.error && xendit.data ? "xendit" : "stripe";
+  const payment = gateway === "xendit" ? xendit : stripe;
+  const unpaid =
+    o.status === "awaiting_payment" && o.payment_status === "pending";
+  const market = asMarket(o.market);
+  // Other channels the customer may switch to, if this order is still open.
+  const switchable =
+    gateway === "xendit" && unpaid && xenditReadiness().enabled
+      ? eligibleChannels(
+          market,
+          await client
+            .rpc("xendit_checkout_channels", {
+              p_market: market,
+              p_live: xendit.data.livemode,
+            })
+            .then((r) => (Array.isArray(r.data) ? (r.data as string[]) : [])),
+          Number(o.total_minor),
+        ).map((c) => ({ code: c.code, label: c.label }))
+      : [];
   // Delivery progress appears once payment is confirmed; a missing or
   // unexpected response simply omits it rather than breaking the order page.
   const fulfilment =
@@ -88,12 +114,22 @@ export default async function Order({
       )}
       <OrderPayment
         orderId={id}
+        gateway={gateway}
         phase={payment.data?.phase}
         mode={payment.data?.livemode}
+        channel={
+          gateway === "xendit" && payment.data?.channel
+            ? (catalogueChannel(market, payment.data.channel)?.label ??
+              payment.data.channel)
+            : undefined
+        }
+        expiresAt={gateway === "xendit" ? payment.data?.expiresAt : undefined}
+        returned={returned}
+        channels={switchable}
         enabled={
-          stripeReadiness().enabled &&
-          o.status === "awaiting_payment" &&
-          o.payment_status === "pending"
+          (gateway === "xendit"
+            ? xenditReadiness().enabled
+            : stripeReadiness().enabled) && unpaid
         }
       />
       {cancellation?.success && cancellation.data.orderId === id && (

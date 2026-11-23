@@ -1,6 +1,18 @@
 # RIWAY provider rollout — 23 November 2026
 
-## Latest live release - descriptive page titles
+## Latest live release - checkout refuses unavailable payment methods before ordering
+
+PR #36 merged as `1c4af9f9e4d3001ebe067d62f21d24fb6ac6d689`. PR CI runs `45132269784` and `45132276516`, and merge CI run `45132769689`, passed the `verify` and `postgres-concurrency` jobs. No migration.
+
+Artifact `14798711435` (19,786,488 bytes) matched SHA-256 `94a2ae8a41e32daccab84494e3ea2dc989dca7779f159721026bc79a72dc3eed` before extraction and upload. Production returned deployment `39c123e513b04579905161413e7aa457` and staging `86bc410c8f9544a2b2ed07d9f9398929` (same etag `020b7d4b40e46c65f251136adacecc3ec470c11cc8b0644d465132e402301b74`); the notification schedule was reapplied on both. Live checks on 23 November: 53/53 HTTP/API cases passed on production and staging, a 27-route desktop and mobile sweep of production was clean, and cross-origin checkout is refused (403). The deploy script ran without `--env` as fixed in PR #35.
+
+Scope:
+- **Fix:** checkout now checks the chosen Xendit method against the documented catalogue and the market's enabled list before creating the order. Previously an unavailable method was refused only after the order and its stock hold existed.
+- **New test:** `tests/unit/checkout-flow.test.ts` runs the full server-side checkout (quote, order, Xendit payment, method switch, expiry, webhook, minute worker) against the real migrations, with only the Supabase client and `fetch` replaced; 10/10 scenarios pass.
+
+Not covered: a browser checkout on staging and a real Xendit sandbox payment. Both need staging's Xendit secrets and an approved market, product and sponsor. Production checkout stays closed (`payments: disabled`, `xendit: disabled`).
+
+## Previous live release - descriptive page titles
 
 PR #34 merged as `38262da318ac24472d432a226b91d0e13a6b9f30`. PR CI runs `45121166773` and `45121194349`, and merge CI run `45122147609`, passed the `verify` and `postgres-concurrency` jobs. No migration. The Playwright e2e steps in CI are still skipped because the `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` repository variables are unset. The e2e suite was instead run against staging and production from a local Playwright install.
 

@@ -10,6 +10,8 @@ import {
   verifyCallbackToken,
   XenditChannelError,
   XenditUncertainError,
+  describePaymentError,
+  XenditRequestError,
   type XenditAttempt,
   type XenditClients,
 } from "../../src/services/xendit-payments";
@@ -457,6 +459,35 @@ describe("starting a Xendit payment", () => {
     ).rejects.toThrow(/closed/);
     expect(h.fetch).not.toHaveBeenCalled();
   });
+  it("uses only fetch options that Cloudflare Workers support", async () => {
+    // Workers throw on redirect: "error"; only "follow" and "manual" exist.
+    const h = harness();
+    h.fetch.mockResolvedValue(json(session(), 201));
+    await startXenditCheckout(orderId, userId, "GCASH", h.clients);
+    for (const [, init] of h.fetch.mock.calls)
+      expect(["manual", "follow", undefined]).toContain(init.redirect);
+    expect(h.fetch.mock.calls[0][1].redirect).toBe("manual");
+  });
+  it("treats an unexpected redirect from Xendit as uncertain, without binding", async () => {
+    const h = harness();
+    h.fetch.mockResolvedValue(
+      new Response(null, {
+        status: 302,
+        headers: { Location: "https://elsewhere.example/" },
+      }),
+    );
+    await expect(
+      startXenditCheckout(orderId, userId, "GCASH", h.clients),
+    ).rejects.toBeInstanceOf(XenditUncertainError);
+    expect(h.rpc).not.toHaveBeenCalledWith(
+      "bind_xendit_payment",
+      expect.anything(),
+    );
+    expect(h.rpc).not.toHaveBeenCalledWith(
+      "reject_xendit_payment",
+      expect.anything(),
+    );
+  });
   it("sanitizes provider error codes before storing them", async () => {
     const h = harness();
     h.fetch.mockResolvedValue(json({ error_code: "bad code'; drop" }, 400));
@@ -552,5 +583,32 @@ describe("reconciling a Xendit session", () => {
     await expect(
       reconcileXenditAttempt(attemptId, "evt", h.clients),
     ).rejects.toThrow(/reference/);
+  });
+});
+
+describe("payment error logging", () => {
+  it("describes failures without secrets or reply values", async () => {
+    const { z } = await import("zod");
+    expect(
+      describePaymentError(
+        new XenditRequestError(400, "INVALID_PAYMENT_CHANNEL"),
+      ),
+    ).toEqual({
+      type: "XenditRequestError",
+      status: 400,
+      code: "INVALID_PAYMENT_CHANNEL",
+    });
+    const parsed = z
+      .object({ amount: z.number(), secret: z.string() })
+      .safeParse({ amount: "xnd_development_leak", secret: 5 });
+    const text = JSON.stringify(describePaymentError(parsed.error));
+    expect(text).toContain("amount");
+    expect(text).not.toContain("xnd_development_leak");
+    expect(
+      describePaymentError(new XenditUncertainError("Xendit did not answer.")),
+    ).toEqual({
+      type: "XenditUncertainError",
+      message: "Xendit did not answer.",
+    });
   });
 });

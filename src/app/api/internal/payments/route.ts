@@ -8,6 +8,7 @@ import {
 } from "@/services/stripe-payments";
 import {
   cancelXenditSession,
+  logPaymentError,
   reconcileXenditAttempt,
   startXenditCheckout,
   xenditClients,
@@ -116,7 +117,8 @@ export async function POST(request: Request) {
             xendit,
           );
         checked++;
-      } catch {
+      } catch (error) {
+        logPaymentError("worker", error, String(item.attempt_id));
         failed++;
         await xendit.database.rpc("flag_xendit_reconciliation", {
           p_attempt: item.attempt_id,

@@ -7,6 +7,7 @@ import { startStripeCheckout } from "@/services/stripe-payments";
 import {
   startXenditCheckout,
   XenditChannelError,
+  logPaymentError,
 } from "@/services/xendit-payments";
 import { stripeReadiness } from "@/lib/stripe-config";
 import { xenditReadiness } from "@/lib/xendit-config";
@@ -59,6 +60,7 @@ export async function POST(request: Request) {
     );
   } catch (error) {
     if (error instanceof XenditChannelError) return failure(error.message, 409);
+    logPaymentError("resume", error, order.data.id);
     return failure(
       "Checkout could not be resumed. Review this order or contact support before paying again.",
       503,

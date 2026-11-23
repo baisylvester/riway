@@ -31,6 +31,7 @@ vi.mock("@/services/xendit-payments", async (load) => {
     XenditChannelError: real.XenditChannelError,
     verifyCallbackToken: real.verifyCallbackToken,
     parseSessionWebhook: real.parseSessionWebhook,
+    logPaymentError: vi.fn(),
     xenditClients: f.xenditClients,
     startXenditCheckout: f.xenditStart,
     reconcileXenditAttempt: f.reconcile,

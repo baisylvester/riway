@@ -135,7 +135,10 @@ async function xenditRequest(
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(10000),
-      redirect: "error",
+      // Cloudflare Workers reject redirect: "error" (only "follow" and
+      // "manual" exist there). Never follow a redirect with credentials;
+      // an unexpected redirect is handled below as an uncertain outcome.
+      redirect: "manual",
     });
   } catch {
     // A timeout never proves the request was not processed.
@@ -148,7 +151,11 @@ async function xenditRequest(
   } catch {
     data = null;
   }
-  if (response.status >= 500)
+  if (
+    response.status >= 500 ||
+    (response.status >= 300 && response.status < 400) ||
+    response.type === "opaqueredirect"
+  )
     throw new XenditUncertainError("Xendit unavailable.");
   if (!response.ok) {
     const raw = (data as { error_code?: unknown })?.error_code;
@@ -430,6 +437,43 @@ export async function reconcileXenditAttempt(
   });
   if (result.error) throw new Error("Payment reconciliation required.");
   return result.data as string;
+}
+
+/** One-line, secret-free description of a payment failure for Worker logs:
+ * error type, Xendit HTTP status and error code, and which reply fields failed
+ * validation (paths and expectations only, never values). */
+export function describePaymentError(error: unknown) {
+  if (error instanceof XenditRequestError)
+    return {
+      type: "XenditRequestError",
+      status: error.status,
+      code: error.code,
+    };
+  if (error instanceof z.ZodError)
+    return {
+      type: "UnexpectedShape",
+      issues: error.issues.slice(0, 8).map((i) => ({
+        path: i.path.join("."),
+        code: i.code,
+        expected: "expected" in i ? String(i.expected) : undefined,
+      })),
+    };
+  if (error instanceof Error)
+    return {
+      type: error.constructor.name,
+      message: error.message.slice(0, 160),
+    };
+  return { type: typeof error };
+}
+export function logPaymentError(where: string, error: unknown, ref?: string) {
+  console.error(
+    JSON.stringify({
+      event: "xendit_error",
+      where,
+      ref,
+      ...describePaymentError(error),
+    }),
+  );
 }
 
 export function verifyCallbackToken(received: string | null, expected: string) {

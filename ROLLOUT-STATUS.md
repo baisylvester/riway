@@ -1,6 +1,16 @@
-# RIWAY provider rollout — 17 November 2026
+# RIWAY provider rollout — 23 November 2026
 
-## Latest live release - GA4 / Meta Pixel behind opt-in consent
+## Latest live release - Xendit gateway with per-market xenPlatform sub-accounts
+
+PR #31 merged as `0992a27a80966fd20820318f626ce095d30c60b5`. PR CI runs `45113303131` and `45113334150`, and merge CI run `45113480043`, passed the `verify` and `postgres-concurrency` jobs, including the new `xendit.sql` suite.
+
+Hosted migration `20261123090000_xendit_payments.sql` is applied under the same version as the repository file. All 23 functions it creates or replaces match a locally migrated database by body hash and security mode. Beforehand, the migration and `tests/security/xendit.sql` ran on the hosted database inside one rolled-back transaction and passed; a follow-up query found no table, function, QA user, product or audit row retained. Security advisors show only the pre-existing leaked-password-protection warning and the two documented INFO no-policy notices.
+
+Artifact `14790357826` (19,783,513 bytes) matched SHA-256 `5c74014ddd1044c324c2c384c03702c6c64d58785de15802113caed8d54f4372` before extraction and upload. Cloudflare returned deployment `d8ecd8c4e8674139a4acf086731558a0`, etag `42c9c35fbd16bbf4c328f193a15d6f1a77c279875395c6ab2cb7d38ccf85a3b4`; the notification schedule was reapplied. Live checks on 23 November passed 53 HTTP/API cases. `/api/health` reports `"xendit":"disabled"`, `/api/webhooks/xendit` returns 503 (not configured), signed-out `/admin/payments` redirects to login, and cross-origin checkout is refused with 403.
+
+Scope: Xendit Payment Sessions (hosted) beside Stripe. Customers choose gateway, then method, then bank (PH online banking, MY FPX); each market's live payments are routed to its own xenPlatform sub-account; the webhook is verified by `x-callback-token` and re-read from Xendit in the attempt's own account; stock is deducted once and late, excess and orphan payments are flagged. Nothing is active: no Xendit keys, sub-accounts or channels are configured, `PAYMENT_PROVIDERS` is unset, and all market sales/payment gates remain false. The removed `deploy-payment-gateway.yml` workflow (direct branch deploy) never ran successfully. Activation and a sandbox payment need RIWAY's Xendit dashboard access; see `XENDIT.md`.
+
+## Previous live release - GA4 / Meta Pixel behind opt-in consent
 
 PR #29 merged as `c62f969acacad74fef24770e756c10124acd42b9`. PR CI runs `44042601148` and `44042609567`, and merge CI run `44042810327`, passed the `verify` and `postgres-concurrency` jobs. No migration.
 

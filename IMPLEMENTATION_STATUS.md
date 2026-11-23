@@ -2,7 +2,7 @@
 
 ## Xendit gateway and xenPlatform routing - 23 November 2026
 
-Branch `integration/payment-gateway`. This is not yet merged, migrated on the hosted database, or deployed.
+PR #31 is merged and deployed (Cloudflare deployment `d8ecd8c4e8674139a4acf086731558a0`). Hosted migration `20261123090000_xendit_payments.sql` is applied. Xendit is not active: no keys, sub-accounts or channels are configured. Exact release evidence is in `ROLLOUT-STATUS.md`.
 
 Xendit Payment Sessions (hosted) are added as a second gateway beside Stripe. Customers choose a gateway, then a method, then a bank where the method needs one: PH e-wallets, QR Ph, online banking and cards; MY e-wallets, FPX banks and cards. SG has no documented Xendit channels and stays without them.
 

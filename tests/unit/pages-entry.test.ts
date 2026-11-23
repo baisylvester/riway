@@ -25,12 +25,16 @@ it('fails closed if the RIWAY binding is absent', async () => {
 it('staging Pages forwards only to the staging Worker, with the same gateway code', async () => {
   const { readFileSync } = await import('node:fs');
   const { parse } = await import('jsonc-parser');
+  // Line endings differ between checkouts; compare the content only.
+  const read = (file: string) => readFileSync(file, 'utf8').replace(/
+/g, '
+');
   const config = (dir: string) => parse(readFileSync(`deployment/${dir}/wrangler.jsonc`, 'utf8'));
   expect(config('pages-staging').name).toBe('riway-platform-staging');
   expect(config('pages-staging').services).toEqual([{ binding: 'RIWAY_APP', service: 'riway-platform-staging' }]);
   expect(config('pages').services).toEqual([{ binding: 'RIWAY_APP', service: 'riway-platform' }]);
   for (const file of ['_worker.js', '_routes.json', '.assetsignore'])
-    expect(readFileSync(`deployment/pages-staging/${file}`, 'utf8')).toBe(readFileSync(`deployment/pages/${file}`, 'utf8'));
+    expect(read(`deployment/pages-staging/${file}`)).toBe(read(`deployment/pages/${file}`));
   const app = parse(readFileSync('wrangler.jsonc', 'utf8'));
   expect(app.env.staging.vars.NEXT_PUBLIC_SITE_URL).toBe('https://riway-platform-staging.pages.dev');
   expect(app.env.staging.workers_dev).toBe(false);

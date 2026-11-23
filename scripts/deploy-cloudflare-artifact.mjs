@@ -13,7 +13,10 @@ const { hash } = requireWrangler("blake3-wasm");
 const args = process.argv.slice(2);
 const envFlag = args.indexOf("--env");
 const envName = envFlag >= 0 ? args[envFlag + 1] : null;
-const bundleArg = args.find((a, i) => !a.startsWith("--") && i !== envFlag + 1);
+// The bundle path is the first argument that is not --env or its value.
+const bundleArg = args.find(
+  (a, i) => !a.startsWith("--") && (envFlag < 0 || i !== envFlag + 1),
+);
 const base_config = parse(fs.readFileSync("wrangler.jsonc", "utf8"));
 // Named environments replace the Worker name, vars, services and triggers.
 const config = envName

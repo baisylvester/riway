@@ -93,7 +93,11 @@ let rpc: ReturnType<typeof vi.fn>;
 beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("PAYMENT_PROVIDERS", "stripe,xendit");
-  rpc = vi.fn(async () => ({ data: orderId, error: null }));
+  rpc = vi.fn(async (name: string) =>
+    name === "xendit_checkout_channels"
+      ? { data: ["GCASH", "BPI_ONLINE_BANKING"], error: null }
+      : { data: orderId, error: null },
+  );
   f.session.mockResolvedValue({ user: { id: userId }, client: { rpc } });
   f.referral.mockResolvedValue({ state: "none", message: "" });
   f.stripeClients.mockReturnValue({ config: { terms: "qa-terms-v1" } });
@@ -160,6 +164,19 @@ describe("checkout gateway selection", () => {
     );
     expect(r.status).toBe(503);
     expect(rpc).not.toHaveBeenCalled();
+  });
+  it("refuses an unavailable method before creating an order", async () => {
+    for (const channel of ["PAYMAYA", "CIMB_FPX"]) {
+      const r = await checkout(
+        post({ ...input, payment: { gateway: "xendit", channel } }),
+      );
+      expect(r.status).toBe(409);
+    }
+    expect(rpc).not.toHaveBeenCalledWith(
+      "create_membership_commerce_order",
+      expect.anything(),
+    );
+    expect(f.xenditStart).not.toHaveBeenCalled();
   });
   it("rejects malformed channel codes", async () => {
     const r = await checkout(

@@ -16,6 +16,7 @@ import { stripeReadiness } from "@/lib/stripe-config";
 import { configuredGateways, xenditReadiness } from "@/lib/xendit-config";
 import { completePendingReferral } from "@/lib/referral-continuity";
 import { commerceFailureStatus } from "@/lib/commerce-errors";
+import { catalogueChannel } from "@/lib/xendit-channels";
 export async function POST(request: Request) {
   if (!sameOrigin(request)) return failure("Invalid request origin", 403);
   const input = checkoutSchema.safeParse(
@@ -36,11 +37,13 @@ export async function POST(request: Request) {
   // Resolve the gateway before any order is created.
   let start: (orderId: string) => Promise<unknown>;
   let terms: string;
+  let xenditLive = false;
   try {
     if (payment.gateway === "xendit") {
       const clients = xenditClients();
       if (!xenditReadiness().enabled) throw new Error("Checkout is disabled.");
       terms = clients.config.terms;
+      xenditLive = clients.config.livemode;
       start = (orderId) =>
         startXenditCheckout(orderId, user.id, payment.channel, clients);
     } else {
@@ -62,6 +65,30 @@ export async function POST(request: Request) {
       "Terms have changed. Refresh checkout and review them before continuing.",
       409,
     );
+  // Refuse a payment method that is not offered in this market before an
+  // order (and its stock hold) exists. Amount limits are checked once the
+  // server has priced the order.
+  if (payment.gateway === "xendit") {
+    const enabled = await Promise.resolve(
+      client.rpc("xendit_checkout_channels", {
+        p_market: input.data.market,
+        p_live: xenditLive,
+      }),
+    ).catch(() => ({ data: null, error: { code: "TRANSPORT" } }));
+    if (enabled.error || !Array.isArray(enabled.data))
+      return failure(
+        "Payment methods could not be checked. Please retry.",
+        503,
+      );
+    if (
+      !catalogueChannel(input.data.market, payment.channel) ||
+      !(enabled.data as string[]).includes(payment.channel)
+    )
+      return failure(
+        "This payment method is not available for your market. Choose another payment method.",
+        409,
+      );
+  }
   if (!input.data.quoteHash)
     return failure(
       "Review the current total before continuing to payment.",

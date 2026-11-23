@@ -1,6 +1,19 @@
 # RIWAY provider rollout — 23 November 2026
 
-## Latest live release - Xendit gateway with per-market xenPlatform sub-accounts
+## Latest live release - descriptive page titles
+
+PR #34 merged as `38262da318ac24472d432a226b91d0e13a6b9f30`. PR CI runs `45121166773` and `45121194349`, and merge CI run `45122147609`, passed the `verify` and `postgres-concurrency` jobs. No migration. The Playwright e2e steps in CI are still skipped because the `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` repository variables are unset. The e2e suite was instead run against staging and production from a local Playwright install.
+
+Artifact `14794102392` (19,784,428 bytes) matched SHA-256 `510e8399968ce1c23c01e35275d5efa2ed6f25e892312ca3e08038347b2b25cd` before extraction and upload. Cloudflare returned deployment `730b50c93c3245df9db2c12363322cb4`, etag `370e7a29cd8d156e1a79a604b6e6770f181dd5e633fa1e423a17b229823909d2`; the notification schedule was reapplied. Live checks on 23 November: 53/53 HTTP/API cases passed; a 27-route desktop and mobile sweep found no errors, failed requests, broken images or overflow, and no page that should be titled still has the generic title; the corrected WebGL-fallback e2e test passed on both viewports.
+
+Scope:
+- **Titles:** product pages take their title and description from the product, legal notices from the notice, and the sign-in, register, password, account, orders, staff and distributor pages have fixed titles.
+- **Test fix:** the WebGL-fallback e2e test now identifies the PURTIER page by its title. It still expected the hero heading from before the 16 November restoration.
+- **Deploy script fix (this PR):** without `--env`, `deploy-cloudflare-artifact.mjs` ignored the bundle path, a regression from PR #33. The first production attempt for this release therefore stopped before uploading anything. The fixed script deployed it.
+
+Staging (`riway-platform-staging`) was deployed beforehand with PR #34's own verified build (artifact `14794080781`, deployment `c8eab3d759ef47c6840f041f86b1bc91`) and passed the same checks.
+
+## Previous live release - Xendit gateway with per-market xenPlatform sub-accounts
 
 PR #31 merged as `0992a27a80966fd20820318f626ce095d30c60b5`. PR CI runs `45113303131` and `45113334150`, and merge CI run `45113480043`, passed the `verify` and `postgres-concurrency` jobs, including the new `xendit.sql` suite.
 

@@ -36,6 +36,14 @@ export const addressSchema = z.object({
   postal_code: z.string().trim().min(3).max(15),
   country: marketSchema,
 });
+export const paymentSelectionSchema = z.discriminatedUnion("gateway", [
+  z.object({ gateway: z.literal("stripe") }),
+  z.object({
+    gateway: z.literal("xendit"),
+    channel: z.string().regex(/^[A-Z0-9_]{2,40}$/),
+  }),
+]);
+export type PaymentSelection = z.infer<typeof paymentSelectionSchema>;
 export const checkoutSchema = z
   .object({
     market: marketSchema,
@@ -55,6 +63,9 @@ export const checkoutSchema = z
       .regex(/^[a-f0-9]{64}$/)
       .optional(),
     membershipConsent: membershipConsentSchema.optional(),
+    // Omitted = Stripe, the original gateway. Receiving account and amount are
+    // never accepted from the browser; only the gateway and channel choice.
+    payment: paymentSelectionSchema.optional(),
   })
   .refine((v) => v.market === v.address.country, {
     message: "Delivery country must match the selected market.",

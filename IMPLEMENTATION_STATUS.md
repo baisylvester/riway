@@ -1,5 +1,15 @@
 # Implementation status
 
+## Xendit gateway and xenPlatform routing - 23 November 2026
+
+Branch `integration/payment-gateway`. This is not yet merged, migrated on the hosted database, or deployed.
+
+Xendit Payment Sessions (hosted) are added as a second gateway beside Stripe. Customers choose a gateway, then a method, then a bank where the method needs one: PH e-wallets, QR Ph, online banking and cards; MY e-wallets, FPX banks and cards. SG has no documented Xendit channels and stays without them.
+
+Per RIWAY's decision (23 November 2026), each market's live payments go to its own xenPlatform sub-account (`for-user-id`); test mode may also use the master account. The account is resolved from the database and set by a market admin with MFA. Webhooks are verified with `x-callback-token`, and canonical session state is re-read in the attempt's account context. The database enforces one payable attempt per order, deducts stock once, and flags late, excess and orphan payments for review. Stripe behaviour is unchanged.
+
+Migration: `20261123090000_xendit_payments.sql`. Local validation: 495 tests (including end-to-end flows against the real migration), a passing hosted rollback-only rehearsal, TypeScript and a webpack production compile. Credentials, dashboard activation and sandbox payments are pending. See `XENDIT.md`.
+
 ## Membership enrolment at checkout - 17 November 2026
 
 PR #15 is merged and deployed. Approved qualifying packages carry an immutable membership rule. Checkout shows the enrolment Terms and Code of Conduct and stores the accepted versions, consent hash and sponsor (including the sponsor's RIWAY member ID). A paid order moves the enrolment to awaiting RIWAY confirmation; staff with market admin/compliance roles and MFA then confirm it against a verified RIWAY member record, which creates the membership and tier. Payment alone never grants member pricing. New routes: `/account/membership`, `/admin/memberships` and a client-only sample journey at `/membership/demo`. Next.js is upgraded from 16.4.3 to 16.4.6 after its build check flagged 16.4.3 as affected by a known vulnerability.

@@ -6,8 +6,14 @@ import {
   paymentClients,
   startStripeCheckout,
 } from "@/services/stripe-payments";
+import {
+  startXenditCheckout,
+  xenditClients,
+  XenditChannelError,
+} from "@/services/xendit-payments";
 import { NextResponse } from "next/server";
 import { stripeReadiness } from "@/lib/stripe-config";
+import { configuredGateways, xenditReadiness } from "@/lib/xendit-config";
 import { completePendingReferral } from "@/lib/referral-continuity";
 import { commerceFailureStatus } from "@/lib/commerce-errors";
 export async function POST(request: Request) {
@@ -21,19 +27,37 @@ export async function POST(request: Request) {
     return failure("Check your bag, delivery details and terms acceptance.");
   const { user, client } = await session();
   if (!user) return failure("Please sign in before checkout.", 401);
-  if (process.env.PAYMENT_PROVIDER !== "stripe")
+  const payment = input.data.payment ?? { gateway: "stripe" as const };
+  if (!configuredGateways().has(payment.gateway))
     return failure(
       "Online ordering is unavailable. RIWAY policy approval, product registration, approved pricing and payment integration are required.",
       409,
     );
-  let clients;
+  // Resolve the gateway before any order is created.
+  let start: (orderId: string) => Promise<unknown>;
+  let terms: string;
   try {
-    clients = paymentClients();
-    if (!stripeReadiness().enabled) throw new Error("Checkout is disabled.");
+    if (payment.gateway === "xendit") {
+      const clients = xenditClients();
+      if (!xenditReadiness().enabled) throw new Error("Checkout is disabled.");
+      terms = clients.config.terms;
+      start = (orderId) =>
+        startXenditCheckout(orderId, user.id, payment.channel, clients);
+    } else {
+      const clients = paymentClients();
+      if (!stripeReadiness().enabled) throw new Error("Checkout is disabled.");
+      terms = clients.config.terms;
+      start = (orderId) => startStripeCheckout(orderId, user.id, clients);
+    }
   } catch {
-    return failure("Stripe checkout is awaiting configuration.", 503);
+    return failure(
+      payment.gateway === "xendit"
+        ? "Xendit checkout is awaiting configuration."
+        : "Stripe checkout is awaiting configuration.",
+      503,
+    );
   }
-  if (input.data.termsVersion !== clients.config.terms)
+  if (input.data.termsVersion !== terms)
     return failure(
       "Terms have changed. Refresh checkout and review them before continuing.",
       409,
@@ -58,7 +82,7 @@ export async function POST(request: Request) {
       items: input.data.items,
       delivery: input.data.address,
       key: input.data.idempotencyKey,
-      terms: clients.config.terms,
+      terms,
       promotion_code: input.data.promotionCode ?? null,
       quote_hash: input.data.quoteHash,
       membership_consent: input.data.membershipConsent ?? null,
@@ -80,11 +104,11 @@ export async function POST(request: Request) {
       503,
     );
   try {
-    return NextResponse.json(
-      await startStripeCheckout(order.data, user.id, clients),
-      { headers: { "Cache-Control": "no-store" } },
-    );
-  } catch {
+    return NextResponse.json(await start(order.data), {
+      headers: { "Cache-Control": "no-store" },
+    });
+  } catch (error) {
+    if (error instanceof XenditChannelError) return failure(error.message, 409);
     return failure(
       "Payment could not be opened. Retry with the same bag, or resume this order from your account. No payment is confirmed here.",
       503,

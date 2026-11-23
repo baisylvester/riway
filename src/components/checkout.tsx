@@ -10,6 +10,13 @@ import {
 } from "@/lib/commerce-checkout";
 import { CheckoutQuote } from "./checkout-quote";
 import { MembershipConsentFields } from "./membership-consent";
+import {
+  PaymentMethodPicker,
+  allowedPaymentRedirect,
+  selectionPayload,
+  type Gateway,
+} from "./payment-method";
+import type { ChannelGroup, XenditChannel } from "@/lib/xendit-channels";
 export function Checkout({
   market,
   payment = {
@@ -17,6 +24,7 @@ export function Checkout({
     mode: "disabled",
     message: "Online ordering is not yet available.",
   },
+  xendit = { enabled: false, message: "", channels: [] },
 }: {
   market: Market;
   payment?: {
@@ -25,7 +33,26 @@ export function Checkout({
     message: string;
     termsVersion?: string;
   };
+  xendit?: {
+    enabled: boolean;
+    message: string;
+    termsVersion?: string;
+    channels: XenditChannel[];
+  };
 }) {
+  const gateways: Gateway[] = [
+    ...(payment.enabled ? (["stripe"] as const) : []),
+    ...(xendit.enabled ? (["xendit"] as const) : []),
+  ];
+  const enabled = gateways.length > 0;
+  const termsVersion = payment.enabled
+    ? payment.termsVersion
+    : xendit.termsVersion;
+  const [method, setMethod] = useState<{
+    gateway: Gateway;
+    group: ChannelGroup | null;
+    channel: string | null;
+  }>({ gateway: gateways[0] ?? "stripe", group: null, channel: null });
   const statusId = useId();
   const attempt = useRef({ payload: "", key: "" });
   const { items } = useStore(),
@@ -80,8 +107,13 @@ export function Checkout({
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (payment.enabled && !currentQuote) {
+    if (enabled && !currentQuote) {
       await review();
+      return;
+    }
+    const selection = enabled ? selectionPayload(method) : undefined;
+    if (selection === null) {
+      setMessage("Choose a payment method and bank before continuing.");
       return;
     }
     setBusy(true);
@@ -98,7 +130,7 @@ export function Checkout({
         items,
         address: { ...address, country: market },
         terms: f.get("terms") === "on",
-        termsVersion: payment.termsVersion,
+        termsVersion,
         promotionCode: quoteSelection(market, items, code).promotionCode,
         quoteHash: currentQuote?.quoteHash,
         membershipConsent: currentQuote?.membership
@@ -110,6 +142,8 @@ export function Checkout({
             }
           : undefined,
       };
+      // The payment choice is not part of the order: changing the method or
+      // bank reuses the same order instead of creating a second one.
       const fingerprint = JSON.stringify(payload);
       if (attempt.current.payload !== fingerprint)
         attempt.current = { payload: fingerprint, key: crypto.randomUUID() };
@@ -118,18 +152,15 @@ export function Checkout({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...payload,
+          payment: selection,
           idempotencyKey: attempt.current.key,
         }),
       });
       const d = await r.json();
       if (r.ok && typeof d.url === "string") {
-        const url = new URL(d.url, window.location.origin);
-        if (
-          (url.protocol === "https:" &&
-            url.hostname === "checkout.stripe.com") ||
-          url.origin === window.location.origin
-        ) {
-          window.location.assign(url.href);
+        const href = allowedPaymentRedirect(d.url, window.location.origin);
+        if (href) {
+          window.location.assign(href);
           return;
         }
       }
@@ -137,7 +168,7 @@ export function Checkout({
         d.error?.message ??
           "Payment is not confirmed here. Check your orders before trying again.",
       );
-      if (payment.enabled && r.status === 409) setQuoted(null);
+      if (enabled && r.status === 409) setQuoted(null);
     } catch {
       setMessage(
         "Checkout could not be reached. Check your orders before trying again.",
@@ -155,7 +186,11 @@ export function Checkout({
     >
       <div className="panel stack">
         <h2>Delivery details</h2>
-        <p className="muted small">{payment.message}</p>
+        <p className="muted small">
+          {[payment.message, xendit.enabled ? xendit.message : ""]
+            .filter(Boolean)
+            .join(" ")}
+        </p>
         <div className="form-grid">
           {[
             ["full_name", "Full name"],
@@ -221,21 +256,31 @@ export function Checkout({
             qualification={currentQuote.membership}
           />
         )}
+        {enabled && currentQuote && (
+          <PaymentMethodPicker
+            gateways={gateways}
+            channels={xendit.channels}
+            totalMinor={currentQuote.totalMinor}
+            value={method}
+            onChange={setMethod}
+            disabled={busy}
+          />
+        )}
         {!currentQuote && quoted && (
           <p className="notice">
             Your selection changed. Review the current total again.
           </p>
         )}
         <div className="notice">
-          {payment.enabled
-            ? "Market approval, verified sponsor, approved pricing and stock are checked before Stripe opens. Card details are entered only on Stripe."
+          {enabled
+            ? "Market approval, verified sponsor, approved pricing and stock are checked before payment opens. Card, wallet and bank details are entered only on Stripe or Xendit, never on RIWAY."
             : "Sales are closed pending policy and regulatory approvals. No card details or payment are collected."}{" "}
           No approved therapeutic claims.
         </div>
         <label className="checkbox">
           <input name="terms" type="checkbox" required />
           <span>
-            {payment.enabled ? (
+            {enabled ? (
               <>
                 I accept the <a href="/legal/terms">Terms of Sale</a> and{" "}
                 <a href="/legal/conduct">Code of Conduct</a>.
@@ -248,9 +293,11 @@ export function Checkout({
         <button className="button" disabled={busy || !items.length}>
           {busy
             ? "Checking…"
-            : payment.enabled
-              ? "Continue to Stripe"
-              : "Check ordering availability"}
+            : !enabled
+              ? "Check ordering availability"
+              : method.gateway === "xendit"
+                ? "Continue to Xendit"
+                : "Continue to Stripe"}
         </button>
         <p id={statusId} role="status">
           {message}

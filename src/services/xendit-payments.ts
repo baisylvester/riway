@@ -439,6 +439,43 @@ export async function reconcileXenditAttempt(
   return result.data as string;
 }
 
+/** One-line, secret-free description of a payment failure for Worker logs:
+ * error type, Xendit HTTP status and error code, and which reply fields failed
+ * validation (paths and expectations only, never values). */
+export function describePaymentError(error: unknown) {
+  if (error instanceof XenditRequestError)
+    return {
+      type: "XenditRequestError",
+      status: error.status,
+      code: error.code,
+    };
+  if (error instanceof z.ZodError)
+    return {
+      type: "UnexpectedShape",
+      issues: error.issues.slice(0, 8).map((i) => ({
+        path: i.path.join("."),
+        code: i.code,
+        expected: "expected" in i ? String(i.expected) : undefined,
+      })),
+    };
+  if (error instanceof Error)
+    return {
+      type: error.constructor.name,
+      message: error.message.slice(0, 160),
+    };
+  return { type: typeof error };
+}
+export function logPaymentError(where: string, error: unknown, ref?: string) {
+  console.error(
+    JSON.stringify({
+      event: "xendit_error",
+      where,
+      ref,
+      ...describePaymentError(error),
+    }),
+  );
+}
+
 export function verifyCallbackToken(received: string | null, expected: string) {
   const a = Buffer.from(received ?? ""),
     b = Buffer.from(expected);

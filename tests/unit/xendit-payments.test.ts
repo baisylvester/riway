@@ -10,6 +10,8 @@ import {
   verifyCallbackToken,
   XenditChannelError,
   XenditUncertainError,
+  describePaymentError,
+  XenditRequestError,
   type XenditAttempt,
   type XenditClients,
 } from "../../src/services/xendit-payments";
@@ -581,5 +583,32 @@ describe("reconciling a Xendit session", () => {
     await expect(
       reconcileXenditAttempt(attemptId, "evt", h.clients),
     ).rejects.toThrow(/reference/);
+  });
+});
+
+describe("payment error logging", () => {
+  it("describes failures without secrets or reply values", async () => {
+    const { z } = await import("zod");
+    expect(
+      describePaymentError(
+        new XenditRequestError(400, "INVALID_PAYMENT_CHANNEL"),
+      ),
+    ).toEqual({
+      type: "XenditRequestError",
+      status: 400,
+      code: "INVALID_PAYMENT_CHANNEL",
+    });
+    const parsed = z
+      .object({ amount: z.number(), secret: z.string() })
+      .safeParse({ amount: "xnd_development_leak", secret: 5 });
+    const text = JSON.stringify(describePaymentError(parsed.error));
+    expect(text).toContain("amount");
+    expect(text).not.toContain("xnd_development_leak");
+    expect(
+      describePaymentError(new XenditUncertainError("Xendit did not answer.")),
+    ).toEqual({
+      type: "XenditUncertainError",
+      message: "Xendit did not answer.",
+    });
   });
 });

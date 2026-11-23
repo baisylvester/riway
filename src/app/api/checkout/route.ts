@@ -10,6 +10,7 @@ import {
   startXenditCheckout,
   xenditClients,
   XenditChannelError,
+  logPaymentError,
 } from "@/services/xendit-payments";
 import { NextResponse } from "next/server";
 import { stripeReadiness } from "@/lib/stripe-config";
@@ -136,6 +137,7 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     if (error instanceof XenditChannelError) return failure(error.message, 409);
+    logPaymentError(`checkout:${payment.gateway}`, error, order.data);
     return failure(
       "Payment could not be opened. Retry with the same bag, or resume this order from your account. No payment is confirmed here.",
       503,

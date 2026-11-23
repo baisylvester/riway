@@ -3,6 +3,7 @@ import { z } from "zod";
 import { failure } from "@/lib/http";
 import { limitedText } from "@/lib/request-body";
 import {
+  logPaymentError,
   parseSessionWebhook,
   reconcileXenditAttempt,
   verifyCallbackToken,
@@ -55,7 +56,8 @@ export async function POST(request: Request) {
       event.data.payment_session_id,
     );
     return ok({ received: true, ignored: outcome === "unknown" || undefined });
-  } catch {
+  } catch (error) {
+    logPaymentError("webhook", error, attempt.data);
     // Non-2xx makes Xendit retry; never acknowledge before the DB transaction.
     return failure("Payment event could not be reconciled.", 503);
   }

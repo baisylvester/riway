@@ -21,3 +21,17 @@ it('fails closed if the RIWAY binding is absent', async () => {
   const response = await entry.fetch(new Request('https://riway-platform.pages.dev/'), {});
   expect(response.status).toBe(503);
 });
+
+it('staging Pages forwards only to the staging Worker, with the same gateway code', async () => {
+  const { readFileSync } = await import('node:fs');
+  const { parse } = await import('jsonc-parser');
+  const config = (dir: string) => parse(readFileSync(`deployment/${dir}/wrangler.jsonc`, 'utf8'));
+  expect(config('pages-staging').name).toBe('riway-platform-staging');
+  expect(config('pages-staging').services).toEqual([{ binding: 'RIWAY_APP', service: 'riway-platform-staging' }]);
+  expect(config('pages').services).toEqual([{ binding: 'RIWAY_APP', service: 'riway-platform' }]);
+  for (const file of ['_worker.js', '_routes.json', '.assetsignore'])
+    expect(readFileSync(`deployment/pages-staging/${file}`, 'utf8')).toBe(readFileSync(`deployment/pages/${file}`, 'utf8'));
+  const app = parse(readFileSync('wrangler.jsonc', 'utf8'));
+  expect(app.env.staging.vars.NEXT_PUBLIC_SITE_URL).toBe('https://riway-platform-staging.pages.dev');
+  expect(app.env.staging.workers_dev).toBe(false);
+});

@@ -26,9 +26,7 @@ it('staging Pages forwards only to the staging Worker, with the same gateway cod
   const { readFileSync } = await import('node:fs');
   const { parse } = await import('jsonc-parser');
   // Line endings differ between checkouts; compare the content only.
-  const read = (file: string) => readFileSync(file, 'utf8').replace(/
-/g, '
-');
+  const read = (file: string) => readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
   const config = (dir: string) => parse(readFileSync(`deployment/${dir}/wrangler.jsonc`, 'utf8'));
   expect(config('pages-staging').name).toBe('riway-platform-staging');
   expect(config('pages-staging').services).toEqual([{ binding: 'RIWAY_APP', service: 'riway-platform-staging' }]);

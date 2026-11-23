@@ -1,4 +1,5 @@
 name: Deploy validated RIWAY payment gateway
+run-name: Deploy RIWAY payment gateway with current credentials
 
 on:
   push:

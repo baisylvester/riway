@@ -21,6 +21,19 @@
 
 Do not send production identities, addresses or orders to an unapproved provider. Do not guess API paths from these interfaces. The interfaces represent application needs, not claims that RIWAY already exposes matching endpoints.
 
+## Next integration seams
+
+`src/services/production-integrations.ts` contains server-only, fail-closed contracts for the planned provider phase:
+
+- `StoreOwnerInventoryAdapter` for stock snapshots, reservations, releases, allocations, reconciliation, and signed webhooks.
+- `TransactionalEmailProvider` for idempotent transactional messages, intended for Resend.
+- `ObjectStorageProvider` for signed uploads/downloads and deletion, intended for Cloudflare R2.
+- `integrationFlags()` for explicit rollout flags.
+
+Clerk, Resend and R2 implementations now accompany these contracts; see `PROVIDER-IMPLEMENTATION.md` for setup and verification. Store-owner inventory is managed inside RIWAY first: RIWAY is the super admin and third-party store owners are tenants. External POS/API synchronization remains deferred until a concrete provider is selected. The Clerk identity bridge preserves UUID application identities and uses verified Supabase third-party JWTs plus a private issuer/subject mapping. Production defaults still use Supabase Auth/Storage and disable email/external inventory.
+
+The existing local inventory model already includes on-hand/reserved quantities, movement records, reservations, expiry handling, row-level access controls, and admin adjustment UI. The store-owner adapter must be layered on top of that model; it must not trust browser quantities or overwrite local state without validated, idempotent reconciliation.
+
 ## Integration sequence
 
 1. Review client documentation; resolve contract/business-rule gaps and data location.

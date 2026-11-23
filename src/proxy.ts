@@ -1,7 +1,46 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-export async function proxy(request: NextRequest) {
+import type { NextFetchEvent } from "next/server";
+import { clerkMiddleware } from "@clerk/nextjs/server";
+import { authProvider } from "./lib/auth-config";
+const clerkProxy = clerkMiddleware(async (auth, request) => {
+  const identity = await auth();
+  const protectedPage = [
+    "/account",
+    "/admin",
+    "/distributor",
+    "/operations",
+  ].some(
+    (prefix) =>
+      request.nextUrl.pathname === prefix ||
+      request.nextUrl.pathname.startsWith(prefix + "/"),
+  );
+  const response =
+    !identity.userId && protectedPage
+      ? NextResponse.redirect(new URL("/auth/login", request.url))
+      : NextResponse.next();
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
+});
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  if (authProvider() === "clerk") return clerkProxy(request, event);
   let response = NextResponse.next({ request });
+  if (
+    ![
+      "/account",
+      "/admin",
+      "/distributor",
+      "/operations",
+      "/api",
+      "/auth",
+      "/checkout",
+    ].some(
+      (prefix) =>
+        request.nextUrl.pathname === prefix ||
+        request.nextUrl.pathname.startsWith(prefix + "/"),
+    )
+  )
+    return response;
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   if (!url || !key) return response;
@@ -23,7 +62,7 @@ export async function proxy(request: NextRequest) {
   const path = request.nextUrl.pathname;
   if (
     !user &&
-    ["/account", "/admin", "/distributor"].some(
+    ["/account", "/admin", "/distributor", "/operations"].some(
       (prefix) => path === prefix || path.startsWith(prefix + "/"),
     )
   ) {
@@ -37,6 +76,7 @@ export async function proxy(request: NextRequest) {
 }
 export const config = {
   matcher: [
+    "/((?!_next|images|design|fonts|favicon.ico).*)",
     "/account/:path*",
     "/admin/:path*",
     "/distributor/:path*",

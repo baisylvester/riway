@@ -1,4 +1,4 @@
-import { AuthForm } from "@/components/auth-form";
+import { AuthPanel } from "@/components/auth-panel";
 export default function Register() {
   return (
     <section className="auth-container">
@@ -8,7 +8,7 @@ export default function Register() {
         Create your website account. Existing RIWAY membership will require
         verification.
       </p>
-      <AuthForm mode="register" />
+      <AuthPanel mode="register" />
     </section>
   );
 }

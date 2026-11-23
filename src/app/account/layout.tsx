@@ -2,6 +2,8 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { session } from "@/lib/data";
 import { SignOut } from "@/components/auth-form";
+import { ClerkSignOut } from "@/components/provider-auth";
+import { authProvider } from "@/lib/auth-config";
 export default async function AccountLayout({
   children,
 }: {
@@ -16,7 +18,7 @@ export default async function AccountLayout({
           <span className="eyebrow">YOUR RIWAY WORLD</span>
           <h1>Your account.</h1>
         </div>
-        <SignOut />
+        {authProvider() === "clerk" ? <ClerkSignOut /> : <SignOut />}
       </div>
       <p className="small muted">{user.email}</p>
       <nav className="tab-links" aria-label="Account navigation">
@@ -24,6 +26,7 @@ export default async function AccountLayout({
         <Link href="/account/orders">Orders</Link>
         <Link href="/account/addresses">Addresses</Link>
         <Link href="/account/security">Security</Link>
+        <Link href="/operations">Store management</Link>
         <Link href="/distributor">Distributor</Link>
       </nav>
       {children}

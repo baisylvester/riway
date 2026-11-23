@@ -1,5 +1,11 @@
 # Testing
 
+## Verified on 5 November 2026 — provider/tenant implementation
+
+Typecheck and production build pass. All 41 automated tests pass across 7 files, including embedded PostgreSQL replay of every migration and the existing RLS/checkout/operations SQL scripts. New database tests cover tenant isolation, role escalation, stock limits, idempotency conflicts/replay, MFA, suspension/revocation, final-owner protection, Clerk UUID mapping/deletion, and durable queue leases/forged completion. Provider tests use fakes and send no external messages or objects. Fifteen local HTTP checks and four newly added desktop Chrome/mobile-emulation browser checks pass with confirmed process exit 0. Use `PLAYWRIGHT_EXTERNAL_SERVER=1` with `PLAYWRIGHT_PORT` when testing against a separately started production server to avoid Windows npm server teardown hangs.
+
+Embedded PostgreSQL supplies minimal Supabase SQL interfaces; it does not verify hosted JWTs, actual Clerk login, real R2 transport, Resend delivery, multi-connection concurrency or Linux OpenNext SDK compatibility. Those require staging credentials and UAT. No hosted migrations, test identities or roles were created.
+
 ## UI integration verified on 2026-11-03
 
 Typecheck, 20 unit tests, Next.js production build and all 11 HTTP checks pass. Full Playwright Chromium/mobile suite: 21 passed, one intentional desktop skip for the mobile-only menu. New coverage includes market failure feedback, category/empty states, quantity limits/removal, unknown-product UI, keyboard goals, reduced motion, WebGL failure/context loss, client-route cleanup and mobile-menu focus behavior. See DESIGN-INTEGRATION.md for the parity inventory.

@@ -1,8 +1,8 @@
-import { MFA } from "@/components/mfa";
+import { SecurityPanel } from "@/components/auth-panel";
 export default function Security() {
   return (
     <div style={{ maxWidth: 600 }}>
-      <MFA />
+      <SecurityPanel />
     </div>
   );
 }

@@ -1,5 +1,9 @@
 # Deployment and handover
 
+## Pending provider rollout — 5 November 2026
+
+See `PROVIDER-IMPLEMENTATION.md` for provider variables, exact staging migration sequence, verified-issuer/user mapping, super-admin provisioning, notification worker scheduling, R2 manifest migration, sandbox acceptance, cutover and rollback. Build-time CSP/Clerk values must match runtime configuration. This increment has not been deployed and has not changed hosted schema or provider flags. Keep the previous release and a database backup; retain additive identity/tenant/journal data during rollback. Clerk-only identities do not automatically gain native Supabase credentials when switching back.
+
 ## Current state
 
 The application is deployed to Cloudflare Workers at https://riway-platform.ai-edu-web.workers.dev, following the user's Cloudflare deployment request. Supabase remains the designated backend. Remote main is published through the GitHub connector. See CLOUDFLARE.md for the verified deployment ID, build commit, artifact checksum and manual redeployment process. Payments and client APIs remain disabled. No production RIWAY domain has been changed.

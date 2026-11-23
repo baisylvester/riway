@@ -30,6 +30,11 @@ export function Checkout({ market }: { market: Market }) {
         }),
       });
       const d = await r.json();
+      if (r.ok && typeof d.url === "string") {
+        // Card and wallet details are entered only on Stripe's hosted page.
+        window.location.assign(d.url);
+        return;
+      }
       setMessage(d.error?.message ?? "No payment has been taken.");
     } catch {
       setMessage("Checkout could not be reached. No payment has been taken.");

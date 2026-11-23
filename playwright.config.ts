@@ -16,9 +16,12 @@ export default defineConfig({
       use: { ...devices["iPhone 13"], defaultBrowserType: "chromium" },
     },
   ],
-  webServer: {
-    command: `npm run start -- --port ${port}`,
-    url: baseURL,
-    reuseExistingServer: !process.env.PLAYWRIGHT_PORT,
-  },
+  webServer:
+    process.env.PLAYWRIGHT_EXTERNAL_SERVER === "1"
+      ? undefined
+      : {
+          command: `npm run start -- --port ${port}`,
+          url: baseURL,
+          reuseExistingServer: !process.env.PLAYWRIGHT_PORT,
+        },
 });

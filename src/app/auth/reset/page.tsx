@@ -1,9 +1,9 @@
-import { AuthForm } from "@/components/auth-form";
+import { AuthPanel } from "@/components/auth-panel";
 export default function Reset() {
   return (
     <section className="auth-container">
       <h1>Reset your password.</h1>
-      <AuthForm mode="reset" />
+      <AuthPanel mode="reset" />
     </section>
   );
 }

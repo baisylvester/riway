@@ -1,5 +1,9 @@
 # Implementation status
 
+## New local implementation — 5 November 2026
+
+Clerk's configurable login/UUID identity bridge, Resend durable outbox and worker, R2 editorial storage and tenant inventory management are now implemented locally. RIWAY is the separately provisioned super admin; third-party store owners manage internal stock as isolated tenants. Forty-one automated tests, typecheck, build, fifteen HTTP checks and four new browser checks pass. Three migrations remain unapplied to hosted Supabase, and no provider flags have been enabled. Real provider credentials, staging dashboard configuration, administrator provisioning, authenticated UAT and Linux OpenNext verification remain. External POS sync is deferred per user direction. See `PROVIDER-IMPLEMENTATION.md` for current scope and precise limits; the older table below describes the earlier deployed release.
+
 Updated 2026-11-02. Live Cloudflare deployment is verified at https://riway-platform.ai-edu-web.workers.dev; 11 live HTTP checks passed. User confirmed platform development, then explicitly deferred payments and client APIs. Work is in the mandatory project directory. Existing Supabase project is connected; no extra project was created.
 
 | Area                                                                | Status                                                       | Practical limit                                                                               |

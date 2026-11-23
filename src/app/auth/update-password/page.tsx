@@ -1,9 +1,9 @@
-import { AuthForm } from "@/components/auth-form";
+import { AuthPanel } from "@/components/auth-panel";
 export default function Update() {
   return (
     <section className="auth-container">
       <h1>Choose a new password.</h1>
-      <AuthForm mode="update" />
+      <AuthPanel mode="update" />
     </section>
   );
 }

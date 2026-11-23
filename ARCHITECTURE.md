@@ -1,5 +1,9 @@
 # Architecture
 
+## Provider and tenant extension — 5 November 2026
+
+See `PROVIDER-IMPLEMENTATION.md` for the current implementation and rollout. `/operations` introduces RIWAY super-admin oversight and isolated store-owner tenants with manual inventory management. Clerk authentication is configurable alongside the native path; database requests still use user tokens/RLS through a private mapping to canonical UUID identities. Resend jobs are queued transactionally and consumed by a service-only worker. R2 preserves existing media through a per-asset backend column. These migrations have been tested in embedded PostgreSQL and are not applied to hosted Supabase. Descriptions below of Supabase-only authentication/storage reflect the previous deployed revision.
+
 ## Decisions
 
 Hosting update: the user's subsequent Cloudflare request supersedes the initial Vercel hosting target. The existing Next.js application is deployed to Cloudflare Workers through OpenNext; Supabase is unchanged. See CLOUDFLARE.md for the current verified release.

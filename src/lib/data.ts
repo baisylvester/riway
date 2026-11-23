@@ -3,6 +3,9 @@ import { db } from "./supabase/server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { asMarket, type Offer, type Product } from "./domain";
+import { auth, currentUser } from "@clerk/nextjs/server";
+import { authProvider, secondFactorVerified } from "./auth-config";
+import { cache } from "react";
 export async function currentMarket() {
   return asMarket((await cookies()).get("riway-market")?.value);
 }
@@ -47,7 +50,8 @@ const previewCatalogue: { products: Product[]; offers: Offer[] } = {
       name: "PURTIER Placenta",
       category: "Nutrition",
       subtitle: "The luxury of health.",
-      description: "A considered presentation of the PURTIER Placenta collection.",
+      description:
+        "A considered presentation of the PURTIER Placenta collection.",
       image_url: "/design/purtier-7th.png",
       status: "published",
     },
@@ -64,13 +68,34 @@ const previewCatalogue: { products: Product[]; offers: Offer[] } = {
   ],
   offers: [],
 };
-export async function session() {
+export const session = cache(async () => {
   const client = await db();
+  if (authProvider() === "clerk") {
+    const identity = await auth();
+    if (!identity.userId) return { client, user: null };
+    const { data: id, error } = await client.rpc("ensure_clerk_profile");
+    if (error || typeof id !== "string")
+      throw new Error("Account synchronization is unavailable.");
+    const user = await currentUser();
+    const primary = user?.emailAddresses.find(
+      (address) => address.id === user.primaryEmailAddressId,
+    );
+    return {
+      client,
+      user: {
+        id,
+        email:
+          primary?.verification?.status === "verified"
+            ? primary.emailAddress
+            : undefined,
+      },
+    };
+  }
   const {
     data: { user },
   } = await client.auth.getUser();
   return { client, user };
-}
+});
 export async function requireSession() {
   const current = await session();
   if (!current.user) redirect("/auth/login");
@@ -79,6 +104,17 @@ export async function requireSession() {
 export async function staffAccess() {
   const { client, user } = await session();
   if (!user) return { user: null, allowed: false, mfa: false };
+  if (authProvider() === "clerk") {
+    const [{ data: roles }, identity] = await Promise.all([
+      client.from("staff_roles").select("market,role").eq("user_id", user.id),
+      auth(),
+    ]);
+    return {
+      user,
+      allowed: !!roles?.length,
+      mfa: secondFactorVerified(identity.sessionClaims),
+    };
+  }
   const [{ data: roles }, { data: aal }] = await Promise.all([
     client.from("staff_roles").select("market,role").eq("user_id", user.id),
     client.auth.mfa.getAuthenticatorAssuranceLevel(),

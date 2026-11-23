@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { staffAccess } from "@/lib/data";
-import { MFA } from "@/components/mfa";
+import { SecurityPanel } from "@/components/auth-panel";
 import { AdminNav } from "@/components/admin-nav";
 export default async function AdminLayout({
   children,
@@ -27,7 +27,7 @@ export default async function AdminLayout({
     return (
       <section className="section" style={{ maxWidth: 700 }}>
         <h1>Verify your identity.</h1>
-        <MFA />
+        <SecurityPanel />
       </section>
     );
   return (

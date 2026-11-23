@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/supabase/server";
+import { authProvider } from "@/lib/auth-config";
 export async function GET(request: Request) {
+  if (authProvider() === "clerk")
+    return NextResponse.redirect(new URL("/auth/login", request.url));
   const url = new URL(request.url),
     code = url.searchParams.get("code");
   const next = url.searchParams.get("next");

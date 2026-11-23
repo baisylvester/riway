@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireSession } from "@/lib/data";
 import { ProfileForm } from "@/components/forms";
+export const metadata = { title: "Your account" };
 export default async function Account() {
   const { client, user } = await requireSession();
   const [

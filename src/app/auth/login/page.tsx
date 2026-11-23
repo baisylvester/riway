@@ -1,6 +1,7 @@
 import { AuthPanel } from "@/components/auth-panel";
 import { session } from "@/lib/data";
 import { redirect } from "next/navigation";
+export const metadata = { title: "Sign in" };
 export default async function Login({
   searchParams,
 }: {

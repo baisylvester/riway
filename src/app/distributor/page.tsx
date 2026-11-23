@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { session } from "@/lib/data";
 import QRCode from "qrcode";
+export const metadata = { title: "Distributor dashboard" };
 export default async function Distributor() {
   const { client, user } = await session();
   if (!user) redirect("/auth/login");

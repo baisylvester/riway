@@ -1,4 +1,5 @@
 import Link from "next/link";
+export const metadata = { title: "Policies & conduct" };
 export default function Legal() {
   return (
     <section className="section page-section">

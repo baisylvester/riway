@@ -12,6 +12,7 @@ import { orderFulfilmentSchema, orderStatusLabels } from "@/lib/fulfilment";
 import { FulfilmentTimeline } from "@/components/fulfilment-timeline";
 import { orderCancellationSchema } from "@/lib/cancellation";
 import { CancelOrderForm } from "@/components/cancel-order-form";
+export const metadata = { title: "Order details" };
 export default async function Order({
   params,
   searchParams,

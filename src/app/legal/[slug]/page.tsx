@@ -63,6 +63,14 @@ const notices: Record<string, { title: string; paragraphs: string[] }> = {
     ],
   },
 };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
+  const n = notices[(await params).slug];
+  return n ? { title: n.title } : {};
+}
 export default async function Notice({
   params,
 }: {

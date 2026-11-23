@@ -135,7 +135,10 @@ async function xenditRequest(
       headers,
       body: body === undefined ? undefined : JSON.stringify(body),
       signal: AbortSignal.timeout(10000),
-      redirect: "error",
+      // Cloudflare Workers reject redirect: "error" (only "follow" and
+      // "manual" exist there). Never follow a redirect with credentials;
+      // an unexpected redirect is handled below as an uncertain outcome.
+      redirect: "manual",
     });
   } catch {
     // A timeout never proves the request was not processed.
@@ -148,7 +151,11 @@ async function xenditRequest(
   } catch {
     data = null;
   }
-  if (response.status >= 500)
+  if (
+    response.status >= 500 ||
+    (response.status >= 300 && response.status < 400) ||
+    response.type === "opaqueredirect"
+  )
     throw new XenditUncertainError("Xendit unavailable.");
   if (!response.ok) {
     const raw = (data as { error_code?: unknown })?.error_code;

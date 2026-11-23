@@ -35,4 +35,42 @@
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_QP1Wn3dmD8FVmdH07fhK6A_HzFKMl_y",
     "NEXT_PUBLIC_SITE_URL": "https://riway-platform.pages.dev",
   },
+  // Staging shares the RIWAY database but runs as its own Worker on workers.dev
+  // with Xendit in test mode. Deployed only with
+  // `node scripts/deploy-cloudflare-artifact.mjs <bundle> --env staging`,
+  // which refuses live-mode payment settings for this environment.
+  "env": {
+    "staging": {
+      "name": "riway-platform-staging",
+      "workers_dev": true,
+      "triggers": { "crons": ["* * * * *"] },
+      "services": [
+        {
+          "binding": "WORKER_SELF_REFERENCE",
+          "service": "riway-platform-staging",
+        },
+      ],
+      "vars": {
+        "NEXT_PUBLIC_SUPABASE_URL": "https://skiimthwadramxdzhgoy.supabase.co",
+        "PAYMENT_PROVIDER": "disabled",
+        "PAYMENT_PROVIDERS": "xendit",
+        "STRIPE_MODE": "test",
+        "STRIPE_LIVE_APPROVED": "false",
+        "XENDIT_MODE": "test",
+        "XENDIT_LIVE_APPROVED": "false",
+        "COMMERCE_TERMS_VERSION": "2026-11-draft",
+        "RIWAY_INTEGRATION": "disabled",
+        "AUTH_PROVIDER": "supabase",
+        "EMAIL_PROVIDER": "disabled",
+        "STORAGE_PROVIDER": "supabase",
+        "INVENTORY_PROVIDER": "disabled",
+        "EMAIL_DELIVERY_MODE": "test",
+        "LOW_INVENTORY_REPORT_TIMEZONE": "Asia/Shanghai",
+        "LOW_INVENTORY_REPORT_HOUR": "9",
+        "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_QP1Wn3dmD8FVmdH07fhK6A_HzFKMl_y",
+        "NEXT_PUBLIC_SITE_URL": "https://riway-platform-staging.ai-edu-web.workers.dev",
+        "SEARCH_INDEXING": "disabled",
+      },
+    },
+  },
 }

@@ -35,14 +35,16 @@
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_QP1Wn3dmD8FVmdH07fhK6A_HzFKMl_y",
     "NEXT_PUBLIC_SITE_URL": "https://riway-platform.pages.dev",
   },
-  // Staging shares the RIWAY database but runs as its own Worker on workers.dev
-  // with Xendit in test mode. Deployed only with
+  // Staging shares the RIWAY database but runs as its own Worker with Xendit in
+  // test mode, served at https://riway-platform-staging.pages.dev. Deployed only with
   // `node scripts/deploy-cloudflare-artifact.mjs <bundle> --env staging`,
   // which refuses live-mode payment settings for this environment.
   "env": {
     "staging": {
       "name": "riway-platform-staging",
-      "workers_dev": true,
+      // Served publicly through the riway-platform-staging Pages project
+      // (deployment/pages-staging); no workers.dev address.
+      "workers_dev": false,
       "triggers": { "crons": ["* * * * *"] },
       "services": [
         {
@@ -68,7 +70,7 @@
         "LOW_INVENTORY_REPORT_TIMEZONE": "Asia/Shanghai",
         "LOW_INVENTORY_REPORT_HOUR": "9",
         "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_QP1Wn3dmD8FVmdH07fhK6A_HzFKMl_y",
-        "NEXT_PUBLIC_SITE_URL": "https://riway-platform-staging.ai-edu-web.workers.dev",
+        "NEXT_PUBLIC_SITE_URL": "https://riway-platform-staging.pages.dev",
         "SEARCH_INDEXING": "disabled",
       },
     },

@@ -1,0 +1,9 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  // Staging's public address, riway-platform-staging.pages.dev. Forwards only
+  // to the staging Worker, never to production.
+  "name": "riway-platform-staging",
+  "pages_build_output_dir": ".",
+  "compatibility_date": "2026-11-02",
+  "services": [{ "binding": "RIWAY_APP", "service": "riway-platform-staging" }],
+}

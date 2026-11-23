@@ -18,6 +18,9 @@ jobs:
   deploy:
     if: github.ref == 'refs/heads/integration/payment-gateway'
     runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: https://riway-platform.pages.dev
     timeout-minutes: 15
     steps:
       - name: Check Cloudflare deployment credentials

@@ -10,13 +10,35 @@ const requireWrangler = createRequire(
   path.resolve("node_modules/wrangler/package.json"),
 );
 const { hash } = requireWrangler("blake3-wasm");
-const config = parse(fs.readFileSync("wrangler.jsonc", "utf8"));
-const root = path.resolve(process.argv[2] ?? ".cache/cloudflare-linux");
+const args = process.argv.slice(2);
+const envFlag = args.indexOf("--env");
+const envName = envFlag >= 0 ? args[envFlag + 1] : null;
+const bundleArg = args.find((a, i) => !a.startsWith("--") && i !== envFlag + 1);
+const base_config = parse(fs.readFileSync("wrangler.jsonc", "utf8"));
+// Named environments replace the Worker name, vars, services and triggers.
+const config = envName
+  ? { ...base_config, ...(base_config.env?.[envName] ?? {}), env: undefined }
+  : base_config;
+if (envName && !base_config.env?.[envName])
+  throw new Error(`Unknown environment "${envName}".`);
+const root = path.resolve(bundleArg ?? ".cache/cloudflare-linux");
 const account = process.env.CLOUDFLARE_ACCOUNT_ID;
 if (!account || !/^[a-f0-9]{32}$/.test(account))
   throw new Error("Set CLOUDFLARE_ACCOUNT_ID to the approved account.");
-if (config.name !== "riway-platform")
+const targets = { "": "riway-platform", staging: "riway-platform-staging" };
+if (config.name !== targets[envName ?? ""])
   throw new Error("Unexpected Worker target.");
+// Staging shares the production database: it must never take live payments.
+if (
+  envName === "staging" &&
+  (config.vars.XENDIT_MODE !== "test" ||
+    config.vars.XENDIT_LIVE_APPROVED !== "false" ||
+    config.vars.STRIPE_LIVE_APPROVED !== "false" ||
+    !String(config.vars.NEXT_PUBLIC_SITE_URL).startsWith(
+      "https://riway-platform-staging.",
+    ))
+)
+  throw new Error("Staging must stay in payment test mode on its own address.");
 // Wrangler names the bundled entry after the configured main (custom-worker.ts).
 const workerEntry = path.basename(config.main).replace(/\.[^.]+$/, ".js");
 const workerFile = path.join(root, ".cloudflare-bundle", workerEntry);
@@ -187,7 +209,10 @@ console.log(
 await api(`/workers/scripts/${config.name}/subdomain`, {
   method: "POST",
   headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ enabled: config.workers_dev !== false, previews_enabled: config.workers_dev !== false }),
+  body: JSON.stringify({
+    enabled: config.workers_dev !== false,
+    previews_enabled: config.workers_dev !== false,
+  }),
 });
 console.log("Deployed:", config.vars.NEXT_PUBLIC_SITE_URL);
 if (config.triggers?.crons) {

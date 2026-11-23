@@ -3,7 +3,12 @@ const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:4173";
 const checks = [];
 async function check(name, path, options, status) {
   const response = await fetch(base + path, { redirect: "manual", ...options });
-  assert.equal(response.status, status, name);
+  if (Array.isArray(status))
+    assert.ok(
+      status.includes(response.status),
+      `${name}: ${response.status} not in ${status}`,
+    );
+  else assert.equal(response.status, status, name);
   checks.push({ name, status: response.status });
   return response;
 }
@@ -141,11 +146,12 @@ await check(
   {},
   307,
 );
+// 401 once PAYMENT_WORKER_SECRET is configured, 503 before; never 2xx.
 await check(
-  "payment reconciliation is unconfigured",
+  "payment reconciliation refuses unauthenticated callers",
   "/api/internal/payments",
   { method: "POST" },
-  503,
+  [401, 503],
 );
 await check(
   "payment resume rejects forged origin",

@@ -1,6 +1,19 @@
 # RIWAY provider rollout — 23 November 2026
 
-## Latest live release - checkout refuses unavailable payment methods before ordering
+## Latest live release - Xendit calls work on Cloudflare Workers
+
+PR #39 merged as `ecc5f4b2a1f5526fb4431f25019c760d74032e58`. PR CI runs `45143014218` and `45143022083`, and merge CI run `45144847944`, passed the `verify` and `postgres-concurrency` jobs. No migration.
+
+Artifact `14802344346` (19,787,648 bytes) matched SHA-256 `876c95f0973f66c2b5dad7299724f7ebe57df51d18935f6b086f303d9a53a0d2` before extraction and upload, and the bundle's Xendit request uses `redirect: "manual"`. Production returned deployment `0b9712005cc7418bb294e1e0e2b696cd` and staging `f6dde9fbc2b340a6b1e6a6a37974c8e6` (same etag `772e0bf461f4ef4b354e948550c892915c5e71f6a2f24857c0e7d9c91d9d0e51`); the notification schedule was reapplied on both. Live checks on 23 November: 53/53 HTTP/API cases passed on production and staging. One catalogue count was adjusted only for that run, because the temporary staging QA product is in the shared catalogue. Production logs over two minutes showed the minute job running with no Xendit errors or exceptions.
+
+Scope:
+- **Fix:** the Xendit service called `fetch` with `redirect: "error"`. Cloudflare Workers reject that value, so every Xendit request failed before leaving the Worker and checkout reported "Payment could not be opened". Found by manual checkout testing on staging; Node-based tests had accepted the option. Requests now use `redirect: "manual"`, and an unexpected redirect is an uncertain outcome.
+- **Logging:** checkout, resume, the Xendit webhook and the minute worker log one sanitised JSON line per Xendit failure (no secrets or reply values).
+- **Manual staging test (Xendit test mode, synthetic QA data):** two orders paid via GCash and Maya, stock deducted once per unit (50 to 47), method switching cancelled the old Xendit link, double submission created one order, and an unavailable method was refused with no order. Xendit refused `BPI_ONLINE_BANKING` with `INVALID_PAYMENT_CHANNEL` (account/channel configuration). No Xendit webhooks arrived; confirmation came from the minute worker.
+- **Configuration note:** the four Xendit/Supabase secrets were also added to the production Worker. Its Xendit checkout stays disabled (`xendit: disabled`), but its minute job now also reconciles test-mode attempts from the shared database; before this release that failed on the old code.
+- **Test update:** `tests/integration/http.mjs` now checks that payment reconciliation refuses unauthenticated callers (401 once `PAYMENT_WORKER_SECRET` is set, 503 before).
+
+## Previous live release - checkout refuses unavailable payment methods before ordering
 
 PR #36 merged as `1c4af9f9e4d3001ebe067d62f21d24fb6ac6d689`. PR CI runs `45132269784` and `45132276516`, and merge CI run `45132769689`, passed the `verify` and `postgres-concurrency` jobs. No migration.
 

@@ -9,6 +9,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { authProvider } from "@/lib/auth-config";
 import { searchIndexingEnabled, siteOrigin } from "@/lib/seo";
 import { ConsentManager } from "@/components/consent-manager";
+import { clientValidationBootstrap } from "@/lib/client-validation";
 export const metadata: Metadata = {
   title: {
     default: "RIWAY International · A world of possibilities",
@@ -38,6 +39,12 @@ export default async function RootLayout({
   );
   return (
     <html lang="en">
+      <head>
+        <script
+          id="validation-config"
+          dangerouslySetInnerHTML={{ __html: clientValidationBootstrap }}
+        />
+      </head>
       <body>
         {authProvider() === "clerk" ? (
           <ClerkProvider signInUrl="/auth/login" signUpUrl="/auth/register">

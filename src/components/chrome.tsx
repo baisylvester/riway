@@ -125,6 +125,7 @@ export function Header({ market }: { market: Market }) {
             <Globe2 size={15} />
             <span className="sr-only">Select country</span>
             <select
+              name="market"
               aria-label="Select country"
               value={market}
               onChange={async (e) => {

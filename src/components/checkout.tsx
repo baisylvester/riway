@@ -9,6 +9,7 @@ import {
   type CommerceQuote,
 } from "@/lib/commerce-checkout";
 import { CheckoutQuote } from "./checkout-quote";
+import { TrackBeginCheckout } from "./commerce-tracking";
 import { MembershipConsentFields } from "./membership-consent";
 import {
   PaymentMethodPicker,
@@ -184,6 +185,14 @@ export function Checkout({
       onSubmit={submit}
       className="two-column"
     >
+      <TrackBeginCheckout
+        currency={markets[market].currency}
+        items={items.map((i) => ({
+          id: i.productId,
+          name: "",
+          quantity: i.quantity,
+        }))}
+      />
       <div className="panel stack">
         <h2>Delivery details</h2>
         <p className="muted small">

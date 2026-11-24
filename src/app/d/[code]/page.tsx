@@ -16,11 +16,19 @@ export default async function DistributorStore({
       .safeParse(code).success
   )
     notFound();
-  const { data, error } = await (
-    await db()
-  ).rpc("lookup_distributor", { c: code });
+  const client = await db();
+  // Prefer the store lookup with the approved photo; fall back to the
+  // original lookup if that function is not deployed yet.
+  let { data, error } = await client.rpc("lookup_distributor_store", {
+    c: code,
+  });
+  if (error)
+    ({ data, error } = await client.rpc("lookup_distributor", { c: code }));
   if (error || !data?.length) notFound();
-  const d = data[0];
+  const d = data[0] as {
+    display_name: string;
+    photo_url?: string | null;
+  };
   return (
     <section className="section page-section">
       <span className="eyebrow">A PERSONAL INTRODUCTION</span>
@@ -29,6 +37,16 @@ export default async function DistributorStore({
         <br />
         with {d.display_name}.
       </h1>
+      {d.photo_url && (
+        <img
+          className="distributor-photo"
+          src={d.photo_url}
+          alt={`${d.display_name}, verified RIWAY distributor`}
+          width={160}
+          height={160}
+          style={{ borderRadius: "50%", objectFit: "cover" }}
+        />
+      )}
       <p className="lead">
         Your introduction from a verified RIWAY distributor.
       </p>

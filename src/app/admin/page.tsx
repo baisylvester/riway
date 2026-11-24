@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { session } from "@/lib/data";
+import { inventoryAlertSubscriptionsSchema } from "@/lib/inventory-alerts";
+import { InventoryAlertForm } from "@/components/inventory-alert-form";
 export const metadata = { title: "Staff console" };
 export default async function Admin() {
   const { client } = await session();
-  const [orders, products, content, stock] = await Promise.all([
+  const [orders, products, content, stock, alerts] = await Promise.all([
     client.from("orders").select("id", { head: true, count: "exact" }),
     client.from("products").select("id", { head: true, count: "exact" }),
     client
@@ -11,7 +13,12 @@ export default async function Admin() {
       .select("id", { head: true, count: "exact" })
       .eq("status", "review"),
     client.from("inventory").select("on_hand,reserved,low_stock_threshold"),
+    client.rpc("my_inventory_alert_subscriptions"),
   ]);
+  // Optional: hidden when the caller has no admin/operations role with MFA.
+  const subscriptions = inventoryAlertSubscriptionsSchema.safeParse(
+    alerts.data,
+  );
   return (
     <>
       <h1>At a glance.</h1>
@@ -47,6 +54,12 @@ export default async function Admin() {
           Manage inventory →
         </Link>
       </div>
+      {subscriptions.success && (
+        <InventoryAlertForm
+          subscriptions={subscriptions.data}
+          emailEnabled={process.env.EMAIL_PROVIDER === "resend"}
+        />
+      )}
     </>
   );
 }

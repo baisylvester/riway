@@ -132,6 +132,9 @@ try {
     "recommendations.sql",
     "scheduled_reports.sql",
     "xendit.sql",
+    "order_confirmation.sql",
+    "compensation.sql",
+    "distributor_dashboard.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');

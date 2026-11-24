@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { analyticsConfig, measurementCspOrigins } from "./src/lib/consent";
+import { nextRedirects } from "./src/lib/legacy-redirects";
 function configuredOrigin(value?: string) {
   if (!value) return "";
   const url = new URL(value);
@@ -38,6 +39,10 @@ const config: NextConfig = {
   // Cloudflare serves these small approved source assets directly; no paid Images binding is required.
   images: { unoptimized: process.env.CLOUDFLARE_BUILD === "1" },
   poweredByHeader: false,
+  // Approved legacy public URLs (empty until RIWAY supplies the inventory).
+  async redirects() {
+    return nextRedirects();
+  },
   async headers() {
     return [
       {

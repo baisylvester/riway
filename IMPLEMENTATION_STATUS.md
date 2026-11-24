@@ -1,5 +1,9 @@
 # Implementation status
 
+## Remaining proposal scope (branch work) - 24 November 2026
+
+Unmerged branch `feat/riway-remaining-scope-20261124` adds paid-order confirmation emails, corporate low-stock alerts, the RIWAY compensation order-volume outbox (delivery fail-closed until RIWAY supplies its API contract), consent-gated conversion events, Product JSON-LD with a validated legacy-redirect map, and the distributor dashboard with approved reorder cycles, materials and store photos. Migrations `20261124090000`, `20261124100000` and `20261124110000` are not applied anywhere. Feature matrix, plan, runbook and RIWAY inputs: `REMAINING-SCOPE.md`.
+
 ## Xendit gateway and xenPlatform routing - 23 November 2026
 
 PR #31 is merged and deployed (Cloudflare deployment `d8ecd8c4e8674139a4acf086731558a0`). Hosted migration `20261123090000_xendit_payments.sql` is applied. Xendit is not active: no keys, sub-accounts or channels are configured. Exact release evidence is in `ROLLOUT-STATUS.md`.

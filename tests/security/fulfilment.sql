@@ -142,7 +142,9 @@ do $$ declare oid uuid:=current_setting('fulfil_qa.order1')::uuid; j private.not
  if (select count(*) from public.audit_logs where entity='orders' and entity_id=oid::text and action like 'ORDER_FULFILMENT_%:PH')<>3 then raise exception 'FAIL: fulfilment audit'; end if;
  if (select count(*) from private.notification_jobs where user_id=current_setting('fulfil_qa.customer')::uuid and kind='order_shipped')<>1
  or (select count(*) from private.notification_jobs where user_id=current_setting('fulfil_qa.customer')::uuid and kind='order_delivered')<>1 then raise exception 'FAIL: shipping notifications'; end if;
- if exists(select 1 from private.notification_jobs where user_id=current_setting('fulfil_qa.customer')::uuid and kind not in ('order_shipped','order_delivered')) then raise exception 'FAIL: unexpected notification'; end if;
+ -- The paid order also queues exactly one order confirmation (20261124090000).
+ if (select count(*) from private.notification_jobs where user_id=current_setting('fulfil_qa.customer')::uuid and kind='order_confirmed' and reference=oid)<>1 then raise exception 'FAIL: order confirmation'; end if;
+ if exists(select 1 from private.notification_jobs where user_id=current_setting('fulfil_qa.customer')::uuid and kind not in ('order_shipped','order_delivered','order_confirmed')) then raise exception 'FAIL: unexpected notification'; end if;
  update private.notification_jobs set status='processing',lease=gen_random_uuid(),lease_until=now()+interval '1 minute'
   where user_id=current_setting('fulfil_qa.customer')::uuid and kind='order_delivered' returning * into j;
  if not private.notification_authorized(j.id,j.lease) then raise exception 'FAIL: delivery notification denied'; end if;

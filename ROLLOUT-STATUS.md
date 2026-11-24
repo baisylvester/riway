@@ -1,5 +1,16 @@
 # RIWAY provider rollout — 24 November 2026
 
+## Live - PRs #51, #53, #54 and #56 (privacy requests, content scheduling, public editorial media)
+
+Released 24 November 2026 from `main` at `464ea939a0f058109be65e604084ef2ea936ec4f` (PR #56 merge). This release also makes the earlier merged PRs #51, #53 and #54 live, so the "awaiting deployment" sections below are superseded.
+
+- **PR #56** merged after all four checks passed (push run `45360164977`, PR run `45360172653`: `verify` and `postgres-concurrency`). Main push run `45360548919` passed.
+- **Migrations** applied with the Supabase MCP and recorded under the repository versions: `20261124075021_privacy_requests` and `20261124150000_content_scheduling_and_public_media`. Each migration and its acceptance suite first passed a hosted rehearsal ending in rollback. Afterwards nothing had persisted: no privacy table, no QA users; users/orders/staff roles 6/2/0. The security advisors show only the existing notices (leaked-password protection off, two informational RLS notices).
+- **Artifact** `14905150417` (19,996,447 bytes) downloaded; its SHA-256 `8ad8dd44ff802201d06bc4406beb7070541460590f04a885446347632dbc28ae` matched GitHub's digest.
+- **Staging** `riway-platform-staging` deployment `b2794ad17bf54297933a6f50a33f4bb0`: 53/53 HTTP/API checks passed; health `commerce: gated, payments: disabled, xendit: test`. Signed-out admin and account pages now redirect to the staging login (PR #51 runtime site URL).
+- **Production** `riway-platform` deployment `8af136e00e92494b99755080ef41b463`: 53/53 checks passed; health `commerce`, `payments` and `xendit` all `disabled`.
+- **Not verified:** signed-in customer privacy flows, privacy staff review, content scheduling and media publication in the browser. These need staff roles plus the second sign-in step, and staff email codes still do not arrive (Resend DNS and Supabase SMTP are pending). No payment, email, credential or gate change was made.
+
 ## Merged, awaiting migration and deployment - privacy requests (G25)
 
 PR #54 merged as `548cb8326a4326556c9d22d1eada20f682a16802`. Tested head `61e34f7c1a20fcd378e3fb1195edef556987f2e0`, tree `5ec1a52006156334df7e06dba33e70c8b97faf5e`. Push run `45352830642` and PR run `45352836169` passed `verify` and `postgres-concurrency`.

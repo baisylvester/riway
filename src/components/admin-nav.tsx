@@ -22,6 +22,7 @@ export function AdminNav() {
         ["content", "Content"],
         ["media", "Media library"],
         ["support", "Support requests"],
+        ["privacy", "Privacy requests"],
         ["audit", "Audit trail"],
         ["integrations", "Launch readiness"],
       ].map(([s, l]) => (

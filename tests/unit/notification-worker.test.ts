@@ -107,10 +107,22 @@ describe("notification worker preflight", () => {
   it("keeps jobs unclaimed when the low-stock alert queue fails", async () => {
     mocks.rpc.mockImplementation(async (name: string) =>
       name === "queue_corporate_low_stock"
-        ? { data: null, error: { code: "42883" } }
+        ? { data: null, error: { code: "57014" } }
         : { data: name === "claim_notifications" ? [] : 0, error: null },
     );
     expect((await POST(request())).status).toBe(503);
     expect(mocks.rpc).not.toHaveBeenCalledWith("claim_notifications");
   });
+  it.each(["PGRST202", "42883"])(
+    "keeps delivering other notifications before the low-stock migration exists (%s)",
+    async (code) => {
+      mocks.rpc.mockImplementation(async (name: string) =>
+        name === "queue_corporate_low_stock"
+          ? { data: null, error: { code } }
+          : { data: name === "claim_notifications" ? [] : 0, error: null },
+      );
+      expect((await POST(request())).status).toBe(200);
+      expect(mocks.rpc).toHaveBeenCalledWith("claim_notifications");
+    },
+  );
 });

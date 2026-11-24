@@ -1,12 +1,42 @@
 # RIWAY provider rollout — 24 November 2026
 
+## Merged, awaiting deployment - full app retest
+
+PR #51 merged as `8ea02e2760f5c13f5cf92bb3f6856aee72e26c5e`. Push run `45342971556` and PR run `45342977852` passed both `verify` and `postgres-concurrency` for head `b7b68db2280d8e5ce4665cafab758283c9aa47a9` (tree `55375e194c05ec5eb166246f44daeaf4c25e6195`). No migration or dependency change.
+
+Changes: runtime `SITE_URL` for server-generated distributor, email, metadata and payment-return links when one artifact is promoted between environments; support for Resend's named sender syntax with control-character rejection; safe WebGL texture upload flags when reusing a canvas and removal of an oversized blur override; the home distributor CTA opens the directory; singular bag/checkout labels. The rollback-only Xendit suite now handles an existing market-routing row and proves its original configuration is preserved.
+
+Validation: 601 tests across 64 files, TypeScript and the production webpack build passed locally. 49 HTTP boundary checks passed against the local production build. All 21 database acceptance suites passed against hosted PostgreSQL, each rolling back; checked before/after counts were identical. CI also passed dependency audit, Next/OpenNext builds, Worker validation and the parallel PostgreSQL tests. Conditional CI Playwright steps remain skipped by existing repository-variable configuration.
+
+Signed-in staging checks covered unchanged profile saving, membership status, both paid test orders and details, archived-product reorder, normal product bag add/remove/persistence/save/restore, quantity rejection, address required-field validation, email-code input, customer denial at staff/distributor pages and the Store management second-step gate. Public routes, filters, calendar month selection and support validation rendered correctly. No order or payment was created. The local and saved bags were returned to their original empty state and the market to PH. Account navigation fits 320/390/768 px with all seven links inside the viewport. The fixed local production home retained one WebGL canvas without overflow or console warnings across 390/1280/320/768/1440 px; its directory CTA target was verified.
+
+Email delivery remains **failed/unverified end to end**: the owner reported no inbox receipt. The 06:07:30 UTC auth log records `mail.send` from Supabase's built-in sender, not Resend. The Resend domain still lacks its three DNS records, and the currently signed-in Cloudflare account does not manage that zone. The named-sender code fix does not resolve DNS or configure Supabase SMTP. Positive staff UI workflows remain unverified without a staff role and second step; their database acceptance checks passed.
+
+Artifact `14896932233` from push run `45342971556` is 19,961,216 bytes; GitHub reports SHA-256 `96f5fd9ab3afa8fbd9d2f0440cc6f8cda82780aaf027343ae7ca4705c357b13b`. This digest is metadata evidence; the ZIP has not been downloaded and independently hashed in this continuation. Deployment was not attempted: the current local execution environment denies outbound HTTPS (`EACCES`), and no suitable Cloudflare plugin was found. **The live release remains PR #50 below.** Download/hash the artifact and run the usual staging, verification and production rollout once deployment access is available.
+
+Hosted advisories: health has no findings; security retains the two expected RLS-without-policy INFO notices and the existing [leaked-password protection warning](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection). Performance has three INFO foreign-key index suggestions and 30 unused-index INFO notices. No indexes, policies, credentials or launch gates were changed.
+
+## Latest live release - mobile account navigation, page titles and email-code recovery
+
+PR #50 merged as `51c9282268cd94312f5fbee144a875fecf730cf4` after push run `45331693815` and PR run `45331701002` passed `verify` and `postgres-concurrency`; merge run `45332107556` also passed both jobs. The tested head (`f247b48d988521de501057f95473b7abd0b77a0d`) and merge share tree `50c10944492361b7ea3a89c6903c34be35752143`. No migration.
+
+The account tabs now wrap instead of extending beyond the page. Addresses, Security and Store management have descriptive titles. Email-code handling distinguishes a provider-specified cooldown, an exhausted sending quota and general throttling; it does not claim a new code was sent on failure. The existing-code form remains usable without requesting another email, including after refresh or a failed resend. Authentication and authorization checks are unchanged.
+
+Local verification passed 574 tests across 61 files, TypeScript and the production webpack build. Linux CI also passed the PostgreSQL suites, dependency audit, Next.js/OpenNext builds and Worker bundle validation. Conditional Playwright jobs were skipped by the existing repository-variable configuration; the signed-in checks below were performed separately in a real browser.
+
+Artifact `14891832797` from push run `45331693815` (19,959,883 bytes) matched GitHub SHA-256 `1c8d0b77ac16b13a18356487b261d7f0d640f36a7f74b9f209f5eb54e3f0590a` before extraction and upload. From the merged checkout, staging deployed as `badb2987ac9544e1b0eb3bad11e0820e` and production as `fcb8cb58d5d74c4d9964523ed764ed60`, with identical etag `4a889942bada68c84dec97706553b1deee164bcf08af96053381590a5b29559a`. Notification schedules were reapplied.
+
+The unmodified HTTP/API suite passed 53/53 on each environment. Signed-in staging checks using the owner's account confirmed no horizontal overflow at 320, 390 and 768 pixels (document/client widths 305/305, 375/375 and 753/753 respectively); all seven account links remain accessible. The three page titles are correct, code entry appears before sending, malformed code input is invalid, and Store management still requires the second step. Temporary viewport overrides were reset. Production commerce/payments/Xendit remain disabled.
+
+Email delivery is **not yet verified**. Supabase logs showed `over_email_send_rate_limit` with `email rate limit exceeded` at 05:03:09 UTC; the earlier one-minute message was misleading. The owner selected Resend and is configuring SMTP. The existing Resend team has a `beyondai.ph` domain marked Failed with all required DNS records missing; its domain-verification and SMTP connection remain operational follow-up. No Resend API key is recorded here, and the code release is not evidence of inbox delivery.
+
 ## QA cleanup completed — 24 November 2026
 
 The owner approved the reviewed scope in `QA-CLEANUP-20261124.md` in chat ("proceed"). After fresh inspection and a passing rollback-only rehearsal, the exact private photo was removed through the Storage API; a guarded database transaction removed its pending submission, one listing, two distributor profiles and two PH compliance roles. All five target-category postcheck counts are zero. The older QA product is archived and its sponsor inactive; PH's temporary sales/payment gates and PH test-mode Xendit routing are disabled. No code or deployment changed.
 
 Both paid orders, their items/payment events and attempts, inventory and movements, and the sponsor attribution have identical before/after fingerprints; all pre-existing audit records are preserved. All three auth accounts and app identities remain. An authenticated rollback-only checkout test was refused with `Online sales not approved`, with no order created. The unmodified HTTP/API suite passed 53/53 on staging and 53/53 on production; the real catalogue count is back to 2. Public QA product/store requests render the not-found fallback with `noindex` (streamed HTTP 200), and the temporary directory entries are absent. Production commerce/payments/Xendit remain disabled. Staging's configured capability still reports gated commerce/test Xendit; PH database gates and test routing are closed. See the cleanup record for exact scope and verification.
 
-## Latest live release - independent distributor photo review
+## Previous live release - independent distributor photo review
 
 PR #47 merged as `ef8dc3fbbb7af548fbf45e3932047fe0fce94a1f` after exact-head push run `45328173860` and PR run `45328178372` passed `verify` and `postgres-concurrency`; merge run `45328583657` also passed both jobs. The tested head (`41df83fc22be779ffada33403f339d75f9c68e67`) and merge share tree `f45851ce16be82c70f2c3cb9635627b7b677b3ea`.
 
@@ -338,3 +368,4 @@ The sections below retain earlier setup details and historical verification coun
 The existing project's Git metadata denies writes despite scoped permission grants. A separate release checkout at `C:\Users\PC2\Documents\Codex\2026-11-05\ac\work\riway-release` contains the rollout branch `integration/riway-provider-rollout-20261105`. It is based on remote main and excludes the user's two unrelated UI edits. No environment file or credentials were included. The original project remains the working source directory.
 
 Latest release candidate: `d0b331ba9fea446addc9349a29540260093e737e`. Linux CI run `41997340943` completed successfully for this revision, including the PostgreSQL concurrency and verification jobs. This revision includes the dormant cron handler and credential-preserving deployment helper. No merge, hosted migration, or deployment has been performed. The approved Clerk development key is still blocked by the open email-verification dialog; approval to create it does not mean it has been created.
+

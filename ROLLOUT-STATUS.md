@@ -1,5 +1,11 @@
 # RIWAY provider rollout — 24 November 2026
 
+## QA cleanup completed — 24 November 2026
+
+The owner approved the reviewed scope in `QA-CLEANUP-20261124.md` in chat ("proceed"). After fresh inspection and a passing rollback-only rehearsal, the exact private photo was removed through the Storage API; a guarded database transaction removed its pending submission, one listing, two distributor profiles and two PH compliance roles. All five target-category postcheck counts are zero. The older QA product is archived and its sponsor inactive; PH's temporary sales/payment gates and PH test-mode Xendit routing are disabled. No code or deployment changed.
+
+Both paid orders, their items/payment events and attempts, inventory and movements, and the sponsor attribution have identical before/after fingerprints; all pre-existing audit records are preserved. All three auth accounts and app identities remain. An authenticated rollback-only checkout test was refused with `Online sales not approved`, with no order created. The unmodified HTTP/API suite passed 53/53 on staging and 53/53 on production; the real catalogue count is back to 2. Public QA product/store requests render the not-found fallback with `noindex` (streamed HTTP 200), and the temporary directory entries are absent. Production commerce/payments/Xendit remain disabled. Staging's configured capability still reports gated commerce/test Xendit; PH database gates and test routing are closed. See the cleanup record for exact scope and verification.
+
 ## Latest live release - independent distributor photo review
 
 PR #47 merged as `ef8dc3fbbb7af548fbf45e3932047fe0fce94a1f` after exact-head push run `45328173860` and PR run `45328178372` passed `verify` and `postgres-concurrency`; merge run `45328583657` also passed both jobs. The tested head (`41df83fc22be779ffada33403f339d75f9c68e67`) and merge share tree `f45851ce16be82c70f2c3cb9635627b7b677b3ea`.
@@ -14,7 +20,7 @@ Artifact `14890876461` from push run `45328173860` (19,959,077 bytes) matched Gi
 
 Post-deployment checks passed 53/53 HTTP/API cases on each environment. The unknown-collection expected count was adjusted from 2 to 3 in a temporary test copy only, because the published QA product remains in the shared catalogue. Signed-out `/admin/distributors` redirects to `/auth/login` on both. Production health still reports commerce, payments and Xendit disabled; staging reports commerce gated and Xendit test mode.
 
-Signed-in browser review is still unverified; conditional CI Playwright steps were skipped by the existing repository-variable configuration. Staff inbox delivery/custom SMTP remains pending. Live QA inspection and the proposed cleanup are documented in `QA-CLEANUP-20261124.md`; no live QA data has been deleted and no QA configuration has been withdrawn. The older sponsor's two paid orders and attribution are preserved.
+Signed-in browser review is still unverified; conditional CI Playwright steps were skipped by the existing repository-variable configuration. Staff inbox delivery/custom SMTP remains pending. At deployment time, live QA fixtures were still present; the subsequently approved cleanup is recorded above and in `QA-CLEANUP-20261124.md`. The older sponsor's two paid orders and attribution are preserved.
 
 ## Previous live release - emailed staff verification codes
 

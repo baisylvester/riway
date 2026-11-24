@@ -67,7 +67,13 @@ export async function POST(request: Request) {
     const stock = await client.rpc("queue_corporate_low_stock", {
       report_day: day,
     });
-    if (stock.error)
+    // Until migration 20261124090000 is applied the function does not exist;
+    // skip only this optional queue so existing notifications keep flowing.
+    // Any other failure still stops the run before jobs are claimed.
+    if (
+      stock.error &&
+      !["PGRST202", "42883"].includes(String(stock.error.code ?? ""))
+    )
       return failure("Low-stock alert queue is unavailable.", 503);
   }
   const { data: jobs, error } = await client.rpc("claim_notifications");

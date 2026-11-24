@@ -1,14 +1,22 @@
 # RIWAY provider rollout — 24 November 2026
 
-## Pending candidate - independent distributor photo review
+## Latest live release - independent distributor photo review
+
+PR #47 merged as `ef8dc3fbbb7af548fbf45e3932047fe0fce94a1f` after exact-head push run `45328173860` and PR run `45328178372` passed `verify` and `postgres-concurrency`; merge run `45328583657` also passed both jobs. The tested head (`41df83fc22be779ffada33403f339d75f9c68e67`) and merge share tree `f45851ce16be82c70f2c3cb9635627b7b677b3ea`.
 
 Migration `20261124140000_distributor_photo_independent_review.sql` refuses own-photo review and direct own-photo changes even when the distributor is a market admin/compliance staff member with MFA. The review queue excludes own submissions. The server action checks the submission's id, market and object path against that queue before copying an image into public storage.
 
 Local verification: 571 tests across 60 files, TypeScript and the production webpack build pass. The new rollback-only acceptance suite reproduced admin self-approval before the fix; after the fix it covers admin/compliance self-approval, self-rejection, direct setting/removal, unchanged submission/photo/audit state on refusal, and independent approval/rejection. Eleven action tests cover refusal before upload and submission-field tampering. Both PGlite and CI's PostgreSQL runner include the new SQL suite.
 
-This candidate is not merged, applied to the hosted database or deployed. Apply the migration before deploying the action that relies on its filtered queue. Hosted/browser acceptance and Linux CI results must be recorded separately. Live QA inspection is documented in `QA-CLEANUP-20261124.md`; no cleanup has been executed.
+Hosted migration `20261124140000_distributor_photo_independent_review.sql` was applied through the Supabase MCP before either deployment and recorded under the repository version in a separate call. The new rollback-only suite then passed on the hosted database. Follow-up counts found zero retained suite users, profiles or submissions. All three private function body hashes match the source; public wrappers remain invoker functions with empty search paths. Security advisors show the same two INFO no-policy notices and the pre-existing [leaked-password-protection warning](https://supabase.com/docs/guides/auth/password-security#password-strength-and-leaked-password-protection).
 
-## Latest live release - emailed staff verification codes
+Artifact `14890876461` from push run `45328173860` (19,959,077 bytes) matched GitHub SHA-256 `1426ece350eb741059ff4dfe323e2c01ef8d85576334829a7f7619a4bfa9da60` before extraction and upload. From a checkout of the merged commit, staging deployed as `155004f102e642f0a73c4641c7d51c49` and production as `7cb4dc4c36e64d78abf2b5640a5c5ba3`, with identical etag `2fe6756dedf42d5352c99f2caff1cddcb7aa447d9aefc8a5530150dab36097ac`. Notification schedules were reapplied on both.
+
+Post-deployment checks passed 53/53 HTTP/API cases on each environment. The unknown-collection expected count was adjusted from 2 to 3 in a temporary test copy only, because the published QA product remains in the shared catalogue. Signed-out `/admin/distributors` redirects to `/auth/login` on both. Production health still reports commerce, payments and Xendit disabled; staging reports commerce gated and Xendit test mode.
+
+Signed-in browser review is still unverified; conditional CI Playwright steps were skipped by the existing repository-variable configuration. Staff inbox delivery/custom SMTP remains pending. Live QA inspection and the proposed cleanup are documented in `QA-CLEANUP-20261124.md`; no live QA data has been deleted and no QA configuration has been withdrawn. The older sponsor's two paid orders and attribution are preserved.
+
+## Previous live release - emailed staff verification codes
 
 PR #46 merged as `4ad6e0828dfa5399955258f607c84d7f8aa77e76`. Branch push run `45324715507` passed `verify` and `postgres-concurrency`; the PR run's `verify` job was still finishing at merge. The branch and merge trees are identical (`8fcc32f`). The GitHub run and artifact metadata were rechecked on 24 November when completing this record.
 

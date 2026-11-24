@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { configuredSiteUrl } from "./site-url";
 
 // Search indexing stays off until RIWAY approves launch. Setting
 // SEARCH_INDEXING=enabled opens public pages to crawlers and publishes the
@@ -13,7 +14,7 @@ export function siteOrigin(
   env: Record<string, string | undefined> = process.env,
 ) {
   try {
-    return new URL(env.NEXT_PUBLIC_SITE_URL || "").origin;
+    return new URL(configuredSiteUrl(env) || "").origin;
   } catch {
     return "http://localhost:4173";
   }

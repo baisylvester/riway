@@ -27,7 +27,10 @@ do $$ declare u uuid:=gen_random_uuid(); d uuid:=gen_random_uuid(); p uuid:=gen_
  insert into public.inventory(product_id,market,on_hand) values(p,'PH',50);
  update public.markets set online_sales_approved=true,payments_ready=true,policy_reference='ROLLBACK-QA-ONLY' where code='PH';
  insert into private.xendit_market_accounts(market,livemode,account_type,enabled_channels,payments_enabled)
- values('PH',false,'MASTER','{GCASH,BPI_ONLINE_BANKING}',true);
+ values('PH',false,'MASTER','{GCASH,BPI_ONLINE_BANKING}',true)
+ on conflict(market,livemode) do update set
+  account_type=excluded.account_type,sub_account_id=null,account_status=null,
+  enabled_channels=excluded.enabled_channels,payments_enabled=excluded.payments_enabled;
 end $$;
 
 -- Browser boundary.
@@ -219,8 +222,8 @@ reset role;
 select set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('xendit_qa.sg'),'role','authenticated','aal','aal2')::text,true);
 set local role authenticated;
 do $$ begin
- if jsonb_array_length(public.staff_xendit_payments())<>0 then raise exception 'FAIL: SG staff can read PH payments'; end if;
- if jsonb_array_length(public.staff_xendit_market_accounts())<>0 then raise exception 'FAIL: SG staff can read PH routing'; end if;
+ if exists(select 1 from jsonb_array_elements(public.staff_xendit_payments()) x where x->>'market'='PH') then raise exception 'FAIL: SG staff can read PH payments'; end if;
+ if exists(select 1 from jsonb_array_elements(public.staff_xendit_market_accounts()) x where x->>'market'='PH') then raise exception 'FAIL: SG staff can read PH routing'; end if;
  begin
   perform public.set_xendit_market_account('PH',false,'OWNED','sg_controlled_0001','LIVE','{GCASH}',true);
   raise exception 'FAIL: another market admin changed PH routing';

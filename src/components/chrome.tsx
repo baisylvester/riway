@@ -17,6 +17,7 @@ export function Header({ market }: { market: Market }) {
   const { items } = useStore(),
     path = usePathname(),
     router = useRouter();
+  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const [open, setOpen] = useState(false);
   const [marketError, setMarketError] = useState("");
   const menuButton = useRef<HTMLButtonElement>(null);
@@ -160,10 +161,10 @@ export function Header({ market }: { market: Market }) {
           <Link
             className="icon-link bag"
             href="/cart"
-            aria-label={`Shopping bag, ${items.reduce((a, i) => a + i.quantity, 0)} items`}
+            aria-label={`Shopping bag, ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
           >
             <ShoppingBag size={20} />
-            <span>{items.reduce((a, i) => a + i.quantity, 0)}</span>
+            <span>{itemCount}</span>
           </Link>
           <button
             ref={menuButton}

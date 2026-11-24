@@ -747,7 +747,7 @@ export function ReferenceHome({
           <h2 className="display split">
             Find your <em>right way</em> in.
           </h2>
-          <a className="btn magnetic" href="/support" data-cursor="Open">
+          <a className="btn magnetic" href="/find-a-distributor" data-cursor="Open">
             Find a distributor
           </a>
         </div>

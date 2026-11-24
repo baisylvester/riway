@@ -6,6 +6,7 @@ import { distributorDashboardSchema } from "@/lib/distributor-dashboard";
 import { myListingSchema } from "@/lib/distributor-directory";
 import { DistributorListingForms } from "@/components/distributor-listing-forms";
 import QRCode from "qrcode";
+import { siteOrigin } from "@/lib/seo";
 export const metadata = { title: "Distributor dashboard" };
 export default async function Distributor() {
   const { client, user } = await session();
@@ -16,9 +17,7 @@ export default async function Distributor() {
     .eq("user_id", user.id)
     .maybeSingle();
   const verified = !!(d?.active && d.verified_at);
-  const url = d
-    ? `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:4173"}/d/${encodeURIComponent(d.code)}`
-    : "";
+  const url = d ? `${siteOrigin()}/d/${encodeURIComponent(d.code)}` : "";
   const qr = verified
     ? await QRCode.toDataURL(url, { width: 220, margin: 2 })
     : "";

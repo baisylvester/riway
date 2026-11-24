@@ -1,3 +1,5 @@
+import { configuredSiteUrl } from "./site-url";
+
 type Environment = Record<string, string | undefined>;
 
 /** Gateways switched on by configuration. `PAYMENT_PROVIDERS` (comma list)
@@ -32,10 +34,11 @@ export function xenditConfiguration(env: Environment = process.env) {
     throw new Error("Xendit webhook verification token is missing.");
   if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.NEXT_PUBLIC_SUPABASE_URL)
     throw new Error("Payment database credentials are missing.");
-  const site = new URL(env.NEXT_PUBLIC_SITE_URL ?? "");
+  const siteUrl = configuredSiteUrl(env);
+  const site = new URL(siteUrl ?? "");
   if (
     site.protocol !== "https:" ||
-    site.origin !== env.NEXT_PUBLIC_SITE_URL ||
+    site.origin !== siteUrl ||
     site.username ||
     site.password
   )

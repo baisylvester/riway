@@ -1,4 +1,5 @@
 import { configuredGateways } from "./xendit-config";
+import { configuredSiteUrl } from "./site-url";
 type Environment = Record<string, string | undefined>;
 
 export function stripeConfiguration(env: Environment = process.env) {
@@ -17,10 +18,11 @@ export function stripeConfiguration(env: Environment = process.env) {
     throw new Error("Stripe webhook signing secret is missing.");
   if (!env.SUPABASE_SERVICE_ROLE_KEY || !env.NEXT_PUBLIC_SUPABASE_URL)
     throw new Error("Payment database credentials are missing.");
-  const site = new URL(env.NEXT_PUBLIC_SITE_URL ?? "");
+  const siteUrl = configuredSiteUrl(env);
+  const site = new URL(siteUrl ?? "");
   if (
     site.protocol !== "https:" ||
-    site.origin !== env.NEXT_PUBLIC_SITE_URL ||
+    site.origin !== siteUrl ||
     site.username ||
     site.password
   )

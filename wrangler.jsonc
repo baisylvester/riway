@@ -34,6 +34,7 @@
     "LOW_INVENTORY_REPORT_HOUR": "9",
     "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_QP1Wn3dmD8FVmdH07fhK6A_HzFKMl_y",
     "NEXT_PUBLIC_SITE_URL": "https://riway-platform.pages.dev",
+    "SITE_URL": "https://riway-platform.pages.dev",
   },
   // Staging shares the RIWAY database but runs as its own Worker with Xendit in
   // test mode, served at https://riway-platform-staging.pages.dev. Deployed only with
@@ -71,6 +72,7 @@
         "LOW_INVENTORY_REPORT_HOUR": "9",
         "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_QP1Wn3dmD8FVmdH07fhK6A_HzFKMl_y",
         "NEXT_PUBLIC_SITE_URL": "https://riway-platform-staging.pages.dev",
+        "SITE_URL": "https://riway-platform-staging.pages.dev",
         "SEARCH_INDEXING": "disabled",
       },
     },

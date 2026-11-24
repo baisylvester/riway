@@ -22,6 +22,7 @@ export function Cart({
   market: Market;
 }) {
   const { items, ready, update, restore } = useStore();
+  const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const [message, setMessage] = useState("");
   const [pending, setPending] = useState(false);
   const requestInFlight = useRef(false);
@@ -173,7 +174,7 @@ export function Cart({
       <aside className="panel">
         <h2>Your selection</h2>
         <p className="small muted">
-          {items.reduce((a, i) => a + i.quantity, 0)} items ·{" "}
+          {itemCount} {itemCount === 1 ? "item" : "items"} ·{" "}
           {markets[market].name}
         </p>
         <div className="price">{money(total, markets[market].currency)}</div>

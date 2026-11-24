@@ -190,13 +190,20 @@ Studio.ground = function (THREE, scene, y, low) {
 // ---------- renderer + optional post ----------
 Studio.renderer = function (THREE, canvas, low, opts) {
   opts = opts || {};
-  const renderer = new THREE.WebGLRenderer({
-    canvas,
+  const attributes = {
     antialias: true,
     alpha: true,
     powerPreference: "high-performance",
     premultipliedAlpha: true,
-  });
+  };
+  const context = canvas.getContext("webgl2", attributes);
+  if (!context) throw new Error("WebGL2 is unavailable.");
+  // A layout change reuses this canvas/context after disposing its renderer.
+  // Reset upload flags before Three creates its placeholder 3D textures;
+  // WebGL2 refuses those uploads when a prior 2D texture left either flag on.
+  context.pixelStorei(context.UNPACK_FLIP_Y_WEBGL, false);
+  context.pixelStorei(context.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+  const renderer = new THREE.WebGLRenderer({ canvas, context, ...attributes });
   renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1 : 1.5));
   // Khronos PBR Neutral keeps brand colours (the PURTIER red) true; ACES as fallback
   renderer.toneMapping =

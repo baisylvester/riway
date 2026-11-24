@@ -1,6 +1,8 @@
 import "server-only";
 import { Resend } from "resend";
 import { z } from "zod";
+import { configuredSiteUrl } from "../lib/site-url";
+import { emailSenderSchema } from "../lib/email-sender";
 import {
   ProviderNotConfigured,
   type TransactionalEmailProvider,
@@ -88,9 +90,10 @@ export function emailProvider() {
     throw new Error("Invalid email delivery mode.");
   if (mode === "live" && process.env.NODE_ENV !== "production")
     throw new Error("Live email requires a production runtime.");
+  const from = emailSenderSchema.parse(process.env.RESEND_FROM_EMAIL);
   return new ResendTransactionalEmailProvider(
     new Resend(process.env.RESEND_API_KEY),
-    process.env.RESEND_FROM_EMAIL,
+    from,
     mode,
     (process.env.EMAIL_TEST_RECIPIENTS || "")
       .split(",")
@@ -233,9 +236,7 @@ const orderStatements: Record<"PH" | "SG" | "MY", string[]> = {
 };
 
 function siteOrigin() {
-  const origin = new URL(
-    process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
-  );
+  const origin = new URL(configuredSiteUrl() || "http://127.0.0.1:4173");
   if (
     !["http:", "https:"].includes(origin.protocol) ||
     origin.username ||
@@ -297,15 +298,7 @@ export function notificationContent(notification: Notification) {
   }
   if (notification.type === "sales_report") {
     const r = salesReportContext.parse(notification.context);
-    const origin = new URL(
-      process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
-    );
-    if (
-      !["http:", "https:"].includes(origin.protocol) ||
-      origin.username ||
-      origin.password
-    )
-      throw new Error("Invalid notification site URL");
+    const origin = new URL(siteOrigin());
     const link = new URL(
       `/admin/reports?${new URLSearchParams({ from: r.from, to: r.to })}`,
       origin.origin,
@@ -330,15 +323,7 @@ export function notificationContent(notification: Notification) {
     notification.type === "order_shipped" ||
     notification.type === "order_delivered"
   ) {
-    const origin = new URL(
-      process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
-    );
-    if (
-      !["http:", "https:"].includes(origin.protocol) ||
-      origin.username ||
-      origin.password
-    )
-      throw new Error("Invalid notification site URL");
+    const origin = new URL(siteOrigin());
     // Tracking details stay in the signed-in account rather than in email.
     const link = new URL("/account/orders", origin.origin).href;
     const shipped = notification.type === "order_shipped";
@@ -358,15 +343,7 @@ export function notificationContent(notification: Notification) {
     notification.type === "membership_requested" ||
     notification.type === "membership_confirmed"
   ) {
-    const origin = new URL(
-      process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
-    );
-    if (
-      !["http:", "https:"].includes(origin.protocol) ||
-      origin.username ||
-      origin.password
-    )
-      throw new Error("Invalid notification site URL");
+    const origin = new URL(siteOrigin());
     const link = new URL("/account/membership", origin.origin).href;
     const confirmed = notification.type === "membership_confirmed";
     const subject = confirmed
@@ -387,15 +364,7 @@ export function notificationContent(notification: Notification) {
   ) {
     const tenant = z.uuid().parse(notification.tenantId);
     const store = z.string().min(2).max(120).parse(notification.context.store);
-    const origin = new URL(
-      process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
-    );
-    if (
-      !["http:", "https:"].includes(origin.protocol) ||
-      origin.username ||
-      origin.password
-    )
-      throw new Error("Invalid notification site URL");
+    const origin = new URL(siteOrigin());
     const link = new URL(`/operations?store=${tenant}`, origin.origin).href;
     if (notification.type === "store_owner_onboarding") {
       const text = `You have been assigned as a store owner for ${store}. Sign in with your existing RIWAY account, enable your authenticator, then add locations, SKUs and stock.\n\nManage your store: ${link}`;

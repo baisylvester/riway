@@ -235,7 +235,10 @@ export function Checkout({
       </div>
       <aside className="panel stack">
         <h2>Order review</h2>
-        <p>{items.length} product selections</p>
+        <p>
+          {items.length} product{" "}
+          {items.length === 1 ? "selection" : "selections"}
+        </p>
         <label>
           Voucher code (optional)
           <input

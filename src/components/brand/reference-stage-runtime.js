@@ -21,15 +21,6 @@ const ADDONS = {
   OutputPass,
   RectAreaLightUniformsLib,
 };
-// The ESM kit changed only PMREM sigma and DPR. Restore the reference locally,
-// without mutating shared model functions or THREE's module namespace.
-class ReferencePMREMGenerator extends THREE.PMREMGenerator {
-  fromScene(scene) {
-    return super.fromScene(scene, 0.06);
-  }
-}
-const environmentThree = { ...THREE, PMREMGenerator: ReferencePMREMGenerator };
-
 function disposePost(post) {
   post?.composer?.passes.forEach((pass) => pass.dispose?.());
   post?.composer?.dispose();
@@ -330,7 +321,7 @@ export function mountReferenceStage(host, kind, options = {}) {
         );
       };
       renderer.setPixelRatio(Math.min(devicePixelRatio, low ? 1.5 : 2));
-      scene.environment = Studio.environment(environmentThree, renderer);
+      scene.environment = Studio.environment(THREE, renderer);
       scene.environmentRotation?.set(0, -0.6, 0);
       Studio.lights(THREE, scene, ADDONS, low);
       post = Studio.post(THREE, ADDONS, renderer, scene, camera, low);

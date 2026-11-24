@@ -37,9 +37,9 @@ if (
   (config.vars.XENDIT_MODE !== "test" ||
     config.vars.XENDIT_LIVE_APPROVED !== "false" ||
     config.vars.STRIPE_LIVE_APPROVED !== "false" ||
-    !String(config.vars.NEXT_PUBLIC_SITE_URL).startsWith(
-      "https://riway-platform-staging.",
-    ))
+    !String(
+      config.vars.SITE_URL || config.vars.NEXT_PUBLIC_SITE_URL,
+    ).startsWith("https://riway-platform-staging."))
 )
   throw new Error("Staging must stay in payment test mode on its own address.");
 // Wrangler names the bundled entry after the configured main (custom-worker.ts).

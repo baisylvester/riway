@@ -1,4 +1,6 @@
 import { z } from "zod";
+import { configuredSiteUrl } from "./site-url";
+import { emailSenderSchema } from "./email-sender";
 
 // Only safe labels and schedule details leave this helper; secret values never do.
 export function notificationConfiguration(
@@ -19,7 +21,7 @@ export function notificationConfiguration(
   )
     issues.push("Choose a supported email provider.");
   if (!env.RESEND_API_KEY) issues.push("Configure a Resend sending key.");
-  if (!z.email().safeParse(env.RESEND_FROM_EMAIL).success)
+  if (!emailSenderSchema.safeParse(env.RESEND_FROM_EMAIL).success)
     issues.push("Configure a valid sender email address.");
   if (env.RESEND_REPLY_TO && !z.email().safeParse(env.RESEND_REPLY_TO).success)
     issues.push("Configure a valid reply-to email address.");
@@ -43,7 +45,7 @@ export function notificationConfiguration(
   )
     issues.push("Configure valid allowlisted test recipients.");
   try {
-    const url = new URL(env.NEXT_PUBLIC_SITE_URL || "");
+    const url = new URL(configuredSiteUrl(env) || "");
     const local =
       url.protocol === "http:" &&
       ["127.0.0.1", "localhost", "[::1]"].includes(url.hostname) &&

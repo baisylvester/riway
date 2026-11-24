@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
 import { analyticsConfig } from "@/lib/consent";
+import { currentMarket } from "@/lib/data";
+import { bodyBlocks, cmsSections } from "@/lib/cms-pages";
 
 // Describes optional measurement as actually built: off entirely without IDs,
 // otherwise opt-in through the cookie choices.
@@ -76,8 +78,34 @@ export default async function Notice({
 }: {
   params: Promise<{ slug: string }>;
 }) {
-  const n = notices[(await params).slug];
+  const slug = (await params).slug;
+  const n = notices[slug];
   if (!n) notFound();
+  // A compliance-published "legal-<slug>" CMS page replaces the development notice.
+  const [approved] = await cmsSections(
+    [`legal-${slug}`],
+    await currentMarket(),
+  );
+  if (approved)
+    return (
+      <section className="section page-prose page-section">
+        <span className="eyebrow">POLICIES &amp; CONDUCT</span>
+        <h1>{approved.title}</h1>
+        {bodyBlocks(approved.body).map((b, i) =>
+          b.type === "heading" ? (
+            <h2 key={i}>{b.text}</h2>
+          ) : b.type === "list" ? (
+            <ul key={i}>
+              {b.items.map((item, j) => (
+                <li key={j}>{item}</li>
+              ))}
+            </ul>
+          ) : (
+            <p key={i}>{b.text}</p>
+          ),
+        )}
+      </section>
+    );
   return (
     <section className="section page-prose page-section">
       <span className="eyebrow">DEVELOPMENT NOTICE · PENDING APPROVAL</span>

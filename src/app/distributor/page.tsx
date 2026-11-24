@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { session } from "@/lib/data";
 import { money } from "@/lib/domain";
 import { distributorDashboardSchema } from "@/lib/distributor-dashboard";
+import { myListingSchema } from "@/lib/distributor-directory";
+import { DistributorListingForms } from "@/components/distributor-listing-forms";
 import QRCode from "qrcode";
 export const metadata = { title: "Distributor dashboard" };
 export default async function Distributor() {
@@ -25,6 +27,11 @@ export default async function Distributor() {
   const dashboard = verified
     ? distributorDashboardSchema.safeParse(
         (await client.rpc("my_distributor_dashboard")).data,
+      )
+    : null;
+  const listing = verified
+    ? myListingSchema.safeParse(
+        (await client.rpc("my_distributor_listing")).data,
       )
     : null;
   return (
@@ -52,6 +59,9 @@ export default async function Distributor() {
               alt="Your verified distributor introduction QR code"
             />
           </div>
+          {listing?.success && (
+            <DistributorListingForms listing={listing.data} />
+          )}
           {dashboard?.success ? (
             <>
               <div className="panel stack">

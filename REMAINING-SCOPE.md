@@ -36,7 +36,7 @@ Rows I01–I21 from the audit remain **Implemented** and were not rebuilt. Chang
 | G02 | Compensation order-volume sync | **Implemented (delivery Contract blocked)** | Outbox, retries, reconciliation, staff alerting and audited retry are in code. The RIWAY adapter is intentionally absent: `compensationAdapter()` throws for `riway` until the contract exists. Partial-refund adjustments follow the refunds work (G11). |
 | G03 | Automatic membership after payment + RIWAY acknowledgement | Contract blocked | Staff confirm/reject fallback unchanged. Needs RIWAY enrolment API and an approved automatic rule. |
 | G04 | Distributor dashboard | **Implemented (disclosure rules pending)** | `src/app/distributor/page.tsx`, `private.my_distributor_dashboard`. Default disclosure is minimal (pseudonymous labels); widening it needs RIWAY's privacy decision. |
-| G05 | Distributor photo / personal store | **Partial** | Staff-approved photo from approved locations renders on `/d/[code]`. Distributor self-upload with moderation and storage is not built. |
+| G05 | Distributor photo / personal store | **Implemented (content integration branch)** | Distributors upload a photo to a private bucket; market admin/compliance approve it, which publishes a copy from the public `distributor-photos` bucket to `/d/[code]` and Find a Distributor. Staff can still set an approved photo directly. |
 | G06 | Guest checkout | Missing | `orders.user_id` is required; needs approved guest rules (verification, access, claim). |
 | G07 | Auto-replenishment subscriptions | Contract blocked | Needs approved intervals, recurring consent wording and a gateway recurring capability (Stripe/Xendit merchant setup). |
 | G08 | Reorder reminders + message reorder | **Partial** | Approved per-product cycles now exist (`products.replenishment_days`) and drive dashboard dates. Reminder jobs, consent and signed message links are not built. |
@@ -45,9 +45,9 @@ Rows I01–I21 from the audit remain **Implemented** and were not rebuilt. Chang
 | G11 | Returns, refunds, credit notes | Contract blocked | Needs Terms of Sale refund policy and gateway refund setup. Unpaid cancellation unchanged. |
 | G12 | Tax and legal receipts/invoices | Contract blocked | Needs per-market tax rules and legal numbering. The new confirmation email says it is not a tax invoice. |
 | G13 | Bonus-item promotions | Contract blocked | Needs the specific approved campaigns. |
-| G14 | Rich market product content/media fields | Missing | Needs approved content model and copy. |
-| G15–G18 | Corporate, membership, support content; Find a Distributor | Contract blocked (content) | Needs approved copy, assets and finder privacy rules. |
-| G19 | Languages and regional URLs | Missing | Staged by rollout; needs approved translations. |
+| G14 | Rich market product content/media fields | **Implemented (content pending)** | `public.product_market_content` per product, market and locale; editors draft at `/admin/product-content`, only market admin/compliance publish with an approval reference; product pages show published content. RIWAY-approved copy still to be entered. |
+| G15–G18, A04 | Corporate, membership, support and legal pages; Find a Distributor | **Implemented (content pending)** | About, Membership, Support and legal pages render compliance-published CMS `page` entries by slug (`about-history`, `membership-overview`, `support-contacts`, `legal-privacy` and so on, optionally `-ph` / `-<locale>`), falling back to the current notices. `/find-a-distributor` lists only verified distributors who opt in (display name, code, market, city, approved photo). Approved copy still to be entered. |
+| G19 | Languages and regional URLs | Partial | CMS sections resolve a locale-specific slug before English. Language selection, URL routing per language, dictionaries and hreflang remain; needs the agreed rollout and approved translations. |
 | G20 | Magazine-app links | Contract blocked | Needs the link contract. |
 | G21 | CRM/SMS/messaging | Contract blocked | Needs provider choice and channel consent rules. |
 | G22 | Order confirmation emails | **Implemented (Config pending)** | Sends once Resend is enabled. Market receipt wording to be approved. |

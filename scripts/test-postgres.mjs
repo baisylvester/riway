@@ -135,6 +135,7 @@ try {
     "order_confirmation.sql",
     "compensation.sql",
     "distributor_dashboard.sql",
+    "content_integration.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');

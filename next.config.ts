@@ -39,6 +39,8 @@ const config: NextConfig = {
   // Cloudflare serves these small approved source assets directly; no paid Images binding is required.
   images: { unoptimized: process.env.CLOUDFLARE_BUILD === "1" },
   poweredByHeader: false,
+  // Distributor photo uploads (up to 3 MB) go through a server action.
+  experimental: { serverActions: { bodySizeLimit: "4mb" } },
   // Approved legacy public URLs (empty until RIWAY supplies the inventory).
   async redirects() {
     return nextRedirects();

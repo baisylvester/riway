@@ -33,6 +33,7 @@ export const staticPublicPaths = [
   "/legal",
   "/purtier",
   "/conscientious",
+  "/find-a-distributor",
 ] as const;
 
 export const legalSlugs = [

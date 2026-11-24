@@ -19,6 +19,7 @@ import { jsonLdScript, productJsonLd } from "@/lib/structured-data";
 import { siteOrigin } from "@/lib/seo";
 import { db } from "@/lib/supabase/server";
 import { ProductComplianceNotice } from "@/components/product-compliance-notice";
+import { ProductContentPanel } from "@/components/product-content-panel";
 // One catalogue read per request, shared by the title and the page.
 const loadCatalogue = cache(catalogue);
 export async function generateMetadata({
@@ -117,6 +118,7 @@ export default async function ProductPage({
               {money(offer?.retail_minor ?? null, markets[market].currency)}
             </div>
             <ProductComplianceNotice market={market} />
+            <ProductContentPanel productId={p.id} market={market} />
             {composition && (
               <div className="panel">
                 <h2>In this package</h2>

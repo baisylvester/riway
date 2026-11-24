@@ -1,7 +1,13 @@
 import Link from "next/link";
 import Image from "next/image";
+import { currentMarket } from "@/lib/data";
+import { cmsSections, pageKeys } from "@/lib/cms-pages";
+import { CmsSections } from "@/components/cms-sections";
 export const metadata = { title: "Our world" };
-export default function About() {
+export default async function About() {
+  // Approved history, leadership, Golden Deer Award, Foundation and Baby
+  // Pegasus sections, when published.
+  const sections = await cmsSections(pageKeys.about, await currentMarket());
   return (
     <>
       <section className="section page-section">
@@ -42,6 +48,7 @@ export default function About() {
           </div>
         </div>
       </section>
+      <CmsSections sections={sections} />
       <section className="section">
         <div className="cards">
           {[

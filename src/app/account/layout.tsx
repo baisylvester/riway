@@ -28,6 +28,7 @@ export default async function AccountLayout({
         <Link href="/account/orders">Orders</Link>
         <Link href="/account/addresses">Addresses</Link>
         <Link href="/account/security">Security</Link>
+        <Link href="/account/privacy">Privacy</Link>
         <Link href="/operations">Store management</Link>
         <Link href="/distributor">Distributor</Link>
       </nav>

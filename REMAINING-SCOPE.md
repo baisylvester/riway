@@ -53,7 +53,7 @@ Rows I01–I21 from the audit remain **Implemented** and were not rebuilt. Chang
 | G22 | Order confirmation emails | **Implemented (Config pending)** | Sends once Resend is enabled. Market receipt wording to be approved. |
 | G23 | Conversion analytics | **Implemented (Config pending)** | Inactive until GA4/Pixel IDs are configured; real dashboard receipt untested. |
 | G24 | SEO structured data and redirects | **Implemented (data pending)** | JSON-LD live in code; redirect map empty until RIWAY's old-URL inventory exists. |
-| G25 | Data-subject requests, retention | Missing | Needs approved verification and retention periods. |
+| G25 | Data-subject requests, retention | **Partial: request workflow implemented** | Customers submit access/correction/erasure/restriction cases, track status, reply and withdraw at `/account/privacy`. Market admin/compliance staff with a second step review at `/admin/privacy`; completion requires an identity-verification reference and resolution reference. Version checks, audit events, pagination, duplicate protection and intake throttling are enforced by the database. Automated exports/deletion and retention schedules remain blocked by approved verification, fulfilment and retention rules. See `PRIVACY-REQUESTS.md`. |
 | G26 | Corporate low-stock alerts | **Implemented (Config pending)** | Sends once Resend is enabled and staff opt in. |
 | A01–A04 | Payments, email, GA4/Meta activation, approved data | Config pending / Acceptance pending | Unchanged; see runbook below. SG PayNow still has no proven channel. |
 | A05 | RIWAY SSO | Contract blocked | Needs OIDC/SAML metadata and linking rules. |

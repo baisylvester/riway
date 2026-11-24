@@ -138,6 +138,7 @@ try {
     "content_integration.sql",
     "email_second_factor.sql",
     "distributor_photo_independent_review.sql",
+    "privacy_requests.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
@@ -564,11 +565,71 @@ try {
     ),
     "1",
   );
+  const privacyCustomer = randomUUID();
+  sql(
+    `insert into auth.users(id,email) values('${privacyCustomer}','privacy-concurrency@example.invalid');`,
+  );
+  const asPrivacyCustomer = `select set_config('request.jwt.claims','{"sub":"${privacyCustomer}","role":"authenticated","aal":"aal1"}',false); set role authenticated;`;
+  const privacyIntakes = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      parallelSql(
+        `${asPrivacyCustomer} set statement_timeout='10s'; select public.create_privacy_request('PH','access','Please provide a copy of my account data.');`,
+      ),
+    ),
+  );
+  assert(
+    privacyIntakes.every((result) => result.code === 0),
+    "Identical parallel privacy intakes must be acknowledged",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from private.privacy_requests where user_id='${privacyCustomer}';`,
+    ),
+    "1",
+    "Parallel privacy intake must create one case",
+  );
+  const privacyCase = sql(
+    `select id from private.privacy_requests where user_id='${privacyCustomer}';`,
+  );
+  const privacyEdits = await Promise.all(
+    [0, 1].map((index) =>
+      parallelSql(
+        `${asPrivacyCustomer} set statement_timeout='10s'; select public.update_privacy_request('${privacyCase}',0,'message',null,'Customer message from concurrent editor ${index}');`,
+      ),
+    ),
+  );
+  assert.equal(
+    privacyEdits.filter((result) => result.code === 0).length,
+    1,
+    "One privacy edit at a given revision may succeed",
+  );
+  assert.equal(
+    privacyEdits.filter(
+      (result) =>
+        result.code !== 0 && result.error.includes("This request changed"),
+    ).length,
+    1,
+    "Stale privacy edit must fail",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from private.privacy_request_events where request_id='${privacyCase}';`,
+    ),
+    "2",
+    "Only accepted privacy edits add events",
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
-        securitySuites: 9,
+        securitySuites: 22,
+        parallelPrivacyRequests: {
+          attempted: 4,
+          cases: 1,
+          editsAccepted: 1,
+          staleEditsRefused: 1,
+          events: 2,
+        },
         parallelMembershipPayments: memberState,
         parallelMembershipConfirmations: {
           attempted: 2,

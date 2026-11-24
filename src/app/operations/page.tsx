@@ -11,6 +11,8 @@ import { auth } from "@clerk/nextjs/server";
 import { authProvider, secondFactorVerified } from "@/lib/auth-config";
 import { InventoryEmailStatus } from "@/components/inventory-email-status";
 
+export const metadata = { title: "Store management" };
+
 export default async function Operations({
   searchParams,
 }: {

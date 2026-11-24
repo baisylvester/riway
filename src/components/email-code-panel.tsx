@@ -28,23 +28,24 @@ export function EmailCodePanel() {
         </button>
       </form>
       <p role="status">{sent.message}</p>
-      {sent.ok && (
-        <form action={check} className="stack">
-          <label>
-            Code from the email
-            <input
-              name="code"
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]{6,10}"
-              required
-            />
-          </label>
-          <button className="button" disabled={checking}>
-            {checking ? "Checking…" : "Verify"}
-          </button>
-        </form>
-      )}
+      <p className="muted">
+        Already received a code? Enter it below. Request another only if needed.
+      </p>
+      <form action={check} className="stack">
+        <label>
+          Code from the email
+          <input
+            name="code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            pattern="[0-9]{6,10}"
+            required
+          />
+        </label>
+        <button className="button" disabled={checking}>
+          {checking ? "Checking…" : "Verify"}
+        </button>
+      </form>
       <p role="status">{checked.message}</p>
     </div>
   );

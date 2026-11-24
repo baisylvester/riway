@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { session } from "@/lib/data";
 import { StaffActionForm } from "@/components/staff-action-form";
+import { photoBuckets } from "@/lib/distributor-directory";
+import { reviewPhoto } from "./photo-actions";
 import {
   saveDistributorMaterial,
   saveDistributorPhoto,
@@ -33,6 +35,32 @@ export default async function DistributorTools() {
     client.rpc("staff_distributor_materials"),
   ]);
   const materials = materialsSchema.safeParse(materialsResult.data);
+  // Pending distributor photo uploads in the markets this staff member reviews.
+  const pending = z
+    .array(
+      z.object({
+        id: z.uuid(),
+        code: z.string(),
+        displayName: z.string(),
+        market: z.enum(["PH", "SG", "MY"]),
+        objectPath: z.string(),
+        createdAt: z.string(),
+      }),
+    )
+    .safeParse((await client.rpc("staff_photo_submissions")).data);
+  const submissions = pending.success
+    ? await Promise.all(
+        pending.data.map(async (s) => ({
+          ...s,
+          preview:
+            (
+              await client.storage
+                .from(photoBuckets.submissions)
+                .createSignedUrl(s.objectPath, 600)
+            ).data?.signedUrl ?? null,
+        })),
+      )
+    : [];
   return (
     <>
       <h1>Distributor tools</h1>
@@ -105,6 +133,53 @@ export default async function DistributorTools() {
           </table>
         )}
       </section>
+
+      {submissions.length > 0 && (
+        <section className="panel stack">
+          <h2>Photos waiting for review</h2>
+          <p className="muted">
+            Uploaded by distributors. Approving publishes the photo on their
+            store page and in Find a Distributor.
+          </p>
+          {submissions.map((s) => (
+            <div key={s.id} className="stack">
+              <p>
+                <strong>{s.displayName}</strong> · {s.code} · {s.market} ·{" "}
+                {s.createdAt.slice(0, 10)}
+              </p>
+              {s.preview && (
+                <img
+                  src={s.preview}
+                  alt={`Photo submitted by ${s.displayName}`}
+                  width={120}
+                  height={120}
+                  style={{ objectFit: "cover" }}
+                />
+              )}
+              <StaffActionForm action={reviewPhoto} submit="Save review">
+                <input type="hidden" name="id" value={s.id} />
+                <input type="hidden" name="market" value={s.market} />
+                <input type="hidden" name="objectPath" value={s.objectPath} />
+                <label>
+                  Decision
+                  <select name="decision" defaultValue="approve">
+                    <option value="approve">Approve and publish</option>
+                    <option value="reject">Reject</option>
+                  </select>
+                </label>
+                <label>
+                  Approval reference
+                  <input name="reference" maxLength={120} />
+                </label>
+                <label>
+                  Note (optional)
+                  <input name="note" maxLength={300} />
+                </label>
+              </StaffActionForm>
+            </div>
+          ))}
+        </section>
+      )}
 
       <section className="panel stack">
         <h2>Store photo</h2>

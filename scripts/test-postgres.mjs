@@ -139,6 +139,7 @@ try {
     "email_second_factor.sql",
     "distributor_photo_independent_review.sql",
     "privacy_requests.sql",
+    "content_scheduling_media.sql",
   ])
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');

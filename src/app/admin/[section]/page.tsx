@@ -14,6 +14,7 @@ import { pageNumber } from "@/lib/pagination";
 import { orderStatusLabels } from "@/lib/fulfilment";
 import { OrderFulfilmentAdmin } from "@/components/order-fulfilment-admin";
 import { z } from "zod";
+import { scheduleLabels, scheduleState } from "@/lib/content-schedule";
 export default async function AdminSection({
   params,
   searchParams,
@@ -183,6 +184,19 @@ export default async function AdminSection({
       .order("created_at", { ascending: false })
       .range((page - 1) * 30, page * 30 - 1);
     const entry = rows?.find((r) => r.id === edit);
+    const { data: media } = edit
+      ? await client
+          .from("media_assets")
+          .select("public_url,file_name,market")
+          .not("public_url", "is", null)
+          .order("published_at", { ascending: false })
+          .limit(100)
+      : { data: [] };
+    const images = (media ?? []).map((m) => ({
+      url: m.public_url as string,
+      name: m.file_name as string,
+      market: m.market as string,
+    }));
     return (
       <>
         <div className="admin-actions">
@@ -192,7 +206,7 @@ export default async function AdminSection({
           </Link>
         </div>
         {edit ? (
-          <ContentForm entry={entry} />
+          <ContentForm entry={entry} images={images} />
         ) : (
           <>
             <div className="table-scroll">
@@ -213,7 +227,29 @@ export default async function AdminSection({
                       <td>{r.kind}</td>
                       <td>{r.market ?? "Global"}</td>
                       <td>
-                        <span className="status">{r.status}</span>
+                        <span className="status">
+                          {scheduleLabels[scheduleState(r)]}
+                        </span>
+                        {r.publish_at && (
+                          <div className="small muted">
+                            From{" "}
+                            {new Date(r.publish_at)
+                              .toISOString()
+                              .slice(0, 16)
+                              .replace("T", " ")}{" "}
+                            UTC
+                          </div>
+                        )}
+                        {r.unpublish_at && (
+                          <div className="small muted">
+                            Until{" "}
+                            {new Date(r.unpublish_at)
+                              .toISOString()
+                              .slice(0, 16)
+                              .replace("T", " ")}{" "}
+                            UTC
+                          </div>
+                        )}
                       </td>
                       <td>
                         <Link className="return-link" href={`?edit=${r.id}`}>

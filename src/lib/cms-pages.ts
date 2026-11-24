@@ -1,5 +1,6 @@
 import { db } from "@/lib/supabase/server";
 import type { Market } from "@/lib/domain";
+import { isLive, type Schedulable } from "@/lib/content-schedule";
 
 // CMS-backed static page sections (audit G15-G18, A04). Staff create
 // content_entries of kind "page" whose slug follows this convention; only
@@ -71,15 +72,15 @@ export async function cmsSections(
       await db()
     )
       .from("content_entries")
-      .select("slug,title,body,market")
+      .select("slug,title,body,market,status,publish_at,unpublish_at")
       .eq("kind", "page")
       .eq("status", "published")
       .in("slug", slugs);
     if (error || !data) return [];
     // A market-specific slug must also be stored for that market.
     const rows = data.filter(
-      (r: { slug: string; market: string | null }) =>
-        !r.market || r.market === market,
+      (r: { slug: string; market: string | null } & Schedulable) =>
+        (!r.market || r.market === market) && isLive(r),
     );
     return pickSections(keys, market, rows, locale);
   } catch {

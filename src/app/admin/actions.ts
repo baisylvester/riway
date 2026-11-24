@@ -3,6 +3,11 @@ import { z } from "zod";
 import { revalidatePath } from "next/cache";
 import { session, staffAccess } from "@/lib/data";
 import { eventDateSchema, marketSchema } from "@/lib/domain";
+import {
+  contentImageSchema,
+  contentScheduleSchema,
+  utcInputToIso,
+} from "@/lib/content-schedule";
 import { recommendationRequestSchema } from "@/lib/recommendations";
 type Result = { message: string; ok?: boolean };
 export async function resolveSupport(id: string) {
@@ -112,16 +117,23 @@ export async function saveContent(_: Result, f: FormData): Promise<Result> {
       market: z.union([marketSchema, z.literal("")]),
       location: z.string().max(300),
       starts_at: eventDateSchema,
+      image_url: contentImageSchema.default(""),
+      publish_at: eventDateSchema.default(""),
+      unpublish_at: eventDateSchema.default(""),
     })
     .safeParse(Object.fromEntries(f));
   if (!v.success) return { message: "Check the content fields." };
+  const schedule = contentScheduleSchema.safeParse(v.data);
+  if (!schedule.success)
+    return { message: "The unpublish time must be after the publish time." };
   const { id, ...raw } = v.data;
   const data = {
     ...raw,
     market: raw.market || null,
-    starts_at: raw.starts_at
-      ? new Date(raw.starts_at + "Z").toISOString()
-      : null,
+    image_url: raw.image_url || null,
+    starts_at: utcInputToIso(raw.starts_at),
+    publish_at: utcInputToIso(raw.publish_at),
+    unpublish_at: utcInputToIso(raw.unpublish_at),
   };
   const { client } = await session();
   const { error } = id
@@ -140,9 +152,11 @@ export async function saveContent(_: Result, f: FormData): Promise<Result> {
     revalidatePath("/events/[slug]", "page");
   }
   return {
-    message: error
-      ? "Save failed. Publishing requires compliance approval and market access."
-      : "Content saved.",
+    message: !error
+      ? "Content saved."
+      : error.message === "Choose a published editorial image for this market"
+        ? "Choose an image published for this content's market."
+        : "Save failed. Publishing requires compliance approval and market access.",
     ok: !error,
   };
 }

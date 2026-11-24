@@ -157,9 +157,11 @@ export async function staffAccess() {
       mfa: secondFactorVerified(identity.sessionClaims),
     };
   }
-  const [{ data: roles }, { data: aal }] = await Promise.all([
+  // Authenticator (aal2) or a recent email code for this session; the same
+  // rule the database applies in private.mfa_verified().
+  const [{ data: roles }, { data: verified }] = await Promise.all([
     client.from("staff_roles").select("market,role").eq("user_id", user.id),
-    client.auth.mfa.getAuthenticatorAssuranceLevel(),
+    client.rpc("second_factor_verified"),
   ]);
-  return { user, allowed: !!roles?.length, mfa: aal?.currentLevel === "aal2" };
+  return { user, allowed: !!roles?.length, mfa: verified === true };
 }

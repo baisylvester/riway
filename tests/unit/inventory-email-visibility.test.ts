@@ -60,14 +60,20 @@ it("keeps provider configuration hidden from an ordinary account", async () => {
     ),
   ).not.toContain("Inventory email reports");
 });
-it("does not load admin or store data before authenticator verification", async () => {
-  mocks.assurance.mockResolvedValue({ data: { currentLevel: "aal1" } });
+it("does not load admin or store data before the second sign-in step", async () => {
+  // Neither an authenticator nor an email code verified this session.
+  mocks.rpc.mockImplementation(async (name: string) => ({
+    data: name === "second_factor_verified" ? false : true,
+    error: null,
+  }));
   const html = renderToStaticMarkup(
     await Operations({ searchParams: Promise.resolve({}) }),
   );
-  expect(html).toContain("Verify your authenticator");
+  expect(html).toContain("Verify your identity");
   expect(html).not.toContain("Inventory email reports");
-  expect(mocks.rpc).not.toHaveBeenCalled();
+  expect(mocks.rpc.mock.calls.map(([name]) => name)).toEqual([
+    "second_factor_verified",
+  ]);
   expect(mocks.stores).not.toHaveBeenCalled();
 });
 it("does not present test configuration as verified delivery", () => {

@@ -16,6 +16,8 @@ export function AdminNav() {
         ["orders", "Orders"],
         ["payments", "Payments"],
         ["reports", "Sales reports"],
+        ["compensation", "RIWAY volume sync"],
+        ["distributors", "Distributor tools"],
         ["content", "Content"],
         ["media", "Media library"],
         ["support", "Support requests"],

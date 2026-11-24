@@ -12,6 +12,7 @@ import { orderFulfilmentSchema, orderStatusLabels } from "@/lib/fulfilment";
 import { FulfilmentTimeline } from "@/components/fulfilment-timeline";
 import { orderCancellationSchema } from "@/lib/cancellation";
 import { CancelOrderForm } from "@/components/cancel-order-form";
+import { TrackPurchase } from "@/components/commerce-tracking";
 export const metadata = { title: "Order details" };
 export default async function Order({
   params,
@@ -107,6 +108,29 @@ export default async function Order({
         </p>
       )}
       <p className="price">Total {money(o.total_minor, o.currency)}</p>
+      {/* Conversion is reported only from the server-verified paid state. */}
+      {o.payment_status === "paid" && (
+        <TrackPurchase
+          orderId={id}
+          currency={o.currency}
+          valueMinor={Number(o.total_minor)}
+          items={o.order_items
+            .filter((i: { product_id: string | null }) => i.product_id)
+            .map(
+              (i: {
+                product_id: string;
+                product_name: string;
+                quantity: number;
+                unit_minor: number;
+              }) => ({
+                id: i.product_id,
+                name: i.product_name,
+                quantity: i.quantity,
+                priceMinor: i.unit_minor,
+              }),
+            )}
+        />
+      )}
       {o.payment_status !== "paid" && o.status === "awaiting_payment" && (
         <p>
           Your order is awaiting payment confirmation. Returning from checkout

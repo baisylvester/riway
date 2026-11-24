@@ -108,6 +108,8 @@ export type Notification =
   | { type: "order_shipped"; reference: string }
   | { type: "order_delivered"; reference: string }
   | { type: "sales_report"; reference: string; context: unknown }
+  | { type: "order_confirmed"; reference: string; context: unknown }
+  | { type: "corporate_low_stock"; reference: string; context: unknown }
   | {
       type: "store_owner_onboarding";
       reference: string;
@@ -182,7 +184,117 @@ function minorAmount(minor: number, currency: string) {
   );
 }
 
+// Frozen order snapshot queued by private.enqueue_order_confirmation. It holds
+// no address, phone or email; the recipient comes from the verified account.
+const orderConfirmedContext = z.object({
+  orderId: z.uuid(),
+  market: z.enum(["PH", "SG", "MY"]),
+  currency: z.string().regex(/^[A-Z]{3}$/),
+  subtotalMinor: z.number().int().nonnegative(),
+  discountMinor: z.number().int().nonnegative(),
+  totalMinor: z.number().int().positive(),
+  placedAt: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  items: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(120),
+        quantity: z.number().int().min(1).max(24),
+        netMinor: z.number().int().nonnegative(),
+      }),
+    )
+    .min(1)
+    .max(30),
+});
+
+const corporateLowStockContext = z.object({
+  market: z.enum(["PH", "SG", "MY"]),
+  day: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  lowStockCount: z.number().int().positive(),
+  items: z
+    .array(
+      z.object({
+        product: z.string().min(1).max(120),
+        available: z.number().int(),
+        threshold: z.number().int().nonnegative(),
+      }),
+    )
+    .min(1)
+    .max(100),
+});
+
+// Statements already used on product pages. Market-approved receipt wording
+// replaces these once RIWAY supplies it; nothing here is a therapeutic claim.
+const orderStatements: Record<"PH" | "SG" | "MY", string[]> = {
+  PH: [
+    "No approved therapeutic claims. Read the label and consult a healthcare professional.",
+  ],
+  SG: [],
+  MY: [],
+};
+
+function siteOrigin() {
+  const origin = new URL(
+    process.env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:4173",
+  );
+  if (
+    !["http:", "https:"].includes(origin.protocol) ||
+    origin.username ||
+    origin.password
+  )
+    throw new Error("Invalid notification site URL");
+  return origin.origin;
+}
+
 export function notificationContent(notification: Notification) {
+  if (notification.type === "order_confirmed") {
+    const o = orderConfirmedContext.parse(notification.context);
+    if (o.orderId !== notification.reference)
+      throw new Error("Order confirmation reference mismatch");
+    const link = new URL(`/account/orders/${o.orderId}`, siteOrigin()).href;
+    const money = (minor: number) => minorAmount(minor, o.currency);
+    const number = o.orderId.slice(0, 8).toUpperCase();
+    const lines = o.items.map(
+      (i) => `${i.name} × ${i.quantity} | ${money(i.netMinor)}`,
+    );
+    const statements = [
+      "This email confirms your payment. It is not a tax invoice or official receipt.",
+      ...orderStatements[o.market],
+    ];
+    const totals = `Subtotal ${money(o.subtotalMinor)}${o.discountMinor ? ` · Discount −${money(o.discountMinor)}` : ""} · Total paid ${money(o.totalMinor)}`;
+    return {
+      subject: `RIWAY order ${number} confirmed`,
+      text: [
+        `Thank you. Payment for your RIWAY order ${number} (placed ${o.placedAt}, ${o.market}) has been confirmed.`,
+        "",
+        ...lines,
+        totals,
+        "",
+        `We will email you when it is dispatched or ready for collection. Order details and delivery progress: ${link}`,
+        "",
+        ...statements,
+      ].join("\n"),
+      html: `<h1>Order ${number} confirmed</h1><p>Payment for your RIWAY order placed ${o.placedAt} (${o.market}) has been confirmed.</p><table><thead><tr><th>Product</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${o.items.map((i) => `<tr><td>${escaped(i.name)}</td><td>${i.quantity}</td><td>${escaped(money(i.netMinor))}</td></tr>`).join("")}</tbody></table><p>${escaped(totals)}</p><p>We will email you when it is dispatched or ready for collection.</p><p><a href="${escaped(link)}">View your order</a></p>${statements.map((s) => `<p><small>${escaped(s)}</small></p>`).join("")}`,
+    };
+  }
+  if (notification.type === "corporate_low_stock") {
+    const r = corporateLowStockContext.parse(notification.context);
+    const link = new URL("/admin/inventory", siteOrigin()).href;
+    const lines = r.items.map(
+      (i) =>
+        `${i.product} | available: ${i.available} | threshold: ${i.threshold}`,
+    );
+    return {
+      subject: `RIWAY low-stock alert · ${r.market} · ${r.day}`,
+      text: [
+        `${r.lowStockCount} checkout stock record${r.lowStockCount === 1 ? " is" : "s are"} at or below threshold in ${r.market} on ${r.day}.`,
+        "",
+        ...lines,
+        "",
+        `Manage inventory (sign-in and authenticator required): ${link}`,
+      ].join("\n"),
+      html: `<h1>Low-stock alert · ${r.market}</h1><p>${r.day} · ${r.lowStockCount} checkout stock record(s) at or below threshold. Up to 100 are listed.</p><table><thead><tr><th>Product</th><th>Available</th><th>Threshold</th></tr></thead><tbody>${r.items.map((i) => `<tr><td>${escaped(i.product)}</td><td>${i.available}</td><td>${i.threshold}</td></tr>`).join("")}</tbody></table><p><a href="${escaped(link)}">Manage inventory</a> (sign-in and authenticator required)</p>`,
+    };
+  }
   if (notification.type === "sales_report") {
     const r = salesReportContext.parse(notification.context);
     const origin = new URL(

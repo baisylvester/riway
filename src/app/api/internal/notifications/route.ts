@@ -63,6 +63,12 @@ export async function POST(request: Request) {
     // Due weekly/monthly sales reports for subscribed staff; idempotent per period.
     const sales = await client.rpc("queue_sales_reports", { report_day: day });
     if (sales.error) return failure("Sales report queue is unavailable.", 503);
+    // Daily corporate checkout-stock alerts for subscribed market staff.
+    const stock = await client.rpc("queue_corporate_low_stock", {
+      report_day: day,
+    });
+    if (stock.error)
+      return failure("Low-stock alert queue is unavailable.", 503);
   }
   const { data: jobs, error } = await client.rpc("claim_notifications");
   if (error || !Array.isArray(jobs))

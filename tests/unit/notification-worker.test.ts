@@ -94,4 +94,23 @@ describe("notification worker preflight", () => {
     expect((await POST(request())).status).toBe(503);
     expect(mocks.rpc).not.toHaveBeenCalledWith("claim_notifications");
   });
+  it("queues corporate low-stock alerts before claiming", async () => {
+    await POST(request());
+    expect(mocks.rpc).toHaveBeenCalledWith("queue_corporate_low_stock", {
+      report_day: "2026-11-06",
+    });
+    const names = mocks.rpc.mock.calls.map(([name]) => name);
+    expect(names.indexOf("queue_corporate_low_stock")).toBeLessThan(
+      names.indexOf("claim_notifications"),
+    );
+  });
+  it("keeps jobs unclaimed when the low-stock alert queue fails", async () => {
+    mocks.rpc.mockImplementation(async (name: string) =>
+      name === "queue_corporate_low_stock"
+        ? { data: null, error: { code: "42883" } }
+        : { data: name === "claim_notifications" ? [] : 0, error: null },
+    );
+    expect((await POST(request())).status).toBe(503);
+    expect(mocks.rpc).not.toHaveBeenCalledWith("claim_notifications");
+  });
 });

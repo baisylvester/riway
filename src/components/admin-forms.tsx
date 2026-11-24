@@ -8,6 +8,7 @@ import {
   saveRecommendations,
 } from "@/app/admin/actions";
 import { markets, type Product } from "@/lib/domain";
+import { isoToUtcInput } from "@/lib/content-schedule";
 export function ProductForm({ product }: { product?: Product }) {
   const [s, a, p] = useActionState(saveProduct, { message: "" });
   return (
@@ -134,9 +135,28 @@ interface Entry {
   market: string | null;
   location: string | null;
   starts_at: string | null;
+  image_url?: string | null;
+  publish_at?: string | null;
+  unpublish_at?: string | null;
 }
-export function ContentForm({ entry }: { entry?: Entry }) {
+export interface PublishedImage {
+  url: string;
+  name: string;
+  market: string;
+}
+export function ContentForm({
+  entry,
+  images = [],
+}: {
+  entry?: Entry;
+  images?: PublishedImage[];
+}) {
   const [s, a, p] = useActionState(saveContent, { message: "" });
+  const current = entry?.image_url ?? "";
+  const imageChoices =
+    current && !images.some((i) => i.url === current)
+      ? [{ url: current, name: "Current image", market: "" }, ...images]
+      : images;
   return (
     <form action={a} className="panel stack">
       <h2>{entry ? "Edit content" : "New content"}</h2>
@@ -195,6 +215,33 @@ export function ContentForm({ entry }: { entry?: Entry }) {
             defaultValue={entry?.starts_at?.slice(0, 16) ?? ""}
           />
         </label>
+        <label>
+          Publish from (UTC, optional)
+          <input
+            name="publish_at"
+            type="datetime-local"
+            defaultValue={isoToUtcInput(entry?.publish_at)}
+          />
+        </label>
+        <label>
+          Unpublish at (UTC, optional)
+          <input
+            name="unpublish_at"
+            type="datetime-local"
+            defaultValue={isoToUtcInput(entry?.unpublish_at)}
+          />
+        </label>
+        <label className="full">
+          Image
+          <select name="image_url" defaultValue={current}>
+            <option value="">No image</option>
+            {imageChoices.map((i) => (
+              <option value={i.url} key={i.url}>
+                {i.market ? `${i.name} (${i.market})` : i.name}
+              </option>
+            ))}
+          </select>
+        </label>
         <label className="full">
           Event location
           <input
@@ -218,7 +265,9 @@ export function ContentForm({ entry }: { entry?: Entry }) {
       </div>
       <p className="small muted">
         Draft → review → compliance publication. Unapproved claims must stay
-        unpublished.
+        unpublished. An approved entry is public only between its publish and
+        unpublish times; leave both empty to publish immediately. Images come
+        from editorial media published for the same market.
       </p>
       <button className="button" disabled={p}>
         Save content

@@ -26,6 +26,17 @@ Existing migrations are unchanged. One existing test changed: `tests/security/fu
 
 New routes and pages: `/api/internal/compensation` (service worker, 503 until enabled), `/admin/compensation` ("RIWAY volume sync"), `/admin/distributors` ("Distributor tools"); `/admin` gains the low-stock alert opt-in; `/distributor` gains orders, customers and materials.
 
+## Content scheduling and public editorial media (branch `feat/unblocked-scope-20261124`)
+
+Built without RIWAY inputs. Not yet merged, applied or deployed.
+
+| Increment | Migration | Tests |
+| --- | --- | --- |
+| CMS scheduled publication: optional `publish_at` / `unpublish_at` window on `content_entries`. An approved entry is public only inside its window, enforced by the database read policy (no scheduler needed). Market staff still see scheduled and ended entries; editors cannot move an approved schedule; customers cannot register for an event before it is public. The content studio shows Draft / In review / Approved, scheduled / Live / Ended. | `20261124150000_content_scheduling_and_public_media.sql` | `tests/security/content_scheduling_media.sql`, `tests/unit/content-schedule.test.ts` |
+| Public editorial media: a market admin or compliance reviewer other than the uploader publishes a private editorial image with an approval reference. The copy goes to the public `editorial-public` bucket at `<market>/<asset id>.<ext>`. Unpublishing is refused while content in review or published uses the image. Stories, events and pages can use a published image of their market (or a bundled `/design` asset), checked by a database trigger. R2-stored media cannot be published yet. | same | same, plus `tests/unit/media-publication.test.ts` |
+
+Rollout: apply the migration (hosted rehearsal first), deploy, then run a staff browser check: schedule an entry, publish an image as a second reviewer, and attach it to a story.
+
 ## Refreshed feature matrix
 
 Rows I01–I21 from the audit remain **Implemented** and were not rebuilt. Changes on this branch are in bold.

@@ -1,8 +1,9 @@
 import { session } from "@/lib/data";
 import { MediaUpload } from "@/components/media-upload";
 import { r2Storage } from "@/services/r2-storage";
+import { MediaPublish, MediaUnpublish } from "@/components/media-publication";
 export default async function Media() {
-  const { client } = await session();
+  const { client, user } = await session();
   const { data, error } = await client
     .from("media_assets")
     .select("*")
@@ -27,6 +28,11 @@ export default async function Media() {
   return (
     <>
       <h1>Editorial media</h1>
+      <p className="muted">
+        Uploads stay private. A market admin or compliance reviewer other than
+        the uploader can publish an approved image with its approval reference;
+        published images can then be attached to stories, events and pages.
+      </p>
       <MediaUpload />
       <div className="cards" style={{ marginTop: 30 }}>
         {rows.map((r) => (
@@ -44,7 +50,27 @@ export default async function Media() {
             <p>
               {r.market} · {Math.ceil(r.size_bytes / 1024)} KiB
             </p>
-            <span className="status">Private editorial asset</span>
+            {r.public_url ? (
+              <>
+                <span className="status">
+                  Published · {r.approval_reference}
+                </span>
+                <MediaUnpublish id={r.id} url={r.public_url} />
+              </>
+            ) : (
+              <>
+                <span className="status">Private editorial asset</span>
+                {r.storage_provider === "supabase" &&
+                  (r.uploaded_by === user?.id ? (
+                    <p className="small muted">
+                      Another market admin or compliance reviewer must publish
+                      your upload.
+                    </p>
+                  ) : (
+                    <MediaPublish id={r.id} />
+                  ))}
+              </>
+            )}
           </div>
         ))}
       </div>

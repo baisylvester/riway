@@ -8,6 +8,7 @@ import { authProvider, secondFactorVerified } from "./auth-config";
 import { cache } from "react";
 import { packageCompositionsSchema } from "./commerce-checkout";
 import { recommendationRowSchema } from "./recommendations";
+import { isLive } from "./content-schedule";
 export async function currentMarket() {
   return asMarket((await cookies()).get("riway-market")?.value);
 }
@@ -41,7 +42,8 @@ export async function content(kind: string) {
     if (process.env.NODE_ENV !== "production") return [];
     throw new Error("Content could not be loaded.");
   }
-  return data;
+  // Staff sessions can read scheduled or ended entries; public pages show only live ones.
+  return data.filter((entry) => isLive(entry));
 }
 
 export async function packageCompositions(market: import("./domain").Market) {

@@ -16,6 +16,15 @@ export default async function Story({
       <span className="eyebrow">OUR STORIES</span>
       <h1>{e.title}</h1>
       <p className="lead">{e.excerpt}</p>
+      {e.image_url && (
+        <img
+          className="content-image"
+          src={e.image_url}
+          alt=""
+          loading="lazy"
+          style={{ maxWidth: "100%", height: "auto", borderRadius: 12 }}
+        />
+      )}
       <div className="content-body">{e.body}</div>
       <div className="notice">
         Individual experiences vary. No approved therapeutic claims. Income and

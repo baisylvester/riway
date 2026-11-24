@@ -1,6 +1,7 @@
 import { requireSession } from "@/lib/data";
 import { deleteAddress } from "@/app/actions";
 import { AddressForm } from "@/components/forms";
+export const metadata = { title: "Your addresses" };
 export default async function Addresses() {
   const { client, user } = await requireSession();
   const { data, error } = await client

@@ -82,8 +82,51 @@ describe("sendEmailCode", () => {
     vi.stubEnv("AUTH_PROVIDER", "supabase");
     mocks.signInWithOtp.mockResolvedValueOnce({ error: { status: 429 } });
     expect((await sendEmailCode({ message: "" }, form())).message).toMatch(
-      /Wait a minute/,
+      /Too many verification requests/,
     );
+  });
+  it("distinguishes an exhausted sending quota from a short send cooldown", async () => {
+    mocks.signInWithOtp.mockResolvedValueOnce({
+      error: {
+        status: 429,
+        code: "over_email_send_rate_limit",
+        message: "email rate limit exceeded",
+      },
+    });
+    const quota = await sendEmailCode({ message: "" }, form());
+    expect(quota.ok).toBeUndefined();
+    expect(quota.message).toMatch(/sending limit/);
+    expect(quota.message).not.toMatch(/sent recently|minute|60 seconds/i);
+    mocks.signInWithOtp.mockResolvedValueOnce({
+      error: {
+        status: 429,
+        code: "over_email_send_rate_limit",
+        message:
+          "For security purposes, you can only request this after 24 seconds.",
+      },
+    });
+    const cooldown = await sendEmailCode({ message: "" }, form());
+    expect(cooldown.ok).toBeUndefined();
+    expect(cooldown.message).toMatch(/wait 24 seconds/);
+    expect(cooldown.message).toMatch(/code you already received/);
+  });
+  it("gives a safe fallback for restricted delivery and never reflects upstream details", async () => {
+    mocks.signInWithOtp.mockResolvedValueOnce({
+      error: {
+        status: 400,
+        code: "email_address_not_authorized",
+        message: "not authorized: staff@example.invalid",
+      },
+    });
+    const restricted = await sendEmailCode({ message: "" }, form());
+    expect(restricted.message).toMatch(/not available for this account/);
+    expect(restricted.message).not.toContain(me.email);
+    mocks.signInWithOtp.mockResolvedValueOnce({
+      error: { status: 429, message: "private provider details" },
+    });
+    const unknown = await sendEmailCode({ message: "" }, form());
+    expect(unknown.message).not.toContain("private provider details");
+    expect(unknown.ok).toBeUndefined();
   });
 });
 

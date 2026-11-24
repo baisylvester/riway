@@ -48,13 +48,26 @@ export async function sendEmailCode(
       email: me.email,
       options: { shouldCreateUser: false },
     });
-    if (error)
+    if (error) {
+      // Supabase uses the email-send code for both a short per-account
+      // cooldown and an exhausted project sending quota. A quota error does
+      // not mean another code was delivered or that one minute will fix it.
+      const cooldown = error.message?.match(
+        /^For security purposes, you can only request this after (\d{1,4}) seconds\.?$/i,
+      );
       return {
         message:
-          error.status === 429
-            ? "A code was sent recently. Wait a minute, then try again."
-            : "The code could not be sent. Please try again shortly.",
+          error.status === 429 && cooldown
+            ? `Please wait ${Number(cooldown[1])} seconds before requesting another code. You can still enter a code you already received.`
+            : error.code === "over_email_send_rate_limit"
+              ? "Email delivery has reached its sending limit. Try again later, use an authenticator, or contact RIWAY support. You can still enter a code you already received."
+              : error.status === 429
+                ? "Too many verification requests. Try again later or use an authenticator. You can still enter a code you already received."
+                : error.code === "email_address_not_authorized"
+                  ? "Email delivery is not available for this account. Use an authenticator or contact RIWAY support."
+                  : "The code could not be sent. Please try again shortly.",
       };
+    }
     return {
       ok: true,
       message: `We sent a sign-in code to ${me.email.replace(/^(.).*(@.*)$/, "$1…$2")}. It expires soon.`,

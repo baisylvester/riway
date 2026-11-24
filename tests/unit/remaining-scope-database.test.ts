@@ -29,6 +29,7 @@ const suites = [
   "compensation.sql",
   "distributor_dashboard.sql",
   "content_integration.sql",
+  "email_second_factor.sql",
 ];
 
 describe("remaining-scope database acceptance", () => {

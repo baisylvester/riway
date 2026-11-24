@@ -20,20 +20,20 @@ export default async function Operations({
   const verified =
     authProvider() === "clerk"
       ? secondFactorVerified((await auth()).sessionClaims)
-      : (await client.auth.mfa.getAuthenticatorAssuranceLevel()).data
-          ?.currentLevel === "aal2";
+      : (await client.rpc("second_factor_verified")).data === true;
   if (!verified)
     return (
       <section className="section page-section stack">
         <span className="eyebrow">RIWAY · ACCOUNT SECURITY</span>
-        <h1>Verify your authenticator</h1>
+        <h1>Verify your identity</h1>
         <p>
-          You are signed in. Store management requires an authenticator code
-          before administrator or store access is available.
+          You are signed in. Store management requires a second step, an emailed
+          code or an authenticator code, before administrator or store access is
+          available.
         </p>
         <p>
-          Set up or verify your authenticator below. After verification, this
-          page will load your stores and administrator controls.
+          Verify below. After verification, this page will load your stores and
+          administrator controls.
         </p>
         <SecurityPanel />
         <Link href="/account/security">Account security</Link>

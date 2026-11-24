@@ -28,7 +28,7 @@ New routes and pages: `/api/internal/compensation` (service worker, 503 until en
 
 ## Content scheduling and public editorial media (branch `feat/unblocked-scope-20261124`)
 
-Built without RIWAY inputs. Not yet merged, applied or deployed.
+Built without RIWAY inputs. Merged as PR #56, migration applied and deployed to staging and production on 24 November 2026 (see `ROLLOUT-STATUS.md`).
 
 | Increment | Migration | Tests |
 | --- | --- | --- |

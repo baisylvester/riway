@@ -1,6 +1,20 @@
-# RIWAY provider rollout — 23 November 2026
+# RIWAY provider rollout — 24 November 2026
 
-## Latest live release - Xendit calls work on Cloudflare Workers
+## Latest live release - remaining proposal scope (order confirmations, volume outbox, distributor dashboard)
+
+PR #41 merged as `511b45c50dc8750e23dbff42fdac67b178e3305e` and PR #42 as `8d3d9951c224ca26b9ffc463e21509a88ee51a91`. PR #41's CI and merge CI run `45310494879` passed `verify` and `postgres-concurrency`, including the new `order_confirmation.sql`, `compensation.sql` and `distributor_dashboard.sql` suites. PR #42 was merged by an auto-merge request that completed immediately because `main` has no required checks; its merge CI run `45310732465` then passed both jobs.
+
+Hosted migrations `20261124090000_order_confirmation_and_stock_alerts.sql`, `20261124100000_compensation_volume_outbox.sql` and `20261124110000_distributor_dashboard.sql` are applied through the Supabase MCP, each in its own transaction; the recorded versions were then set to the repository filenames. **Deviation:** the usual rolled-back hosted rehearsal of each migration with its suite was not run (the combined script was too large for the tool); the suites passed on real PostgreSQL in CI and in local PGlite replay, including a local run of the exact combined rehearsal script. After applying: both triggers exist, grants match the suites (no authenticated access to the outbox or its claim function, no anonymous dashboard access, anonymous store lookup allowed), the outbox is empty, and security advisors show only the pre-existing leaked-password-protection warning and two INFO no-policy notices. This PR also narrows the `compensation.sql` backfill assertions to the suite's own orders so it can run on the shared database.
+
+Artifact `14883356729` (19,928,211 bytes) matched SHA-256 `cadd89b550af84a362da6311b25baccf76d0a187164d66ec60552d78b509c67f` before extraction and upload. Staging returned deployment `39d82de784ed4e6eaba83a850169fdb0` and production `7049a575b9e143a4b97389099e755bfd` (same etag `7cbdbb11300b58e3c0d952d944e541f9a03d6dfdf3b768120b6a2ad116c9f7d4`); the notification schedule was reapplied on both. Live checks on 24 November: 53/53 HTTP/API cases passed on staging and production, with the unknown-collection catalogue count adjusted to 3 only for that run because the staging QA product is in the shared catalogue. On both, `POST /api/internal/compensation` returns 503 (not configured), signed-out `/admin/compensation`, `/admin/distributors` and `/distributor` redirect to login, `/d/QA-CHECKOUT` returns 200, and `/api/health` still reports commerce, payments and Xendit disabled. Staging product JSON-LD includes an Offer only for the opened QA product. Production logs over about 75 seconds showed one minute-cron run `ok` on the new version and no exceptions or error logs.
+
+Scope and state:
+- **Order confirmation and low-stock emails:** queued by the database; nothing sends while `EMAIL_PROVIDER` is not `resend`. Receipt wording still needs RIWAY approval.
+- **Compensation outbox:** paid and reversal events now queue for every newly paid order; delivery stays off (`COMPENSATION_PROVIDER` unset) until RIWAY's API contract exists. Orders paid before this release have no events; `enqueue_missing_compensation_events` can backfill up to 31 days when needed.
+- **Analytics events, Product JSON-LD, legacy redirects (empty), distributor dashboard and staff tools:** live in code; analytics stays inactive without measurement IDs.
+- Not covered: signed-in staff/distributor pages against the live database, email delivery, and any RIWAY integration.
+
+## Previous live release - Xendit calls work on Cloudflare Workers
 
 PR #39 merged as `ecc5f4b2a1f5526fb4431f25019c760d74032e58`. PR CI runs `45143014218` and `45143022083`, and merge CI run `45144847944`, passed the `verify` and `postgres-concurrency` jobs. No migration.
 

@@ -150,11 +150,15 @@ set local role service_role;
 do $$ begin
  begin perform public.enqueue_missing_compensation_events(now()-interval '40 days'); raise exception 'FAIL: unbounded backfill';
  exception when raise_exception then if SQLERRM<>'Backfill window must be within 31 days' then raise; end if; end;
- if public.enqueue_missing_compensation_events(now()-interval '1 day')<>1 then raise exception 'FAIL: backfill paid'; end if;
+ -- A shared database may hold other recent paid orders, so require at least
+ -- the fixture order here and check its exact events below.
+ if public.enqueue_missing_compensation_events(now()-interval '1 day')<1 then raise exception 'FAIL: backfill paid'; end if;
  if public.enqueue_missing_compensation_events(now()-interval '1 day')<>0 then raise exception 'FAIL: backfill replay'; end if;
 end $$;
 reset role;
 do $$ begin
- if (select count(*) from private.compensation_volume_events)<>2 then raise exception 'FAIL: backfill should restore paid and reversal'; end if;
+ if (select count(*) from private.compensation_volume_events where order_id=current_setting('comp_qa.order1')::uuid)<>2
+  or exists(select 1 from private.compensation_volume_events where order_id=current_setting('comp_qa.order2')::uuid) then
+  raise exception 'FAIL: backfill should restore paid and reversal'; end if;
 end $$;
 rollback;

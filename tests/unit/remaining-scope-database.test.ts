@@ -30,6 +30,7 @@ const suites = [
   "distributor_dashboard.sql",
   "content_integration.sql",
   "email_second_factor.sql",
+  "distributor_photo_independent_review.sql",
 ];
 
 describe("remaining-scope database acceptance", () => {

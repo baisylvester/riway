@@ -139,7 +139,8 @@ export default async function DistributorTools() {
           <h2>Photos waiting for review</h2>
           <p className="muted">
             Uploaded by distributors. Approving publishes the photo on their
-            store page and in Find a Distributor.
+            store page and in Find a Distributor. Your own photo must be
+            reviewed by another market admin or compliance staff member.
           </p>
           {submissions.map((s) => (
             <div key={s.id} className="stack">
@@ -188,7 +189,7 @@ export default async function DistributorTools() {
           page. Use an image already in this site&apos;s /images folder or on
           RIWAY&apos;s official image host. Leave the location blank to remove
           it. Admin or compliance role in the distributor&apos;s market
-          required.
+          required. Ask another reviewer to change your own store photo.
         </p>
         <StaffActionForm action={saveDistributorPhoto} submit="Save photo">
           <label>

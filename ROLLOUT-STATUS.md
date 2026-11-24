@@ -1,6 +1,27 @@
 # RIWAY provider rollout — 24 November 2026
 
-## Latest live release - content integration (product content, CMS pages, Find a Distributor, photo uploads)
+## Pending candidate - independent distributor photo review
+
+Migration `20261124140000_distributor_photo_independent_review.sql` refuses own-photo review and direct own-photo changes even when the distributor is a market admin/compliance staff member with MFA. The review queue excludes own submissions. The server action checks the submission's id, market and object path against that queue before copying an image into public storage.
+
+Local verification: 571 tests across 60 files, TypeScript and the production webpack build pass. The new rollback-only acceptance suite reproduced admin self-approval before the fix; after the fix it covers admin/compliance self-approval, self-rejection, direct setting/removal, unchanged submission/photo/audit state on refusal, and independent approval/rejection. Eleven action tests cover refusal before upload and submission-field tampering. Both PGlite and CI's PostgreSQL runner include the new SQL suite.
+
+This candidate is not merged, applied to the hosted database or deployed. Apply the migration before deploying the action that relies on its filtered queue. Hosted/browser acceptance and Linux CI results must be recorded separately. Live QA inspection is documented in `QA-CLEANUP-20261124.md`; no cleanup has been executed.
+
+## Latest live release - emailed staff verification codes
+
+PR #46 merged as `4ad6e0828dfa5399955258f607c84d7f8aa77e76`. Branch push run `45324715507` passed `verify` and `postgres-concurrency`; the PR run's `verify` job was still finishing at merge. The branch and merge trees are identical (`8fcc32f`). The GitHub run and artifact metadata were rechecked on 24 November when completing this record.
+
+Hosted migration `20261124130000_email_second_factor.sql` is applied and recorded under the repository version. The handover records a rolled-back hosted acceptance run covering password-only refusal, service-role-only recording, foreign-session refusal, single-session scope and authenticator compatibility, with no test rows retained. Hosted migration history was rechecked on 24 November.
+
+Artifact `14888474708` (19,958,909 bytes) has GitHub SHA-256 `043a2ffc3772be9c9380314cc77f06963ece005bad5f6d8425484c09ea2833fb`. The handover records a matching downloaded digest before deployment: staging `840ee04f3de84c00b25b44b064b231f9` and production `cbd5858c5424450aaa82dd85df08e75d`. It also records 53/53 HTTP/API checks passing on both, with the unknown-collection count adjusted to 3 for the shared QA product. These deployment and HTTP results are prior release evidence from the handover, not a new deployment or rerun.
+
+Scope and state:
+- **Staff verification:** an emailed code or an existing authenticator is accepted; email verification applies to one browser session for 12 hours.
+- **Email delivery is not verified end to end:** the staging panel sent codes and Supabase logged both sends, but receipt in the staff inbox was not confirmed. The Magic Link template contains `{{ .Token }}`; custom SMTP still needs configuration.
+- Commerce, payments and Xendit remain disabled on production. Staging and production share the database; temporary QA content remains pending reviewed cleanup.
+
+## Previous live release - content integration (product content, CMS pages, Find a Distributor, photo uploads)
 
 PR #44 merged as `a35dcdd9dedf2a7f750c4a9871a99ea17585e51b` after its PR CI passed `verify` and `postgres-concurrency`, including the new `content_integration.sql` suite; merge CI run `45321216289` passed.
 

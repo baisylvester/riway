@@ -1,6 +1,6 @@
 # RIWAY remaining proposal scope — 24 November 2026
 
-Branch `feat/riway-remaining-scope-20261124`, worktree `riway_remaining_scope`, cut from `integration/features` @ `4c980a7` (22 commits past the audited `992c2ac`; the audit's findings were rechecked against this base). Nothing here is committed, applied to a hosted database, deployed or connected to a real provider.
+Branch `feat/riway-remaining-scope-20261124`, worktree `riway_remaining_scope`, cut from `integration/features` @ `4c980a7` (22 commits past the audited `992c2ac`; the audit's findings were rechecked against this base). Status update: merged as PR #41 (and #42), hosted migrations applied and deployed to staging and production on 24 November 2026 (see `ROLLOUT-STATUS.md`). No real provider is connected; email and RIWAY volume delivery remain off.
 
 Status words used below:
 

@@ -1,5 +1,19 @@
 # RIWAY provider rollout — 24 November 2026
 
+## Merged, awaiting migration and deployment - privacy requests (G25)
+
+PR #54 merged as `548cb8326a4326556c9d22d1eada20f682a16802`. Tested head `61e34f7c1a20fcd378e3fb1195edef556987f2e0`, tree `5ec1a52006156334df7e06dba33e70c8b97faf5e`. Push run `45352830642` and PR run `45352836169` passed `verify` and `postgres-concurrency`.
+
+Customers can submit access/copy, correction, erasure and restriction cases, follow status and messages, reply and withdraw open cases at `/account/privacy`. Market admin/compliance staff with the existing second step review at `/admin/privacy`; self-review, cross-market access and other staff roles are refused. Completion needs recorded identity verification and a resolution reference. Private tables, invoker RPC wrappers, repeated database authorization, expected revisions, row locks, pagination, duplicate intake protection, rate limits and audit history are covered by tests. See `PRIVACY-REQUESTS.md`.
+
+Validation: **627 tests in 67 files**, TypeScript and the final production webpack build passed locally; **53 HTTP checks** passed, including protection of the four new list/detail routes. The robots-origin check used indexing enabled only on the loopback test server; hosted gates were not changed. CI ran all **22 rollback-only database suites**, duplicate-intake concurrency and conflicting-edit races, dependency audit, Next/OpenNext builds and Worker validation. Conditional Playwright steps were skipped by existing repository-variable configuration.
+
+Migration `20261124075021_privacy_requests.sql` plus its acceptance suite passed a rolled-back hosted rehearsal. Schema and fixtures did not persist; users/orders/staff roles remained 6/2/0. **The migration has not been applied.** Synthetic local browser checks confirmed required-field validation and no overflow at 320/390/768/1440 px. The temporary development-only preview route was removed and excluded from the PR; viewport overrides and local test servers were reset/stopped. Positive deployed customer/staff UI acceptance remains pending.
+
+Artifact `14901585607` from push run `45352830642` is 19,986,214 bytes. GitHub metadata SHA-256: `af54bd858f368753b2f14bab9a8e3aa3955f83be79e7ba49409bfc8633f6bc56`. It has not been downloaded or independently hashed here. Deployment access remains unavailable; **PR #54, #53 and #51 are not live; PR #50 remains the live release**. Before rollout apply the reviewed migration using the repository-version history convention, download/hash the artifact, deploy to staging, run signed-in customer and authorized privacy-staff acceptance, then follow the production rollout procedure. Staging and production share one database.
+
+G25 is now **partial**: manual intake/case handling is implemented, while automated exports/deletion/session revocation, retention schedules and approved identity/fulfilment policy remain pending. No email delivery, deletion, payment activation or credential changes occurred.
+
 ## Merged, awaiting deployment - final browser diagnostics
 
 PR #53 merged as `47a0321c1c1d6c201f2a9c3ccc249f5561639193` after push run `45344795129` and PR run `45344803781` passed both `verify` and `postgres-concurrency`. Tested head `ca5d7220f3f48673c7cdb90b1bd2426e208b07eb`, tree `a4b2e593c51e25582d1a8443b489b1667b607697`, includes PR #51. No migration or dependency change.

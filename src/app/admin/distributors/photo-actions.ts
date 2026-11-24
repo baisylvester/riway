@@ -34,6 +34,25 @@ export async function reviewPhoto(
   if (!parsed.success) return { message: "Check the review fields." };
   const v = parsed.data;
   const { client } = await session();
+  // Authorize against the database queue before publishing any bytes. The
+  // queue excludes own submissions and binds the form's id, market and path
+  // to one pending submission in a market this staff member can review.
+  const queue = await client.rpc("staff_photo_submissions");
+  const pending = z
+    .array(reviewSchema.pick({ id: true, market: true, objectPath: true }))
+    .safeParse(queue.data);
+  if (
+    queue.error ||
+    !pending.success ||
+    !pending.data.some(
+      (s) =>
+        s.id === v.id && s.market === v.market && s.objectPath === v.objectPath,
+    )
+  )
+    return {
+      message:
+        "This photo is not available for you to review. Ask another market reviewer to review your own photo.",
+    };
   let publicUrl: string | null = null;
   if (v.decision === "approve") {
     if (v.reference.length < 3)

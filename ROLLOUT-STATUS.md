@@ -1,6 +1,19 @@
 # RIWAY provider rollout — 24 November 2026
 
-## Latest live release - remaining proposal scope (order confirmations, volume outbox, distributor dashboard)
+## Latest live release - content integration (product content, CMS pages, Find a Distributor, photo uploads)
+
+PR #44 merged as `a35dcdd9dedf2a7f750c4a9871a99ea17585e51b` after its PR CI passed `verify` and `postgres-concurrency`, including the new `content_integration.sql` suite; merge CI run `45321216289` passed.
+
+Hosted migration `20261124120000_content_integration.sql` is applied through the Supabase MCP and recorded under the repository version. It was applied before the deploy; the previous code was unaffected because the migration only adds objects and loosens the distributor photo URL check. As with the previous release, the rolled-back hosted rehearsal with the suite was not run; the suite passed on real PostgreSQL in CI and in local PGlite replay. After applying: buckets `distributor-photo-submissions` (private) and `distributor-photos` (public) exist, the four storage policies are present, anonymous users can call only `find_distributors`, authenticated users cannot read the directory or submission tables, and security advisors show only the pre-existing notices.
+
+Artifact `14887920999` (19,955,301 bytes) matched SHA-256 `9a0fd9b41c150dc3c32dc7298fd1e698f57bcf91d6e81bd2746d0ee1bb590ea4` before extraction and upload. Staging returned deployment `edcc6122d271473e9578119f5b35f1fa` and production `f2597b20ee70472b9fe04309dc5c6040` (same etag `d61d2bef3c81db97ae9dca33460791454a38f97d1f39e69dd02ce8e4a6013ad1`); the notification schedule was reapplied on both. Live checks on 24 November: 53/53 HTTP/API cases passed on staging and production (unknown-collection count adjusted to 3 for that run only, because of the staging QA product). `/find-a-distributor`, `/about`, `/membership`, `/support`, `/legal/privacy` and product pages return 200; signed-out `/admin/product-content` and `/distributor` redirect to login; `/api/health` still reports commerce, payments and Xendit disabled. Find a Distributor shows its empty-list message (no distributor has opted in). Production logs over about 75 seconds showed one minute-cron run `ok` and no exceptions or error logs.
+
+Scope and state:
+- **Product content, CMS page sections, legal pages:** live in code; no RIWAY content has been entered, so pages still show their existing notices.
+- **Find a Distributor and photo uploads:** live; listing is opt-in from `/distributor`, photos appear only after market admin/compliance approval on `/admin/distributors`.
+- Not covered: signed-in testing of listing, upload and review (needs a verified distributor and a compliance account); per-language URLs and hreflang.
+
+## Previous live release - remaining proposal scope (order confirmations, volume outbox, distributor dashboard)
 
 PR #41 merged as `511b45c50dc8750e23dbff42fdac67b178e3305e` and PR #42 as `8d3d9951c224ca26b9ffc463e21509a88ee51a91`. PR #41's CI and merge CI run `45310494879` passed `verify` and `postgres-concurrency`, including the new `order_confirmation.sql`, `compensation.sql` and `distributor_dashboard.sql` suites. PR #42 was merged by an auto-merge request that completed immediately because `main` has no required checks; its merge CI run `45310732465` then passed both jobs.
 

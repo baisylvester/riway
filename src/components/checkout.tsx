@@ -18,8 +18,13 @@ import {
   type Gateway,
 } from "./payment-method";
 import type { ChannelGroup, XenditChannel } from "@/lib/xendit-channels";
+import type {
+  CheckoutFulfilment,
+  ServiceCentre,
+} from "@/lib/checkout-fulfilment";
 export function Checkout({
   market,
+  centres = [],
   payment = {
     enabled: false,
     mode: "disabled",
@@ -28,6 +33,7 @@ export function Checkout({
   xendit = { enabled: false, message: "", channels: [] },
 }: {
   market: Market;
+  centres?: ServiceCentre[];
   payment?: {
     enabled: boolean;
     mode: string;
@@ -60,17 +66,24 @@ export function Checkout({
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(false);
   const [code, setCode] = useState("");
+  const [fulfilment, setFulfilment] = useState<CheckoutFulfilment>({
+    method: "delivery",
+  });
+  const centre =
+    fulfilment.method === "collection"
+      ? centres.find((c) => c.id === fulfilment.centreId)
+      : undefined;
   const [quoted, setQuoted] = useState<{
     fingerprint: string;
     quote: CommerceQuote;
   } | null>(null);
   const quoteRequest = useRef(0);
-  const fingerprint = quoteFingerprint(market, items, code);
+  const fingerprint = quoteFingerprint(market, items, code, fulfilment);
   const currentQuote =
     quoted?.fingerprint === fingerprint ? quoted.quote : null;
   async function review() {
     const sequence = ++quoteRequest.current;
-    const selected = quoteSelection(market, items, code);
+    const selected = quoteSelection(market, items, code, fulfilment);
     const selectedFingerprint = JSON.stringify(selected);
     setBusy(true);
     setMessage("");
@@ -129,7 +142,18 @@ export function Checkout({
       const payload = {
         market,
         items,
-        address: { ...address, country: market },
+        fulfilment,
+        address: {
+          ...address,
+          ...(centre
+            ? {
+                line1: centre.line1,
+                city: centre.city,
+                postal_code: centre.postal_code,
+              }
+            : {}),
+          country: market,
+        },
         terms: f.get("terms") === "on",
         termsVersion,
         promotionCode: quoteSelection(market, items, code).promotionCode,
@@ -195,6 +219,61 @@ export function Checkout({
       />
       <div className="panel stack">
         <h2>Delivery details</h2>
+        <label>
+          Receive your order
+          <select
+            value={fulfilment.method}
+            onChange={(e) => {
+              setQuoted(null);
+              setFulfilment(
+                e.target.value === "collection" && centres.length
+                  ? { method: "collection", centreId: centres[0].id }
+                  : { method: "delivery" },
+              );
+            }}
+          >
+            <option value="delivery">Delivery</option>
+            {centres.length > 0 && (
+              <option value="collection">Collect from a service centre</option>
+            )}
+          </select>
+        </label>
+        {fulfilment.method === "collection" && (
+          <>
+            <label>
+              Service centre
+              <select
+                value={fulfilment.centreId}
+                onChange={(e) => {
+                  setQuoted(null);
+                  setFulfilment({
+                    method: "collection",
+                    centreId: e.target.value,
+                  });
+                }}
+              >
+                {centres.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} · {c.city}
+                  </option>
+                ))}
+              </select>
+            </label>
+            {centre && (
+              <div className="notice">
+                <p>
+                  {centre.name}: {centre.line1}, {centre.city},{" "}
+                  {centre.postal_code}
+                </p>
+                <p className="content-body">{centre.instructions}</p>
+                <p>
+                  No additional collection fee. Payment is completed online
+                  before collection.
+                </p>
+              </div>
+            )}
+          </>
+        )}
         <p className="muted small">
           {[payment.message, xendit.enabled ? xendit.message : ""]
             .filter(Boolean)
@@ -207,26 +286,32 @@ export function Checkout({
             ["line1", "Street address"],
             ["city", "City"],
             ["postal_code", "Postal code"],
-          ].map(([name, label]) => (
-            <label key={name} className={name === "line1" ? "full" : ""}>
-              {label}
-              <input
-                aria-describedby={message ? statusId : undefined}
-                name={name}
-                required
-                autoComplete={
-                  {
-                    full_name: "name",
-                    phone: "tel",
-                    line1: "address-line1",
-                    city: "address-level2",
-                    postal_code: "postal-code",
-                  }[name]
-                }
-                maxLength={name === "line1" ? 200 : 100}
-              />
-            </label>
-          ))}
+          ]
+            .filter(
+              ([name]) =>
+                fulfilment.method === "delivery" ||
+                ["full_name", "phone"].includes(name),
+            )
+            .map(([name, label]) => (
+              <label key={name} className={name === "line1" ? "full" : ""}>
+                {label}
+                <input
+                  aria-describedby={message ? statusId : undefined}
+                  name={name}
+                  required
+                  autoComplete={
+                    {
+                      full_name: "name",
+                      phone: "tel",
+                      line1: "address-line1",
+                      city: "address-level2",
+                      postal_code: "postal-code",
+                    }[name]
+                  }
+                  maxLength={name === "line1" ? 200 : 100}
+                />
+              </label>
+            ))}
           <label>
             Delivery country
             <input readOnly value={markets[market].name} />

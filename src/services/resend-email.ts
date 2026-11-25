@@ -23,6 +23,15 @@ const messageSchema = z.object({
   html: z.string().max(100000),
   text: z.string().min(1).max(100000),
   replyTo: z.email().optional(),
+  headers: z
+    .object({
+      "List-Unsubscribe": z
+        .string()
+        .max(2000)
+        .regex(/^[^\r\n]+$/),
+      "List-Unsubscribe-Post": z.literal("List-Unsubscribe=One-Click"),
+    })
+    .optional(),
 });
 
 export class EmailDeliveryError extends Error {
@@ -112,6 +121,12 @@ export type Notification =
   | { type: "order_delivered"; reference: string }
   | { type: "sales_report"; reference: string; context: unknown }
   | { type: "order_confirmed"; reference: string; context: unknown }
+  | {
+      type: "consultation_update" | "consultation_reminder";
+      reference: string;
+      context: unknown;
+    }
+  | { type: "reorder_reminder"; reference: string; context: unknown }
   | { type: "corporate_low_stock"; reference: string; context: unknown }
   | {
       type: "store_owner_onboarding";
@@ -247,6 +262,62 @@ function siteOrigin() {
 }
 
 export function notificationContent(notification: Notification) {
+  if (notification.type === "reorder_reminder") {
+    const c = z
+      .object({
+        orderId: z.uuid(),
+        market: z.enum(["PH", "SG", "MY"]),
+        unsubscribeToken: z.uuid(),
+      })
+      .parse(notification.context);
+    const link = new URL(`/account/orders/${c.orderId}`, siteOrigin()).href;
+    const unsubscribe = new URL(
+      `/api/preferences/unsubscribe?token=${c.unsubscribeToken}`,
+      siteOrigin(),
+    ).href;
+    const subject = "Review your RIWAY reorder";
+    const text = `It may be time to review your previous purchase, based on RIWAY-approved product timing.\nSign in to review products and copy them to your bag: ${link}\nThis does not place an order, start a subscription or authorize payment. Review current prices and availability at checkout.\nStop optional reorder emails: ${unsubscribe}`;
+    const statements = orderStatements[c.market];
+    return {
+      subject,
+      text: [text, ...statements].join("\n"),
+      html: `<h1>${subject}</h1><p>It may be time to review your previous purchase, based on RIWAY-approved product timing.</p><p><a href="${escaped(link)}">Review your previous order</a></p><p>This does not place an order, start a subscription or authorize payment. Review current prices and availability at checkout.</p><p><a href="${escaped(unsubscribe)}">Stop reorder emails</a></p>${statements.map((s) => `<p>${escaped(s)}</p>`).join("")}`,
+      headers: {
+        "List-Unsubscribe": `<${unsubscribe}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" as const,
+      },
+    };
+  }
+  if (
+    notification.type === "consultation_update" ||
+    notification.type === "consultation_reminder"
+  ) {
+    const c = z
+      .object({
+        bookingId: z.uuid(),
+        revision: z.number().int().nonnegative(),
+        status: z.enum(["booked", "cancelled"]),
+        startsAt: z.string().refine((v) => Number.isFinite(Date.parse(v))),
+        timezone: z.string().max(80),
+      })
+      .parse(notification.context);
+    const date = new Intl.DateTimeFormat("en", {
+      dateStyle: "medium",
+      timeStyle: "short",
+      timeZone: c.timezone,
+    }).format(new Date(c.startsAt));
+    const subject =
+      notification.type === "consultation_reminder"
+        ? "RIWAY consultation reminder"
+        : `RIWAY consultation ${c.status}`;
+    const link = new URL("/account/consultations", siteOrigin()).href;
+    const text = `${subject}\n${date} (${c.timezone})\nSign in to view, reschedule or cancel your consultation: ${link}\nBooking reference: ${c.bookingId}`;
+    return {
+      subject,
+      text,
+      html: `<h1>${escaped(subject)}</h1><p>${escaped(date)} (${escaped(c.timezone)})</p><p><a href="${escaped(link)}">Manage your consultation</a></p><p>Booking reference: ${escaped(c.bookingId)}</p>`,
+    };
+  }
   if (notification.type === "order_confirmed") {
     const o = orderConfirmedContext.parse(notification.context);
     if (o.orderId !== notification.reference)

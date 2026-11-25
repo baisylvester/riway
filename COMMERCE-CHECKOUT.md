@@ -1,5 +1,9 @@
 # Approved package and promotion checkout
 
+## Current proposal candidate — 25 November 2026
+
+The current candidate adds verified passwordless guest access and delivery/collection choices using `20261125015757_checkout_collection_choice.sql`. Selected approved centre revisions and instructions are bound to authoritative quotes/orders; retries preserve the original frozen order. Only staff-approved no-additional-fee collection is supported. Existing package/voucher/stock/idempotency logic remains authoritative. Neither collection nor guest verification enables payments. Refunds/tax invoices/subscriptions/bonus-item campaigns remain missing; see [the handover](PROPOSAL-DELIVERY.md).
+
 Drafts remain preparation records. A market administrator or compliance user with verified MFA must review the exact draft revision, select its published package SKU where applicable, enter an approval reference and acknowledge the checkout contract. Approval stores a separate immutable version. Editing a draft does not edit that approved version. Withdraw an existing package/voucher configuration before approving its replacement.
 
 For packages, approval copies the proposed retail/member prices into market pricing without granting product registration or opening sales. Subsequent authorized market-price edits remain authoritative. Package composition is taken from the approved snapshot. Catalogue details show approved composition; checkout expands packages into physical components and aggregates overlaps with other packages and loose products. Component publication, country registration, quantity limits and stock are checked independently of the package SKU. Corporate stock is used; the separate third-party tenant inventory is unchanged.

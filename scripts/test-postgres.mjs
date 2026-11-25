@@ -1,4 +1,11 @@
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  openSync,
+  closeSync,
+} from "node:fs";
 import { resolve, join } from "node:path";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:net";
@@ -76,6 +83,7 @@ function parallelSql(text) {
   });
 }
 let started = false;
+let ownedServer;
 try {
   if (!external) {
     execFileSync(
@@ -94,21 +102,35 @@ try {
       ],
       { stdio: "pipe", windowsHide: true },
     );
-    execFileSync(
-      binary("pg_ctl"),
-      [
-        "-D",
-        data,
-        "-l",
-        join(data, "server.log"),
-        "-o",
-        `-h 127.0.0.1 -p ${port}`,
-        "-w",
-        "start",
-      ],
-      { stdio: "pipe", windowsHide: true },
-    );
+    // Own the server directly: pg_ctl can inherit Windows output handles and
+    // keep an execFileSync caller waiting even after startup succeeds.
+    const log = openSync(join(data, "server.log"), "a");
+    try {
+      ownedServer = spawn(
+        binary("postgres"),
+        ["-D", data, "-h", "127.0.0.1", "-p", String(port)],
+        { stdio: ["ignore", log, log], windowsHide: true },
+      );
+    } finally {
+      closeSync(log);
+    }
     started = true;
+    let ready = false;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      if (ownedServer.exitCode !== null)
+        throw new Error(
+          "Disposable PostgreSQL exited during startup. See server.log.",
+        );
+      try {
+        sql("select 1;");
+        ready = true;
+        break;
+      } catch {
+        /* bounded readiness probe */
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!ready) throw new Error("Disposable PostgreSQL startup timed out.");
   }
   sql(readFileSync("tests/security/local-bootstrap.sql", "utf8"));
   const migrations = readdirSync("supabase/migrations")
@@ -116,8 +138,12 @@ try {
     .sort();
   for (const file of migrations)
     sql(readFileSync(join("supabase/migrations", file), "utf8"));
-  for (const file of [
+  const securitySuites = [
     "rls.sql",
+    "consultations_library.sql",
+    "story_event_assistant_privacy.sql",
+    "reorder_reminders.sql",
+    "checkout_collection.sql",
     "checkout.sql",
     "operations.sql",
     "tenant_inventory.sql",
@@ -140,7 +166,8 @@ try {
     "distributor_photo_independent_review.sql",
     "privacy_requests.sql",
     "content_scheduling_media.sql",
-  ])
+  ];
+  for (const file of securitySuites)
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
  insert into private.platform_admins values('${admin}');
@@ -619,11 +646,115 @@ try {
     "2",
     "Only accepted privacy edits add events",
   );
+  const consultationDistributor = randomUUID(),
+    consultationUsers = Array.from({ length: 8 }, () => randomUUID());
+  const consultationSlot = randomUUID(),
+    consultationNext = [randomUUID(), randomUUID()],
+    capacityEvent = randomUUID();
+  sql(`insert into auth.users(id,email,email_confirmed_at) values ${[consultationDistributor, ...consultationUsers].map((id) => `('${id}','concurrent-${id}@example.invalid',now())`).join(",")};
+    insert into public.distributor_profiles(user_id,code,display_name,market,external_member_id,active,verified_at)
+    values('${consultationDistributor}','Q${consultationDistributor.replaceAll("-", "")}','Concurrent distributor','PH','QA-${consultationDistributor}',true,now());
+    insert into private.consultation_slots(id,distributor_id,starts_at,ends_at,timezone)values
+    ('${consultationSlot}','${consultationDistributor}',now()+interval '2 days',now()+interval '2 days 1 hour','UTC'),
+    ('${consultationNext[0]}','${consultationDistributor}',now()+interval '3 days',now()+interval '3 days 1 hour','UTC'),
+    ('${consultationNext[1]}','${consultationDistributor}',now()+interval '4 days',now()+interval '4 days 1 hour','UTC');
+    insert into public.content_entries(id,slug,kind,title,status,market,starts_at) values('${capacityEvent}','qa-capacity-${capacityEvent}','event','Concurrent event','published','PH',now()+interval '5 days');
+    insert into private.event_admission_rules(event_id,capacity,approval_reference,updated_by) values('${capacityEvent}',2,'QA-CAPACITY','${admin}');`);
+  const asCustomer = (id) =>
+    `select set_config('request.jwt.claims','{"sub":"${id}","role":"authenticated","aal":"aal1"}',false);set role authenticated;set statement_timeout='10s';`;
+  const simultaneousBookings = await Promise.all(
+    consultationUsers.map((id) =>
+      parallelSql(
+        `${asCustomer(id)}select public.change_consultation(null,'${consultationSlot}',0,'UTC',false);`,
+      ),
+    ),
+  );
+  assert.equal(
+    simultaneousBookings.filter((r) => r.code === 0).length,
+    1,
+    "Exactly one simultaneous consultation may win",
+  );
+  assert.equal(
+    simultaneousBookings.filter(
+      (r) => r.code !== 0 && r.error.includes("no longer available"),
+    ).length,
+    7,
+    "Other consultation requests must report a conflict",
+  );
+  const winner =
+    consultationUsers[simultaneousBookings.findIndex((r) => r.code === 0)];
+  const booking = sql(
+    `select id from private.consultation_bookings where user_id='${winner}' and slot_id='${consultationSlot}';`,
+  );
+  const bookingReplays = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      parallelSql(
+        `${asCustomer(winner)}select public.change_consultation(null,'${consultationSlot}',0,'UTC',false);`,
+      ),
+    ),
+  );
+  assert.equal(
+    bookingReplays.filter((r) => r.code === 0 && r.output.includes(booking))
+      .length,
+    4,
+    "Identical consultation retries return the same booking",
+  );
+  const reschedules = await Promise.all(
+    consultationNext.map((slot) =>
+      parallelSql(
+        `${asCustomer(winner)}select public.change_consultation('${booking}','${slot}',0,'UTC',false);`,
+      ),
+    ),
+  );
+  assert.equal(
+    reschedules.filter((r) => r.code === 0).length,
+    1,
+    "One concurrent reschedule succeeds",
+  );
+  assert.equal(
+    reschedules.filter(
+      (r) => r.code !== 0 && r.error.includes("Booking changed"),
+    ).length,
+    1,
+    "Stale reschedule is refused",
+  );
+  const admissions = await Promise.all(
+    consultationUsers.map((id) =>
+      parallelSql(
+        `${asCustomer(id)}insert into public.event_registrations(user_id,event_id)values('${id}','${capacityEvent}');`,
+      ),
+    ),
+  );
+  assert.equal(
+    admissions.filter((r) => r.code === 0).length,
+    2,
+    "Event admits exactly its capacity under concurrent registration",
+  );
+  assert.equal(
+    admissions.filter((r) => r.code !== 0 && r.error.includes("event is full"))
+      .length,
+    6,
+    "No event oversell under concurrency",
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
-        securitySuites: 22,
+        securitySuites: securitySuites.length,
+        parallelConsultations: {
+          attempted: 8,
+          accepted: 1,
+          conflicts: 7,
+          identicalReplays: 4,
+          reschedulesAccepted: 1,
+          staleReschedulesRefused: 1,
+        },
+        parallelEventAdmissions: {
+          attempted: 8,
+          accepted: 2,
+          capacity: 2,
+          rejected: 6,
+        },
         parallelPrivacyRequests: {
           attempted: 4,
           cases: 1,
@@ -663,9 +794,13 @@ try {
     ),
   );
 } finally {
-  if (started)
+  if (started) {
     execFileSync(binary("pg_ctl"), ["-D", data, "-m", "fast", "-w", "stop"], {
       stdio: "pipe",
       windowsHide: true,
+      timeout: 15000,
     });
+    if (ownedServer && ownedServer.exitCode === null)
+      await new Promise((resolve) => ownedServer.once("close", resolve));
+  }
 }

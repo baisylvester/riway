@@ -1,5 +1,9 @@
 # Testing
 
+## Current proposal candidate — 25 November 2026
+
+Current candidate evidence: **656 tests/75 files**, **38 migrations/27 real PostgreSQL rollback suites**, **8 desktop/mobile disposable browser cases**, typecheck and webpack production build passed. Browser Auth/REST is synthetic over real migration/RLS/RPC execution; no real email, AI, RIWAY, SSO or gateway acceptance is implied. Windows runtime Node 26 is outside the declared range; Node 22 Linux CI remains a merge gate. Detailed commands, concurrency counts, prior public-browser reruns and remaining verification: [PROPOSAL-DELIVERY.md](PROPOSAL-DELIVERY.md). Earlier dated results below do not establish this candidate as deployed.
+
 ## Deployed disabled Stripe release - 6 November 2026
 
 Verified build `79ef39cc5bbcede779f7071aea5f76627204c48e` (merge `6522b990faa74689bcf5b655b33c535b7b73d8d5`) passed CI `42189319675`/`42189327485` and was deployed from checksum-verified artifact `13489445790`. Local 126 tests/17 files and TypeScript passed. Linux CI passed six SQL suites and ten concurrent duplicate Stripe events with one payment/stock transition. Live postchecks passed 35 HTTP/API cases, 45 route scenarios, 103 static assets and exact payment-module byte matching. No browser/real Stripe transaction is counted as passed.

@@ -7,6 +7,7 @@ import {
   saveDistributorMaterial,
   saveDistributorPhoto,
   saveProductCycle,
+  saveReorderTiming,
 } from "./actions";
 
 export const metadata = { title: "Distributor tools" };
@@ -29,7 +30,9 @@ export default async function DistributorTools() {
   const [products, materialsResult] = await Promise.all([
     client
       .from("products")
-      .select("id,name,replenishment_days,replenishment_reference")
+      .select(
+        "id,name,replenishment_days,replenishment_reference,reorder_lead_days,reorder_timing_reference",
+      )
       .neq("status", "archived")
       .order("name"),
     client.rpc("staff_distributor_materials"),
@@ -95,6 +98,8 @@ export default async function DistributorTools() {
                   name: string;
                   replenishment_days: number | null;
                   replenishment_reference: string | null;
+                  reorder_lead_days: number | null;
+                  reorder_timing_reference: string | null;
                 }) => (
                   <tr key={p.id}>
                     <td>{p.name}</td>
@@ -122,6 +127,31 @@ export default async function DistributorTools() {
                             name="reference"
                             maxLength={120}
                             defaultValue={p.replenishment_reference ?? ""}
+                          />
+                        </label>
+                      </StaffActionForm>
+                      <StaffActionForm
+                        action={saveReorderTiming}
+                        submit="Approve reminder timing"
+                      >
+                        <input type="hidden" name="productId" value={p.id} />
+                        <label>
+                          Reminder lead days
+                          <input
+                            name="leadDays"
+                            type="number"
+                            min={0}
+                            max={30}
+                            defaultValue={p.reorder_lead_days ?? ""}
+                          />
+                        </label>
+                        <label>
+                          Timing approval reference
+                          <input
+                            name="reference"
+                            minLength={3}
+                            maxLength={120}
+                            defaultValue={p.reorder_timing_reference ?? ""}
                           />
                         </label>
                       </StaffActionForm>

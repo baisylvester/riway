@@ -45,6 +45,16 @@ export default async function Distributor() {
         <>
           <div className="panel">
             <h2>{d.display_name}</h2>
+            <p>
+              <Link href="/account/consultations">
+                Manage consultation availability and bookings
+              </Link>
+            </p>
+            <p>
+              <Link href="/distributor/library">
+                Search the campaign content library
+              </Link>
+            </p>
             <p>Verified distributor code: {d.code}</p>
             <p>
               <Link className="return-link" href={`/d/${d.code}`}>

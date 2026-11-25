@@ -64,7 +64,11 @@ beforeEach(() => {
   vi.clearAllMocks();
   vi.stubEnv("PAYMENT_PROVIDER", "stripe");
   vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://riway.example.invalid");
-  f.session.mockResolvedValue({ user: { id: userId }, client: { rpc: f.rpc } });
+  f.session.mockResolvedValue({
+    user: { id: userId },
+    contactVerified: true,
+    client: { rpc: f.rpc },
+  });
   f.rpc.mockResolvedValue({ data: orderId, error: null });
   f.start.mockResolvedValue({
     url: "https://checkout.stripe.com/c/pay/fixture",

@@ -7,7 +7,11 @@ export async function GET(request: Request) {
   const url = new URL(request.url),
     code = url.searchParams.get("code");
   const next = url.searchParams.get("next");
-  const destination = next === "/auth/update-password" ? next : "/account";
+  const destination = ["/auth/update-password", "/checkout"].includes(
+    next ?? "",
+  )
+    ? next!
+    : "/account";
   if (code) {
     const { error } = await (await db()).auth.exchangeCodeForSession(code);
     if (!error) return NextResponse.redirect(new URL(destination, url.origin));

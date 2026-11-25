@@ -43,7 +43,23 @@ export async function content(kind: string) {
     throw new Error("Content could not be loaded.");
   }
   // Staff sessions can read scheduled or ended entries; public pages show only live ones.
-  return data.filter((entry) => isLive(entry));
+  const live = data.filter((entry) => isLive(entry));
+  // A staff session can see withdrawn-linked content through its review policy.
+  // Public-facing pages must still apply the same media withdrawal boundary.
+  if (kind !== "story") return live;
+  const visible = await Promise.all(
+    live.map(async (entry) => {
+      if (!entry.story_asset_id) return entry;
+      const media = await client.rpc("shared_library_asset", {
+        p_id: entry.story_asset_id,
+        p_market: entry.market,
+      });
+      return !media.error && media.data ? entry : null;
+    }),
+  );
+  return visible.filter(
+    (entry): entry is NonNullable<typeof entry> => entry !== null,
+  );
 }
 
 export async function packageCompositions(market: import("./domain").Market) {
@@ -116,7 +132,7 @@ export const session = cache(async () => {
   const client = await db();
   if (authProvider() === "clerk") {
     const identity = await auth();
-    if (!identity.userId) return { client, user: null };
+    if (!identity.userId) return { client, user: null, contactVerified: false };
     const { data: id, error } = await client.rpc("ensure_clerk_profile");
     if (error || typeof id !== "string")
       throw new Error("Account synchronization is unavailable.");
@@ -126,6 +142,7 @@ export const session = cache(async () => {
     );
     return {
       client,
+      contactVerified: primary?.verification?.status === "verified",
       user: {
         id,
         email:
@@ -138,7 +155,11 @@ export const session = cache(async () => {
   const {
     data: { user },
   } = await client.auth.getUser();
-  return { client, user };
+  return {
+    client,
+    user,
+    contactVerified: !!(user?.email && user.email_confirmed_at),
+  };
 });
 export async function requireSession() {
   const current = await session();

@@ -1,0 +1,1002 @@
+[
+  {
+    "id": "W01",
+    "proposal_section": "4.1",
+    "requirement": "Home hero, products, stories, events and shop/join navigation",
+    "implementation_evidence": "src/app/page.tsx; src/components/brand",
+    "remaining_work_dependencies": "Approved home content and stakeholder design sign-off",
+    "acceptance_criteria": "Desktop/mobile navigation and published sections accepted",
+    "status": "partial",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "W02",
+    "proposal_section": "4.1",
+    "requirement": "Corporate introduction and history",
+    "implementation_evidence": "src/app/about/page.tsx; src/components/cms-sections.tsx",
+    "remaining_work_dependencies": "Approved history copy",
+    "acceptance_criteria": "Correct regional approved copy displayed",
+    "status": "partial",
+    "gap_category": "content"
+  },
+  {
+    "id": "W03",
+    "proposal_section": "4.1",
+    "requirement": "Leadership and Golden Deer Award",
+    "implementation_evidence": "src/app/about/page.tsx",
+    "remaining_work_dependencies": "Approved leadership/award assets and copy",
+    "acceptance_criteria": "Published approved leadership and award sections",
+    "status": "partial",
+    "gap_category": "content"
+  },
+  {
+    "id": "W04",
+    "proposal_section": "4.1",
+    "requirement": "Foundation and Baby Pegasus",
+    "implementation_evidence": "src/app/about/page.tsx",
+    "remaining_work_dependencies": "Approved Foundation/Baby Pegasus copy",
+    "acceptance_criteria": "Published approved sections and links",
+    "status": "partial",
+    "gap_category": "content"
+  },
+  {
+    "id": "W05",
+    "proposal_section": "4.1",
+    "requirement": "Membership rules, packages, compensation overview and income disclaimer",
+    "implementation_evidence": "src/app/membership/page.tsx; src/lib/membership-consent.ts",
+    "remaining_work_dependencies": "Approved policies and disclosure copy",
+    "acceptance_criteria": "Published policy versions match qualifying packages",
+    "status": "partial",
+    "gap_category": "content/policy"
+  },
+  {
+    "id": "W06",
+    "proposal_section": "4.1",
+    "requirement": "Moderated stories and disclaimers",
+    "implementation_evidence": "src/app/stories; content_entries publication trigger",
+    "remaining_work_dependencies": "Approved testimonials and source media",
+    "acceptance_criteria": "Unapproved or wrong-market story never shown",
+    "status": "partial",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "W07",
+    "proposal_section": "4.1",
+    "requirement": "Regional events calendar and basic registration",
+    "implementation_evidence": "src/app/events; src/lib/events.ts; tests/security/customer_workflows.sql",
+    "remaining_work_dependencies": "Approved event data and hosted role acceptance",
+    "acceptance_criteria": "Register only a live future event; duplicates safe",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "W08",
+    "proposal_section": "4.1",
+    "requirement": "FAQ, shipping, returns, refunds and regional contact information",
+    "implementation_evidence": "src/app/support/page.tsx; src/components/cms-sections.tsx",
+    "remaining_work_dependencies": "Approved regional contacts and Terms of Sale",
+    "acceptance_criteria": "Current approved support/legal content before checkout",
+    "status": "partial",
+    "gap_category": "content/policy"
+  },
+  {
+    "id": "W09",
+    "proposal_section": "4.1",
+    "requirement": "Find a Distributor",
+    "implementation_evidence": "src/app/find-a-distributor; tests/security/content_integration.sql",
+    "remaining_work_dependencies": "Approved listing disclosure; real opt-ins",
+    "acceptance_criteria": "Only active verified opted-in distributors exposed",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "W10",
+    "proposal_section": "4.1",
+    "requirement": "Legal Terms of Use/Sale, Privacy, Cookies and Code of Conduct",
+    "implementation_evidence": "src/app/legal; src/components/cms-sections.tsx",
+    "remaining_work_dependencies": "Approved market/versioned legal content",
+    "acceptance_criteria": "Published authoritative current versions",
+    "status": "partial",
+    "gap_category": "content/policy"
+  },
+  {
+    "id": "W11",
+    "proposal_section": "4.2",
+    "requirement": "Premium brand design and prior UX approval",
+    "implementation_evidence": "src/app/brand.css; DESIGN-INTEGRATION.md",
+    "remaining_work_dependencies": "RIWAY recorded design approval",
+    "acceptance_criteria": "Approved responsive visual design",
+    "status": "partial",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "W12",
+    "proposal_section": "4.2;7",
+    "requirement": "Mobile responsive and WCAG 2.1 AA",
+    "implementation_evidence": "src/app/globals.css; src/components/chrome.tsx",
+    "remaining_work_dependencies": "Full automated/manual accessibility and browser matrix",
+    "acceptance_criteria": "WCAG AA audit including keyboard/screen reader/contrast",
+    "status": "partial",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "W13",
+    "proposal_section": "4.2",
+    "requirement": "Country controls currency, pricing and availability",
+    "implementation_evidence": "src/lib/domain.ts; commerce SQL; tests/security/commerce_checkout.sql",
+    "remaining_work_dependencies": "Approved market setup and runtime acceptance",
+    "acceptance_criteria": "Cross-country server order rejection and correct currency",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "W14",
+    "proposal_section": "4.2",
+    "requirement": "Language selection, translated UI and locale URLs",
+    "implementation_evidence": "src/components/cms-sections.tsx",
+    "remaining_work_dependencies": "Routing, dictionaries and approved translations",
+    "acceptance_criteria": "Locale URLs, translated UI and language selector agree",
+    "status": "partial",
+    "gap_category": "code/content"
+  },
+  {
+    "id": "W15",
+    "proposal_section": "4.2;7",
+    "requirement": "Approved legacy content migration and SEO redirects",
+    "implementation_evidence": "src/lib/legacy-redirects.ts; REMAINING-SCOPE.md",
+    "remaining_work_dependencies": "Actual old URL inventory and approved migration",
+    "acceptance_criteria": "Every agreed legacy URL maps once without loop",
+    "status": "partial",
+    "gap_category": "content"
+  },
+  {
+    "id": "W16",
+    "proposal_section": "4.2",
+    "requirement": "CMS pages, products, promotions, events and stories editing",
+    "implementation_evidence": "src/components/admin-forms.tsx; src/app/admin",
+    "remaining_work_dependencies": "Hosted staff acceptance",
+    "acceptance_criteria": "Role/country constraints and publication checks",
+    "status": "implemented",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "W17",
+    "proposal_section": "4.2",
+    "requirement": "CMS approval, scheduling, media publication and withdrawal",
+    "implementation_evidence": "20261124150000_content_scheduling_and_public_media.sql; tests/security/content_scheduling_media.sql",
+    "remaining_work_dependencies": "Signed-in browser acceptance",
+    "acceptance_criteria": "Scheduled content visibility and independent media review",
+    "status": "implemented",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "C01",
+    "proposal_section": "5.1",
+    "requirement": "Singles, multiple-bottle packages and bundles",
+    "implementation_evidence": "COMMERCE-CHECKOUT.md; tests/security/commerce_checkout.sql",
+    "remaining_work_dependencies": "Approved product/package/price data",
+    "acceptance_criteria": "Exact package composition and authoritative price",
+    "status": "implemented",
+    "gap_category": "content/configuration"
+  },
+  {
+    "id": "C02",
+    "proposal_section": "5.1",
+    "requirement": "Rich product images, video, ingredients, usage, labels and market claims",
+    "implementation_evidence": "src/app/admin/product-content; tests/security/content_integration.sql",
+    "remaining_work_dependencies": "Approved rich media/copy",
+    "acceptance_criteria": "Only published regional content shown",
+    "status": "partial",
+    "gap_category": "content"
+  },
+  {
+    "id": "C03",
+    "proposal_section": "5.1;5.10",
+    "requirement": "Server-side registration, country sale and quantity restrictions",
+    "implementation_evidence": "tests/security/commerce_checkout.sql; membership SQL",
+    "remaining_work_dependencies": "Approved product registration and market launch authorization",
+    "acceptance_criteria": "UI/API/SQL all refuse restricted products/components",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "C04",
+    "proposal_section": "5.1",
+    "requirement": "Search/filter/cross-sell/upsell",
+    "implementation_evidence": "src/app/shop; src/lib/recommendations.ts; tests/security/recommendations.sql",
+    "remaining_work_dependencies": "Approved recommendations",
+    "acceptance_criteria": "Search/filter and current eligible suggested items work",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "C05",
+    "proposal_section": "5.1",
+    "requirement": "Time-bound offers, vouchers and bundle pricing",
+    "implementation_evidence": "COMMERCE-CHECKOUT.md; tests/security/commerce_checkout.sql",
+    "remaining_work_dependencies": "Approved campaigns",
+    "acceptance_criteria": "Correct integer allocation, audience, period, redemption limits",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "C06",
+    "proposal_section": "5.1",
+    "requirement": "Bonus-item/bonus-bottle promotions",
+    "implementation_evidence": "REMAINING-SCOPE.md G13",
+    "remaining_work_dependencies": "Bonus engine and approved campaign definitions",
+    "acceptance_criteria": "Bonus physical stock, limits, discounts and returns reconcile",
+    "status": "missing",
+    "gap_category": "code/policy"
+  },
+  {
+    "id": "M01",
+    "proposal_section": "5.2",
+    "requirement": "Country/currency retail and member price lists",
+    "implementation_evidence": "product_offers; tests/security/membership.sql",
+    "remaining_work_dependencies": "Approved price lists",
+    "acceptance_criteria": "Authoritative member eligibility and currency",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "M02",
+    "proposal_section": "5.2",
+    "requirement": "RIWAY identity lookup/link and sponsor/placement reconciliation",
+    "implementation_evidence": "src/services/integrations.ts DisabledMemberAdapter",
+    "remaining_work_dependencies": "RIWAY private member API schemas/auth/sandbox",
+    "acceptance_criteria": "Lookup, duplicate, timeout and authoritative placement reconciliation",
+    "status": "blocked",
+    "gap_category": "external-contract"
+  },
+  {
+    "id": "M03",
+    "proposal_section": "5.2",
+    "requirement": "Checkout enrolment with qualifying package tier mapping",
+    "implementation_evidence": "src/app/account/membership; tests/security/membership.sql",
+    "remaining_work_dependencies": "Approved packages/tiers",
+    "acceptance_criteria": "Only qualifying approved package yields frozen enrolment",
+    "status": "implemented",
+    "gap_category": "policy/acceptance"
+  },
+  {
+    "id": "M04",
+    "proposal_section": "5.2",
+    "requirement": "Versioned Terms and Code of Conduct acceptance",
+    "implementation_evidence": "src/lib/membership-consent.ts; tests/security/membership.sql",
+    "remaining_work_dependencies": "Approved versions",
+    "acceptance_criteria": "Immutable accepted versions/hash/sponsor with enrolment",
+    "status": "implemented",
+    "gap_category": "policy/acceptance"
+  },
+  {
+    "id": "M05",
+    "proposal_section": "5.2",
+    "requirement": "Automatic activation after verified payment AND RIWAY acknowledgement",
+    "implementation_evidence": "src/app/admin/memberships; tests/security/membership.sql",
+    "remaining_work_dependencies": "RIWAY enrolment API; auto-activation orchestration",
+    "acceptance_criteria": "No activation from browser redirect or unacknowledged payment",
+    "status": "partial",
+    "gap_category": "code/external-contract"
+  },
+  {
+    "id": "M06",
+    "proposal_section": "5.2",
+    "requirement": "Duplicate/rejection/timeout/reconciliation and staff fallback/status",
+    "implementation_evidence": "Membership manual confirm/reject; src/app/account/membership",
+    "remaining_work_dependencies": "Adapter retry/reconciliation implementation after contract",
+    "acceptance_criteria": "Customer status accurate and staff resolution audited",
+    "status": "partial",
+    "gap_category": "code/external-contract"
+  },
+  {
+    "id": "M07",
+    "proposal_section": "5.2",
+    "requirement": "Welcome and order confirmation notifications",
+    "implementation_evidence": "src/services/resend-email.ts; notification worker",
+    "remaining_work_dependencies": "Sender DNS, SMTP and inbox acceptance",
+    "acceptance_criteria": "Actual approved recipient receives correct messages once",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "D01",
+    "proposal_section": "5.3",
+    "requirement": "Personal store name/photo, link and QR",
+    "implementation_evidence": "src/app/d/[code]; src/app/distributor; tests/security/distributor_photo_independent_review.sql",
+    "remaining_work_dependencies": "Approved photos and signed-in acceptance",
+    "acceptance_criteria": "Verified stores show independently approved photo and QR",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "D02",
+    "proposal_section": "5.3",
+    "requirement": "Persistent sponsor through registration/checkout/repeat purchases",
+    "implementation_evidence": "tests/security/operations.sql; tests/security/membership.sql",
+    "remaining_work_dependencies": "RIWAY reconciliation and subscription path",
+    "acceptance_criteria": "Existing sponsor cannot be overwritten; settled order attribution stable",
+    "status": "partial",
+    "gap_category": "external-contract/code"
+  },
+  {
+    "id": "D03",
+    "proposal_section": "5.3;5.9",
+    "requirement": "Compensation order-volume queued delivery and acknowledgement",
+    "implementation_evidence": "src/services/compensation.ts; tests/security/compensation.sql",
+    "remaining_work_dependencies": "RIWAY endpoint/auth/ack/error/refund contract and real adapter",
+    "acceptance_criteria": "Sandbox duplicate/retry/reversal and RIWAY reconciliation match",
+    "status": "partial",
+    "gap_category": "code/external-contract"
+  },
+  {
+    "id": "D04",
+    "proposal_section": "5.3",
+    "requirement": "Distributor orders and privacy-controlled customer summaries",
+    "implementation_evidence": "src/app/distributor; tests/security/distributor_dashboard.sql",
+    "remaining_work_dependencies": "Wider disclosure rules if requested; hosted acceptance",
+    "acceptance_criteria": "Own paid attributed orders only; no cross-distributor PII",
+    "status": "implemented",
+    "gap_category": "acceptance/policy"
+  },
+  {
+    "id": "D05",
+    "proposal_section": "5.3",
+    "requirement": "Distributor reorder dates and approved materials",
+    "implementation_evidence": "products.replenishment_days; distributor dashboard",
+    "remaining_work_dependencies": "Approved product cycles and materials",
+    "acceptance_criteria": "Dates only from approved cycles; no invented schedules",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "P01",
+    "proposal_section": "5.4",
+    "requirement": "Guest checkout with verified contact, secure access and safe claiming",
+    "implementation_evidence": "src/components/guest-checkout.tsx; auth/callback; verified-contact checkout/resume guards; checkout-flow.test.ts",
+    "remaining_work_dependencies": "SMTP/auth-template configuration and real email OTP/link, expiry, recovery and existing-account acceptance",
+    "acceptance_criteria": "Verified guest, expiring secure access, safe claim; no IDOR",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "P02",
+    "proposal_section": "5.4",
+    "requirement": "Delivery/collection selection and approved centre availability",
+    "implementation_evidence": "20261125015757_checkout_collection_choice.sql; admin/centres; checkout-quote; checkout_collection.sql",
+    "remaining_work_dependencies": "Approved market centres, addresses, availability, instructions and no-additional-fee approval; hosted acceptance",
+    "acceptance_criteria": "Immutable selected centre/instructions; stale selection requoted",
+    "status": "implemented",
+    "gap_category": "content/policy/acceptance"
+  },
+  {
+    "id": "P03",
+    "proposal_section": "5.4",
+    "requirement": "PH card payment channel",
+    "implementation_evidence": "Stripe/Xendit adapters and method model",
+    "remaining_work_dependencies": "Per-channel merchant setup and test transaction",
+    "acceptance_criteria": "Card authorization/3DS/decline/webhook/resume separately proven",
+    "status": "partial",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "P04",
+    "proposal_section": "5.4",
+    "requirement": "PH GCash payment channel",
+    "implementation_evidence": "XENDIT.md; ROLLOUT-STATUS.md historical sandbox evidence",
+    "remaining_work_dependencies": "Current branch/channel acceptance replay",
+    "acceptance_criteria": "Verified payment and exact one stock transition",
+    "status": "sandbox-verified",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "P05",
+    "proposal_section": "5.4",
+    "requirement": "PH Maya payment channel",
+    "implementation_evidence": "XENDIT.md; ROLLOUT-STATUS.md historical sandbox evidence",
+    "remaining_work_dependencies": "Current branch/channel acceptance replay",
+    "acceptance_criteria": "Verified payment and exact one stock transition",
+    "status": "sandbox-verified",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "P06",
+    "proposal_section": "5.4",
+    "requirement": "PH banking and QR payment channels",
+    "implementation_evidence": "src/services/xendit-payments.ts",
+    "remaining_work_dependencies": "Each selected bank/QR channel sandbox acceptance",
+    "acceptance_criteria": "Method-specific success/failure/duplicate/reconciliation evidence",
+    "status": "partial",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "P07",
+    "proposal_section": "5.4",
+    "requirement": "MY FPX/cards/e-wallet channels",
+    "implementation_evidence": "src/lib/xendit-channels.ts; XENDIT.md",
+    "remaining_work_dependencies": "Merchant selection and each channel sandbox acceptance",
+    "acceptance_criteria": "Each enabled channel tested independently",
+    "status": "partial",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "P08",
+    "proposal_section": "5.4",
+    "requirement": "SG PayNow",
+    "implementation_evidence": "XENDIT.md SG has no documented channels",
+    "remaining_work_dependencies": "Selected merchant-supported provider and implementation",
+    "acceptance_criteria": "PayNow sandbox success/timeout/refund/webhook evidence",
+    "status": "blocked",
+    "gap_category": "provider/code"
+  },
+  {
+    "id": "P09",
+    "proposal_section": "5.4",
+    "requirement": "Optional manual transfer/pay at pickup",
+    "implementation_evidence": "No selected method",
+    "remaining_work_dependencies": "Explicit RIWAY market approval and rules",
+    "acceptance_criteria": "Only approved methods with verified settlement and audit",
+    "status": "blocked",
+    "gap_category": "policy/code"
+  },
+  {
+    "id": "P10",
+    "proposal_section": "5.4;8.2",
+    "requirement": "Payment resume, verified webhooks, duplicates and reconciliation",
+    "implementation_evidence": "tests/unit/xendit-flow.test.ts; tests/security/stripe.sql; xendit.sql",
+    "remaining_work_dependencies": "Gateway/channel-specific sandbox and merchant PCI acceptance",
+    "acceptance_criteria": "Canonical status/amount/currency; one applied payment",
+    "status": "implemented",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "P11",
+    "proposal_section": "5.4",
+    "requirement": "Market tax snapshots, legal numbering, receipts/invoices",
+    "implementation_evidence": "Confirmation explicitly is not tax invoice",
+    "remaining_work_dependencies": "Finance-approved tax/numbering rules and financial code",
+    "acceptance_criteria": "Immutable tax snapshot, lawful sequential documents and download",
+    "status": "blocked",
+    "gap_category": "policy/code"
+  },
+  {
+    "id": "P12",
+    "proposal_section": "5.6",
+    "requirement": "Unpaid order cancellation",
+    "implementation_evidence": "src/app/account/orders/actions.ts; tests/security/cancellation.sql",
+    "remaining_work_dependencies": "Hosted acceptance",
+    "acceptance_criteria": "Owner/staff permission, stock and voucher release once",
+    "status": "implemented",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "P13",
+    "proposal_section": "5.6",
+    "requirement": "Paid cancellation, full/partial refunds, returns, stock and credit notes",
+    "implementation_evidence": "REMAINING-SCOPE.md G11/G12",
+    "remaining_work_dependencies": "Approved refund/tax rules and gateway refund workflows",
+    "acceptance_criteria": "Idempotent actual gateway refund; stock disposition; credit note",
+    "status": "blocked",
+    "gap_category": "policy/code"
+  },
+  {
+    "id": "R01",
+    "proposal_section": "5.5",
+    "requirement": "Account reorder",
+    "implementation_evidence": "src/components/reorder.tsx",
+    "remaining_work_dependencies": "Hosted acceptance with approved stock/prices",
+    "acceptance_criteria": "Copies products to bag; never charges or places order directly",
+    "status": "implemented",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "R02",
+    "proposal_section": "5.5",
+    "requirement": "Auto-replenishment recurring consent and billing",
+    "implementation_evidence": "No subscription tables/worker",
+    "remaining_work_dependencies": "Approved intervals/products/consent plus merchant recurring capability",
+    "acceptance_criteria": "Gateway-supported recurring mandate; each renewal quoted/paid safely",
+    "status": "blocked",
+    "gap_category": "policy/provider/code"
+  },
+  {
+    "id": "R03",
+    "proposal_section": "5.5",
+    "requirement": "Pause/skip/resume/cancel and failed-payment recovery",
+    "implementation_evidence": "No recurring orchestration",
+    "remaining_work_dependencies": "R02 and subscription lifecycle implementation",
+    "acceptance_criteria": "No charge after cancellation; retries/notifications accurate",
+    "status": "missing",
+    "gap_category": "code"
+  },
+  {
+    "id": "R04",
+    "proposal_section": "5.5",
+    "requirement": "Reorder reminders email/SMS/messaging and secure links",
+    "implementation_evidence": "20261125015220_reorder_preferences_and_reminders.sql; account/preferences; resend-email; reorder_reminders.sql",
+    "remaining_work_dependencies": "Selected SMS/messaging adapters still missing; approved product cycles/lead time, sender configuration and inbox acceptance",
+    "acceptance_criteria": "Dedupe, delivery-time consent, timing, no charge from link",
+    "status": "partial",
+    "gap_category": "code/provider/policy/configuration/acceptance"
+  },
+  {
+    "id": "F01",
+    "proposal_section": "5.6",
+    "requirement": "Country inventory and staff stock management",
+    "implementation_evidence": "tests/security/checkout.sql; tenant_inventory.sql",
+    "remaining_work_dependencies": "Real stock setup and hosted role acceptance",
+    "acceptance_criteria": "Country isolation, nonnegative stock, audited movements",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "F02",
+    "proposal_section": "5.6",
+    "requirement": "Concurrent component reservations, expiry and OOS control",
+    "implementation_evidence": "38-migration real PostgreSQL run; 27 suites; concurrent reservations, voucher capacity, expiry and duplicate settlement checks",
+    "remaining_work_dependencies": "Hosted acceptance with approved inventory and observed operations",
+    "acceptance_criteria": "No oversell, expired reservations release once",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "F03",
+    "proposal_section": "5.6",
+    "requirement": "Corporate/tenant low-stock alerts",
+    "implementation_evidence": "tests/security/order_confirmation.sql; notification worker",
+    "remaining_work_dependencies": "Email activation and owner opt-ins",
+    "acceptance_criteria": "Actual scoped recipient receives once per day",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "F04",
+    "proposal_section": "5.6",
+    "requirement": "Courier quote, shipment, labels and verified tracking",
+    "implementation_evidence": "Manual fulfilment adapter only",
+    "remaining_work_dependencies": "Courier selection/contract and implementation",
+    "acceptance_criteria": "Sandbox rate/label/tracking/exception/reconciliation",
+    "status": "blocked",
+    "gap_category": "external-contract/code"
+  },
+  {
+    "id": "F05",
+    "proposal_section": "5.6",
+    "requirement": "Customer tracking and collection journeys",
+    "implementation_evidence": "Frozen collection centre/instructions on customer/staff orders; fulfilment timeline; checkout_collection.sql",
+    "remaining_work_dependencies": "Selected courier adapter, actual centre data and hosted fulfilment acceptance",
+    "acceptance_criteria": "Customer sees accurate status/collection instructions",
+    "status": "partial",
+    "gap_category": "code/provider/content/acceptance"
+  },
+  {
+    "id": "F06",
+    "proposal_section": "5.6",
+    "requirement": "Order/shipping/delivery notifications",
+    "implementation_evidence": "src/services/resend-email.ts; tests/security/fulfilment.sql",
+    "remaining_work_dependencies": "Sender activation and real inbox delivery",
+    "acceptance_criteria": "Only authorized customer receives appropriate status once",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "A01",
+    "proposal_section": "5.7",
+    "requirement": "Registration/login/recovery/profile/addresses",
+    "implementation_evidence": "src/app/auth; src/app/account; customer_workflows.sql",
+    "remaining_work_dependencies": "SMTP/inbox acceptance",
+    "acceptance_criteria": "Verified auth, ownership, safe recovery and address isolation",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "A02",
+    "proposal_section": "5.7",
+    "requirement": "RIWAY SSO and safe linking",
+    "implementation_evidence": "Existing native/Clerk identity bridge",
+    "remaining_work_dependencies": "RIWAY OIDC/SAML issuer/metadata/linking rules",
+    "acceptance_criteria": "Signed identity, state/nonce, no email-only takeover or role escalation",
+    "status": "blocked",
+    "gap_category": "external-contract/code"
+  },
+  {
+    "id": "A03",
+    "proposal_section": "5.7",
+    "requirement": "Order history, invoices, memberships and packages",
+    "implementation_evidence": "src/app/account/orders; src/app/account/membership",
+    "remaining_work_dependencies": "Legal invoice work and authoritative member sync",
+    "acceptance_criteria": "Only own records, exact package/tier status",
+    "status": "partial",
+    "gap_category": "code/external-contract"
+  },
+  {
+    "id": "A04",
+    "proposal_section": "5.7",
+    "requirement": "Communication preferences",
+    "implementation_evidence": "Account reorder email opt-in/revocation; bearer unsubscribe; delivery-time preference revision checks; reorder_reminders.sql",
+    "remaining_work_dependencies": "Other communication channels and consent purposes require selected contracts/policy and implementation",
+    "acceptance_criteria": "Revocation suppresses pending optional messages",
+    "status": "partial",
+    "gap_category": "code/policy/provider"
+  },
+  {
+    "id": "S01",
+    "proposal_section": "5.8",
+    "requirement": "Admin products/prices/stock/promotions/orders/content by country",
+    "implementation_evidence": "src/app/admin; tests/security/rls.sql",
+    "remaining_work_dependencies": "Hosted positive staff browser acceptance; refunds missing",
+    "acceptance_criteria": "MFA and country/role enforcement at database and server",
+    "status": "partial",
+    "gap_category": "code/acceptance"
+  },
+  {
+    "id": "S02",
+    "proposal_section": "5.8",
+    "requirement": "Sales country/product/package/channel/distributor dashboards",
+    "implementation_evidence": "src/app/admin/reports; tests/security/reports.sql",
+    "remaining_work_dependencies": "Business acceptance and approved data",
+    "acceptance_criteria": "Totals/currency/window and scoping correct",
+    "status": "implemented",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "S03",
+    "proposal_section": "5.8",
+    "requirement": "Scoped exports and scheduled sales reports",
+    "implementation_evidence": "tests/security/scheduled_reports.sql; reports.sql",
+    "remaining_work_dependencies": "Email delivery and owner schedules",
+    "acceptance_criteria": "Only current authorized subscribers; correct period and CSV safety",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "I01",
+    "proposal_section": "5.9",
+    "requirement": "CRM, SMS and messaging integrations",
+    "implementation_evidence": "No selected provider",
+    "remaining_work_dependencies": "Selected provider contract, templates and consent",
+    "acceptance_criteria": "End-to-end authorized delivery, callback/suppression/retries",
+    "status": "blocked",
+    "gap_category": "provider/code"
+  },
+  {
+    "id": "I02",
+    "proposal_section": "5.9",
+    "requirement": "GA4/Meta consent and commerce events",
+    "implementation_evidence": "src/components/commerce-tracking.tsx; commerce-analytics.test.ts",
+    "remaining_work_dependencies": "Measurement IDs and dashboard acceptance",
+    "acceptance_criteria": "No events before consent; revocation/dedup/no PII",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "I03",
+    "proposal_section": "5.9",
+    "requirement": "Magazine app deep links",
+    "implementation_evidence": "No app link contract",
+    "remaining_work_dependencies": "RIWAY scheme/universal-link ownership and mappings",
+    "acceptance_criteria": "Real device app-to-product/store attribution",
+    "status": "blocked",
+    "gap_category": "external-contract/code"
+  },
+  {
+    "id": "K01",
+    "proposal_section": "5.10;8.4",
+    "requirement": "FDA/market statements and approved claims",
+    "implementation_evidence": "src/components/product-compliance-notice.tsx",
+    "remaining_work_dependencies": "Approved market registration evidence and wording",
+    "acceptance_criteria": "Correct statement on product/checkout/communications",
+    "status": "partial",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "K02",
+    "proposal_section": "5.10",
+    "requirement": "Claims/testimonial approval workflow",
+    "implementation_evidence": "CMS RLS and publication triggers",
+    "remaining_work_dependencies": "Approved reviewers/content and real role acceptance",
+    "acceptance_criteria": "Unapproved claims never published",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "K03",
+    "proposal_section": "5.10",
+    "requirement": "Income disclaimers and online selling policy updates",
+    "implementation_evidence": "Membership notices and legal CMS",
+    "remaining_work_dependencies": "Approved RIWAY income/online-selling policy",
+    "acceptance_criteria": "Current approved disclaimers before market launch",
+    "status": "partial",
+    "gap_category": "policy/content"
+  },
+  {
+    "id": "O1",
+    "proposal_section": "6 A",
+    "requirement": "Customer Stories Hub accessible approved video/documentary",
+    "implementation_evidence": "Story-to-independently-approved library media; transcript/disclaimer/market guards; story_event_assistant_privacy.sql",
+    "remaining_work_dependencies": "Professionally produced approved source media, translations and hosted accessible-media acceptance",
+    "acceptance_criteria": "Accessible approved restricted-market media, moderation, withdrawal",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "O2",
+    "proposal_section": "6 B",
+    "requirement": "AI Product Assistant text/voice, approved grounding, private order support, hand-off",
+    "implementation_evidence": "services/approved-content-assistant.ts; account/assistant; voice API; owner-only order support; assistant unit/browser tests",
+    "remaining_work_dependencies": "Approved corpus, model/key, provider privacy approval and real text/voice/provider acceptance; unsupported browser voice fallback acceptance",
+    "acceptance_criteria": "Only approved source answers, owner-only orders, safe handoff, no medical advice",
+    "status": "partial",
+    "gap_category": "content/provider/configuration/acceptance"
+  },
+  {
+    "id": "O3",
+    "proposal_section": "6 C",
+    "requirement": "Consultation availability/timezones/book/reschedule/cancel/reminders/conflicts",
+    "implementation_evidence": "Consultation migration/pages; PostgreSQL concurrent booking/replay/reschedule; desktop/mobile synthetic-auth browser flows",
+    "remaining_work_dependencies": "Hosted real-auth participant acceptance, email activation and actual reminder delivery",
+    "acceptance_criteria": "Atomic conflict prevention, participant-only access, stale reminders suppressed",
+    "status": "implemented",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "O4",
+    "proposal_section": "6 D",
+    "requirement": "Enhanced paid event tickets/capacity/attendees/confirmations/check-in/refunds",
+    "implementation_evidence": "Capacity/attendees/check-in/cancellation migration and staff/customer UI; PostgreSQL capacity race; cancellation notification suppression",
+    "remaining_work_dependencies": "Paid ticketing/payment/refund orchestration remains missing; approved ticket prices, merchant/refund rules and hosted attendance acceptance",
+    "acceptance_criteria": "No oversell, verified payment, secure check-in, cancellation/refund accounting",
+    "status": "partial",
+    "gap_category": "code/policy/provider/acceptance"
+  },
+  {
+    "id": "O5",
+    "proposal_section": "6 E",
+    "requirement": "Expanded searchable assets/videos/library/sharing/version/withdrawal",
+    "implementation_evidence": "Versioned library migration/pages; independent publication/withdrawal; SQL role checks; desktop/mobile synthetic-auth publication journey",
+    "remaining_work_dependencies": "Approved market/language campaign assets and real hosted role acceptance",
+    "acceptance_criteria": "Own-market live revisions, independent review and immediate withdrawal",
+    "status": "implemented",
+    "gap_category": "content/acceptance"
+  },
+  {
+    "id": "N01",
+    "proposal_section": "7",
+    "requirement": "Preserve modular existing architecture and RIWAY commission boundary",
+    "implementation_evidence": "ARCHITECTURE.md; compensation outbox",
+    "remaining_work_dependencies": "Authoritative API contracts; design sign-off",
+    "acceptance_criteria": "RIWAY retains member/commission authority; no replacement engine",
+    "status": "implemented",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "N02",
+    "proposal_section": "7",
+    "requirement": "Authenticated durable integrations, bounded retries, reconciliation and alerts",
+    "implementation_evidence": "Notification/payment/compensation queues",
+    "remaining_work_dependencies": "Real adapters and named queue owners",
+    "acceptance_criteria": "Duplicate/timeouts/poison events recovered and alerted",
+    "status": "partial",
+    "gap_category": "code/operations"
+  },
+  {
+    "id": "N03",
+    "proposal_section": "7",
+    "requirement": "99.9% monthly availability and managed scaling/CDN",
+    "implementation_evidence": "Cloudflare Workers deployment",
+    "remaining_work_dependencies": "Agreed measurement/windows/provider dependencies; actual SLI evidence",
+    "acceptance_criteria": "Measured monthly target; incident owner and alert delivery tested",
+    "status": "partial",
+    "gap_category": "operations/acceptance"
+  },
+  {
+    "id": "N04",
+    "proposal_section": "7",
+    "requirement": "Mobile <3s on agreed 4G and passing Core Web Vitals",
+    "implementation_evidence": "Responsive UI/build only",
+    "remaining_work_dependencies": "Agreed pages/devices/load; actual mobile and field measurements",
+    "acceptance_criteria": "Recorded LCP/INP/CLS and <3s test pass",
+    "status": "partial",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "N05",
+    "proposal_section": "7;12",
+    "requirement": "Latest two Chrome/Safari/Edge/Firefox desktop/iOS/Android",
+    "implementation_evidence": "Existing Chrome browser evidence only",
+    "remaining_work_dependencies": "Full agreed browser/device regression",
+    "acceptance_criteria": "Required browser journeys pass",
+    "status": "partial",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "N06",
+    "proposal_section": "7",
+    "requirement": "Product structured data/sitemap/canonical/hreflang/indexing",
+    "implementation_evidence": "src/app/sitemap.ts; src/lib/structured-data.ts; robots.ts",
+    "remaining_work_dependencies": "Actual locales and legacy map; SEO acceptance",
+    "acceptance_criteria": "Accurate sellable price, canonical and language alternates",
+    "status": "partial",
+    "gap_category": "code/content/acceptance"
+  },
+  {
+    "id": "N07",
+    "proposal_section": "7",
+    "requirement": "Separate development/staging/production data and secrets",
+    "implementation_evidence": "wrangler.jsonc uses shared Supabase; hosted branches only main",
+    "remaining_work_dependencies": "Existing isolation or authorized separate environment",
+    "acceptance_criteria": "Different DB/secrets, anonymized fixtures, controlled promotion",
+    "status": "blocked",
+    "gap_category": "infrastructure"
+  },
+  {
+    "id": "N08",
+    "proposal_section": "7",
+    "requirement": "Availability/error/checkout/queue monitoring and escalation",
+    "implementation_evidence": "/api/health; staff queue views",
+    "remaining_work_dependencies": "Named owners, configured external monitor/alerts and rehearsal",
+    "acceptance_criteria": "Alert on synthetic failure; checkout/queue runbook exercised",
+    "status": "partial",
+    "gap_category": "configuration/operations"
+  },
+  {
+    "id": "N09",
+    "proposal_section": "7",
+    "requirement": "Daily separately protected backups with 30-day retention",
+    "implementation_evidence": "Hosted organization reported FREE; no verified 30-day backup retention or isolated restore; no paid service created",
+    "remaining_work_dependencies": "Authorized backup capability/configuration, RPO/RTO and protected isolated restore target; recorded restore test",
+    "acceptance_criteria": "30 retained daily snapshots and successful isolated restoration",
+    "status": "blocked",
+    "gap_category": "infrastructure/acceptance"
+  },
+  {
+    "id": "N10",
+    "proposal_section": "7",
+    "requirement": "Validated vendor/system boundaries and sandbox back-office flow",
+    "implementation_evidence": "INTEGRATIONS.md; architecture docs",
+    "remaining_work_dependencies": "RIWAY API sandbox and design approval",
+    "acceptance_criteria": "Paid order-to-RIWAY acknowledgement/reversal proven",
+    "status": "blocked",
+    "gap_category": "external-contract/acceptance"
+  },
+  {
+    "id": "Q01",
+    "proposal_section": "8.1",
+    "requirement": "OWASP safeguards, WAF, validation, rate limits, country/role MFA",
+    "implementation_evidence": "next.config.ts; SQL authorization/rate guards; email second step",
+    "remaining_work_dependencies": "WAF configuration and independent security evidence",
+    "acceptance_criteria": "No high/critical findings; privilege and origin tests pass",
+    "status": "partial",
+    "gap_category": "operations/acceptance"
+  },
+  {
+    "id": "Q02",
+    "proposal_section": "8.1",
+    "requirement": "TLS/storage encryption/separate secrets and sensitive audit trails",
+    "implementation_evidence": "Supabase/Cloudflare, private audit logs",
+    "remaining_work_dependencies": "Configuration evidence, key owners and audit retention approval",
+    "acceptance_criteria": "Provider encryption and least privilege verified",
+    "status": "partial",
+    "gap_category": "configuration/acceptance"
+  },
+  {
+    "id": "Q03",
+    "proposal_section": "8.1;12",
+    "requirement": "Vulnerability checks and independent penetration test/retest",
+    "implementation_evidence": "CI npm audit and security tests",
+    "remaining_work_dependencies": "Independent assessor and findings remediation/retest",
+    "acceptance_criteria": "All critical/high resolved and independently retested",
+    "status": "partial",
+    "gap_category": "external-assurance"
+  },
+  {
+    "id": "Q04",
+    "proposal_section": "8.2",
+    "requirement": "Hosted/tokenized payment, no PAN/logs, 3DS and fraud",
+    "implementation_evidence": "Stripe/Xendit hosted adapters",
+    "remaining_work_dependencies": "Per-channel merchant 3DS/fraud and PCI duty verification",
+    "acceptance_criteria": "No stored card data; sandbox fraud/3DS evidence",
+    "status": "partial",
+    "gap_category": "provider/acceptance"
+  },
+  {
+    "id": "Q05",
+    "proposal_section": "8.3",
+    "requirement": "Privacy intake/access/correction/erasure/restriction and approved retention",
+    "implementation_evidence": "Privacy case intake/correction; authenticated explicit-projection JSON export; SQL subject isolation and export rate guard",
+    "remaining_work_dependencies": "Automated erasure/restriction fulfilment, applicable session revocation and approved retention schedules remain missing",
+    "acceptance_criteria": "Identity verified, subject-only export, lawful preservation and audit",
+    "status": "partial",
+    "gap_category": "code/policy/acceptance"
+  },
+  {
+    "id": "Q06",
+    "proposal_section": "8.3",
+    "requirement": "Controller/processor/data locations/transfers and agreements",
+    "implementation_evidence": "Database eu-west-1; INTEGRATIONS.md",
+    "remaining_work_dependencies": "RIWAY privacy approval and processor agreements",
+    "acceptance_criteria": "Recorded ownership/location/transfer approvals",
+    "status": "blocked",
+    "gap_category": "policy/legal"
+  },
+  {
+    "id": "Q07",
+    "proposal_section": "8.3",
+    "requirement": "Breach response, contacts and notification timelines",
+    "implementation_evidence": "SECURITY.md foundational instructions",
+    "remaining_work_dependencies": "Named contacts and approved jurisdiction timelines; exercise",
+    "acceptance_criteria": "Incident drill and authorized notification process",
+    "status": "partial",
+    "gap_category": "policy/operations"
+  },
+  {
+    "id": "H01",
+    "proposal_section": "10;11",
+    "requirement": "Requirements, architecture, integration specs, source and reviewable PR",
+    "implementation_evidence": "This matrix; architecture docs; isolated branch ccd5be7 base",
+    "remaining_work_dependencies": "Complete remaining requirements, CI and review",
+    "acceptance_criteria": "Reviewable tested branch with traceable gaps",
+    "status": "partial",
+    "gap_category": "delivery"
+  },
+  {
+    "id": "H02",
+    "proposal_section": "11;12",
+    "requirement": "Functional/integration/authorization/transaction/concurrency verification",
+    "implementation_evidence": "656 tests/75 files; 38 migrations/27 real PostgreSQL suites; eight desktop/mobile disposable browser cases; typecheck and production build",
+    "remaining_work_dependencies": "Real-provider/auth and wider role/browser acceptance; accessibility, agreed performance/load, independent pentest and restore evidence",
+    "acceptance_criteria": "Evidence by requirement including negative cases and concurrency",
+    "status": "partial",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "H03",
+    "proposal_section": "11;12",
+    "requirement": "Payment/load/penetration reports and 10-business-day staging UAT",
+    "implementation_evidence": "Historical payment and browser records",
+    "remaining_work_dependencies": "All-channel evidence, agreed load, independent pentest and UAT",
+    "acceptance_criteria": "Written RIWAY acceptance after agreed UAT",
+    "status": "blocked",
+    "gap_category": "acceptance"
+  },
+  {
+    "id": "H04",
+    "proposal_section": "11;13",
+    "requirement": "Admin/distributor guides, role training, video guides and handover",
+    "implementation_evidence": "OPERATING-GUIDE.md; PROPOSAL-DELIVERY.md; EXTERNAL-DEPENDENCIES.md; deployment/rollback and role training exercise outline",
+    "remaining_work_dependencies": "Actual recorded video guides, delivered role training, credential ownership handover and RIWAY sign-off",
+    "acceptance_criteria": "Role-based training and receipt of assets/access recorded",
+    "status": "partial",
+    "gap_category": "delivery/acceptance"
+  },
+  {
+    "id": "H05",
+    "proposal_section": "13",
+    "requirement": "30-day launch hypercare and incident/support coverage",
+    "implementation_evidence": "Not commercially launched",
+    "remaining_work_dependencies": "Named support owners and launch date/support agreement",
+    "acceptance_criteria": "Launch support coverage accepted; operational escalation tested",
+    "status": "blocked",
+    "gap_category": "operations"
+  },
+  {
+    "id": "H06",
+    "proposal_section": "14;15",
+    "requirement": "Governance, approvals, operating owners and client inputs",
+    "implementation_evidence": "Repository status documents",
+    "remaining_work_dependencies": "Named RIWAY approvers/owners and approval records",
+    "acceptance_criteria": "Decisions/evidence tracked; no invented provider/policy/content",
+    "status": "partial",
+    "gap_category": "governance"
+  },
+  {
+    "id": "H07",
+    "proposal_section": "16;17;18;19",
+    "requirement": "Commercial fees, ownership, confidentiality and written launch approval",
+    "implementation_evidence": "Proposal is reference material; user authorizes code work",
+    "remaining_work_dependencies": "Stakeholder commercial acceptance; launch gates remain",
+    "acceptance_criteria": "No new paid services/real charge/public commercial launch without explicit authorization",
+    "status": "blocked",
+    "gap_category": "commercial/approval"
+  }
+]

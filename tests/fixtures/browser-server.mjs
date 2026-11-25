@@ -106,6 +106,19 @@ const identifier = (value) => {
     throw new Error("Invalid fixture identifier");
   return '"' + value + '"';
 };
+// Two paid orders for the desktop/mobile customer return journeys. Payments
+// are simulated through the real settlement RPC inside this disposable DB.
+await pg.exec(`insert into public.sponsor_attributions(user_id,distributor_id)values('${users.customer}','${users.distributor}');
+ update public.markets set online_sales_approved=true,payments_ready=true,policy_reference='SYNTHETIC-BROWSER'where code='PH';
+ do $$declare p uuid;o uuid;q jsonb;r jsonb;begin
+ foreach p in array array['84000000-0000-4000-8000-000000000001'::uuid,'84000000-0000-4000-8000-000000000003'::uuid]loop
+ perform set_config('request.jwt.claims','{"sub":"${users.customer}","role":"authenticated","aal":"aal1"}',true);
+ q:=public.quote_fulfilment_checkout('PH',jsonb_build_array(jsonb_build_object('productId',p,'quantity',1)),null,'{"method":"delivery"}');
+ o:=public.create_fulfilment_order('PH',jsonb_build_array(jsonb_build_object('productId',p,'quantity',1)),'{"full_name":"Synthetic customer","phone":"0000000000","line1":"Disposable fixture address","city":"Manila","postal_code":"1000","country":"PH"}',gen_random_uuid(),(select checkout_terms_version from public.markets where code='PH'),null,q->>'quoteHash',null,'{"method":"delivery"}');
+ perform set_config('request.jwt.claims','{}',true);
+ r:=public.prepare_stripe_checkout(o,'${users.customer}',false,'https://example.invalid');
+ perform public.apply_stripe_checkout_event('evt_browser_'||o,(r->>'id')::uuid,o,'cs_test_browser_'||replace(o::text,'-',''),false,100,'php','complete','paid','pi_browser'||replace(o::text,'-',''));
+ end loop;end $$;`);
 const tables = new Set([
   "markets",
   "products",
@@ -227,7 +240,9 @@ const server = createServer((req, res) => {
           if (req.method !== "GET")
             throw new Error("Fixture method unavailable");
           const columns = url.searchParams.get("select") ?? "*";
-          if (columns !== "*" && !/^[a-z0-9_,]+$/i.test(columns))
+          const orderItems =
+            table === "orders" && columns === "*,order_items(*)";
+          if (!orderItems && columns !== "*" && !/^[a-z0-9_,]+$/i.test(columns))
             throw new Error("Nested fixture selection unavailable");
           const values = [];
           const conditions = [];
@@ -278,8 +293,18 @@ const server = createServer((req, res) => {
           );
           if (!Number.isInteger(limit) || !Number.isInteger(offset))
             throw new Error("Invalid fixture page");
-          const sql = `select ${columns === "*" ? "*" : columns.split(",").map(identifier).join(",")} from public.${identifier(table)}${conditions.length ? " where " + conditions.join(" and ") : ""}${order ? " order by " + order : ""} limit ${limit} offset ${offset}`;
+          const sql = `select ${orderItems || columns === "*" ? "*" : columns.split(",").map(identifier).join(",")} from public.${identifier(table)}${conditions.length ? " where " + conditions.join(" and ") : ""}${order ? " order by " + order : ""} limit ${limit} offset ${offset}`;
           const r = await tx.query(sql, values);
+          if (orderItems) {
+            // Exact allowlisted embedding only; both reads keep caller RLS.
+            for (const row of r.rows)
+              row.order_items = (
+                await tx.query(
+                  "select * from public.order_items where order_id=$1",
+                  [row.id],
+                )
+              ).rows;
+          }
           return req.headers.accept?.includes("vnd.pgrst.object")
             ? (r.rows[0] ?? null)
             : r.rows;

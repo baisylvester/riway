@@ -36,6 +36,14 @@ export const commerceQuoteSchema = z
   .object({
     fulfilment: fulfilmentSnapshotSchema.optional(),
     bonusItems: bonusItemsSchema.optional(),
+    refundPolicy: z
+      .object({
+        policyId: z.uuid(),
+        version: z.string().min(3).max(120),
+        terms: z.string().min(20).max(8000),
+        allowPartial: z.boolean(),
+      })
+      .optional(),
     market: marketSchema,
     currency: z.enum(["PHP", "SGD", "MYR"]),
     items: z

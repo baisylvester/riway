@@ -2,7 +2,7 @@
 
 ## Current proposal candidate — 25 November 2026
 
-The current requirement-by-requirement source is [PROPOSAL-MATRIX.md](PROPOSAL-MATRIX.md), with [delivery evidence](PROPOSAL-DELIVERY.md) and [exact dependencies/missing code](EXTERNAL-DEPENDENCIES.md). New candidate work is not deployed. Guest/collection and portions of all five optional enhancements have working code; subscriptions, paid tickets, refunds/tax, bonus campaigns, actual RIWAY/SSO/courier and other adapters still require implementation. Earlier G-number assessments below describe their dated releases.
+The current requirement-by-requirement source is [PROPOSAL-MATRIX.md](PROPOSAL-MATRIX.md), with [delivery evidence](PROPOSAL-DELIVERY.md) and [exact dependencies/missing code](EXTERNAL-DEPENDENCIES.md). New candidate work is not deployed. Guest/collection and portions of all five optional enhancements have working code; bonus campaigns and returns/refund approvals/reconciliation now also have working code. Subscriptions, paid tickets, official tax/credit notes, RIWAY partial adjustments, actual RIWAY/SSO/courier and other adapters still require implementation. See `REFUNDS.md` for the refund boundaries. Earlier G-number assessments below describe their dated releases.
 
 Branch `feat/riway-remaining-scope-20261124`, worktree `riway_remaining_scope`, cut from `integration/features` @ `4c980a7` (22 commits past the audited `992c2ac`; the audit's findings were rechecked against this base). Status update: merged as PR #41 (and #42), hosted migrations applied and deployed to staging and production on 24 November 2026 (see `ROLLOUT-STATUS.md`). No real provider is connected; email and RIWAY volume delivery remain off.
 

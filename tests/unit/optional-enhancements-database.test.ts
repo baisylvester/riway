@@ -42,6 +42,9 @@ it("enforces consultation conflicts, privacy, lifecycle and library publication/
     await pg.exec(
       readFileSync(resolve(root, "tests/security/bonus_campaigns.sql"), "utf8"),
     );
+    await pg.exec(
+      readFileSync(resolve(root, "tests/security/returns_refunds.sql"), "utf8"),
+    );
   } finally {
     await pg.close();
   }

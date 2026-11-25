@@ -145,6 +145,7 @@ try {
     "reorder_reminders.sql",
     "checkout_collection.sql",
     "bonus_campaigns.sql",
+    "returns_refunds.sql",
     "checkout.sql",
     "operations.sql",
     "tenant_inventory.sql",
@@ -813,11 +814,122 @@ try {
     ),
     "2",
   );
+  // Approvals and physical receipts serialize on the original paid order.
+  // Provider responses are synthetic facts here; no gateway is contacted.
+  const returnCase = sql(
+    `${asCustomer(customer)}select public.request_order_return('${paymentOrder}','return','Disposable concurrent return request');`,
+  )
+    .split("\n")
+    .at(-1);
+  const refundPolicy = sql(
+    `${asUser}select public.approve_refund_policy('PH','QA-CONCURRENT-REFUNDS','Synthetic approved policy for disposable concurrent refund verification.',true,'QA-CONCURRENCY');`,
+  )
+    .split("\n")
+    .at(-1);
+  const refundItem = sql(
+    `select id from public.order_items where order_id='${paymentOrder}';`,
+  );
+  const approvalRaces = await Promise.all(
+    Array.from({ length: 8 }, (_, i) =>
+      parallelSql(
+        `${asUser}select public.approve_order_refund('${returnCase}','${refundPolicy}','[{"itemId":"${refundItem}","amountMinor":6000}]','QA-CONCURRENT-${i}');`,
+      ),
+    ),
+  );
+  assert.equal(
+    approvalRaces.filter((r) => r.code === 0).length,
+    1,
+    "One approval fits the remaining payment",
+  );
+  assert.equal(
+    approvalRaces.filter(
+      (r) => r.code !== 0 && r.error.includes("remaining line amount"),
+    ).length,
+    7,
+    "Concurrent over-refunds are refused",
+  );
+  const refundWinner = approvalRaces.findIndex((r) => r.code === 0);
+  const refundId = approvalRaces[refundWinner].output.trim().split("\n").at(-1);
+  const approvalReplays = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      parallelSql(
+        `${asUser}select public.approve_order_refund('${returnCase}','${refundPolicy}','[{"itemId":"${refundItem}","amountMinor":6000}]','QA-CONCURRENT-${refundWinner}');`,
+      ),
+    ),
+  );
+  assert(
+    approvalReplays.every(
+      (r) => r.code === 0 && r.output.trim().endsWith(refundId),
+    ),
+    "Exact financial retries return the same refund",
+  );
+  const refundSettlements = await Promise.all(
+    Array.from({ length: 8 }, () =>
+      parallelSql(
+        `set role service_role;select public.apply_order_refund('${refundId}','re_concurrent','pi_concurrency',6000,'PHP','succeeded');`,
+      ),
+    ),
+  );
+  assert(
+    refundSettlements.every((r) => r.code === 0),
+    "Concurrent verified settlements are idempotent",
+  );
+  assert.equal(
+    sql(`select refunded_minor from public.orders where id='${paymentOrder}';`),
+    "6000",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from public.audit_logs where action='REFUND_SUCCEEDED_COMPENSATION_REVIEW'and entity_id='${refundId}';`,
+    ),
+    "1",
+  );
+  const beforeReceipt = Number(
+    sql(
+      `select on_hand from public.inventory where product_id='${product}'and market='PH';`,
+    ),
+  );
+  const stockReturns = await Promise.all(
+    Array.from({ length: 8 }, (_, i) =>
+      parallelSql(
+        `${asUser}select public.record_return_stock('${returnCase}','${product}',1,'restock','QA-CONCURRENT-RECEIPT-${i}');`,
+      ),
+    ),
+  );
+  assert.equal(
+    stockReturns.filter((r) => r.code === 0).length,
+    1,
+    "Physical quantity cannot be restocked twice",
+  );
+  assert.equal(
+    stockReturns.filter(
+      (r) => r.code !== 0 && r.error.includes("Returned quantity exceeds"),
+    ).length,
+    7,
+  );
+  assert.equal(
+    Number(
+      sql(
+        `select on_hand from public.inventory where product_id='${product}'and market='PH';`,
+      ),
+    ),
+    beforeReceipt + 1,
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
         securitySuites: securitySuites.length,
+        parallelRefunds: {
+          approvals: 8,
+          accepted: 1,
+          overRefundsRefused: 7,
+          identicalApprovalReplays: 4,
+          verifiedSettlementReplays: 8,
+          refundedMinor: 6000,
+          physicalReceipts: 8,
+          acceptedReceipts: 1,
+        },
         parallelBonusCampaign: {
           attempted: 8,
           accepted: 2,

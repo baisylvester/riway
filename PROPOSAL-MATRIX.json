@@ -224,7 +224,7 @@
     "proposal_section": "5.1",
     "requirement": "Bonus-item/bonus-bottle promotions",
     "implementation_evidence": "20261125072929_bonus_item_campaigns.sql; /admin/bonuses; quote/order/stock and bonus snapshots; confirmations/export/compensation facts; bonus_campaigns.sql; PostgreSQL campaign race and desktop/mobile approval/withdrawal",
-    "remaining_work_dependencies": "Approved campaign definitions/return terms and hosted acceptance; full returns/refund/credit-note workflow remains missing and must use frozen physical bonus facts",
+    "remaining_work_dependencies": "Approved campaigns/return terms and hosted acceptance; physical bonus returns are bounded and explicit, paid campaign capacity retained; official credit notes and RIWAY adjustments remain outstanding",
     "acceptance_criteria": "Bonus physical stock, limits, discounts and returns reconcile",
     "status": "partial",
     "gap_category": "code/policy/content/acceptance"
@@ -473,11 +473,11 @@
     "id": "P13",
     "proposal_section": "5.6",
     "requirement": "Paid cancellation, full/partial refunds, returns, stock and credit notes",
-    "implementation_evidence": "REMAINING-SCOPE.md G11/G12",
-    "remaining_work_dependencies": "Approved refund/tax rules and gateway refund workflows",
+    "implementation_evidence": "20261125075200_returns_and_refunds.sql; /admin/returns and own-order intake; Stripe/Xendit real adapters, signed callbacks and gated minute worker; policy snapshots, line ledger, explicit physical/gift disposition, refund-adjusted reports and private exports; SQL/concurrency, provider-route and desktop/mobile tests; REFUNDS.md",
+    "remaining_work_dependencies": "Approved market policies and real merchant/channel refund acceptance; tax/credit-note numbering and immutable documents; RIWAY partial-volume/member adjustment contract and reconciliation",
     "acceptance_criteria": "Idempotent actual gateway refund; stock disposition; credit note",
-    "status": "blocked",
-    "gap_category": "policy/code"
+    "status": "partial",
+    "gap_category": "policy/provider/code/acceptance"
   },
   {
     "id": "R01",
@@ -624,7 +624,7 @@
     "proposal_section": "5.8",
     "requirement": "Admin products/prices/stock/promotions/orders/content by country",
     "implementation_evidence": "src/app/admin; tests/security/rls.sql",
-    "remaining_work_dependencies": "Hosted positive staff browser acceptance; refunds missing",
+    "remaining_work_dependencies": "Hosted positive staff browser acceptance and official finance documents; returns/refund approvals now have local SQL/browser evidence",
     "acceptance_criteria": "MFA and country/role enforcement at database and server",
     "status": "partial",
     "gap_category": "code/acceptance"
@@ -633,8 +633,8 @@
     "id": "S02",
     "proposal_section": "5.8",
     "requirement": "Sales country/product/package/channel/distributor dashboards",
-    "implementation_evidence": "src/app/admin/reports; tests/security/reports.sql",
-    "remaining_work_dependencies": "Business acceptance and approved data",
+    "implementation_evidence": "src/app/admin/reports; reports.sql; returns_refunds.sql partial/full refund assertions",
+    "remaining_work_dependencies": "Business acceptance and approved data; net amounts deduct verified refunds in original order periods, sold units remain original quantities",
     "acceptance_criteria": "Totals/currency/window and scoping correct",
     "status": "implemented",
     "gap_category": "acceptance"
@@ -643,8 +643,8 @@
     "id": "S03",
     "proposal_section": "5.8",
     "requirement": "Scoped exports and scheduled sales reports",
-    "implementation_evidence": "tests/security/scheduled_reports.sql; reports.sql",
-    "remaining_work_dependencies": "Email delivery and owner schedules",
+    "implementation_evidence": "scheduled_reports.sql; refund-adjusted queue snapshots; sales-report CSV tests",
+    "remaining_work_dependencies": "Real email delivery and owner schedules; queued reports are snapshots and later refunds can change the online report",
     "acceptance_criteria": "Only current authorized subscribers; correct period and CSV safety",
     "status": "implemented",
     "gap_category": "configuration/acceptance"
@@ -943,7 +943,7 @@
     "id": "H02",
     "proposal_section": "11;12",
     "requirement": "Functional/integration/authorization/transaction/concurrency verification",
-    "implementation_evidence": "657 tests/75 files; 39 migrations/28 real PostgreSQL suites; 20 desktop/mobile disposable/component browser cases; typecheck and production build",
+    "implementation_evidence": "679 tests/79 files; 40 migrations/29 real PostgreSQL suites; 22 desktop/mobile disposable/component browser cases; bounded refund/stock concurrency; typecheck and production build",
     "remaining_work_dependencies": "Real-provider/auth and wider role/browser acceptance; accessibility, agreed performance/load, independent pentest and restore evidence",
     "acceptance_criteria": "Evidence by requirement including negative cases and concurrency",
     "status": "partial",

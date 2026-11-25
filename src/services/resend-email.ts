@@ -127,6 +127,7 @@ export type Notification =
       context: unknown;
     }
   | { type: "reorder_reminder"; reference: string; context: unknown }
+  | { type: "return_update"; reference: string; context: unknown }
   | { type: "corporate_low_stock"; reference: string; context: unknown }
   | {
       type: "store_owner_onboarding";
@@ -185,6 +186,7 @@ const salesReportContext = z.object({
   subtotalMinor: z.number().int(),
   discountMinor: z.number().int(),
   totalMinor: z.number().int(),
+  refundedMinor: z.number().int().nonnegative().default(0),
   topProducts: z
     .array(
       z.object({
@@ -272,6 +274,39 @@ function siteOrigin() {
 }
 
 export function notificationContent(notification: Notification) {
+  if (notification.type === "return_update") {
+    const r = z
+      .object({
+        orderId: z.uuid(),
+        stage: z.enum(["received", "resolved", "processed"]),
+        amountMinor: z.number().int().positive().optional(),
+        currency: z.enum(["PHP", "SGD", "MYR"]).optional(),
+      })
+      .parse(notification.context);
+    const link = new URL(
+      `/account/orders/${r.orderId}`,
+      new URL(siteOrigin()).origin,
+    ).href;
+    const subject =
+      r.stage === "received"
+        ? "Your RIWAY return request was received"
+        : r.stage === "resolved"
+          ? "Your RIWAY return case has an update"
+          : "Your RIWAY refund was processed";
+    if (r.stage === "processed" && (!r.amountMinor || !r.currency))
+      throw Error("Refund notice amount unavailable");
+    const body =
+      r.stage === "received"
+        ? "Your request has been recorded for review. This does not itself cancel or refund the order."
+        : r.stage === "resolved"
+          ? "Sign in to review the decision and explanation for your return case."
+          : `The original payment provider reports that your refund of ${minorAmount(r.amountMinor!, r.currency!)} was processed. Posting to your account depends on the original payment channel.`;
+    return {
+      subject,
+      text: `${body}\n\nReview your order: ${link}`,
+      html: `<p>${escaped(body)}</p><p><a href="${escaped(link)}">Review your order</a></p>`,
+    };
+  }
   if (notification.type === "reorder_reminder") {
     const c = z
       .object({
@@ -390,14 +425,14 @@ export function notificationContent(notification: Notification) {
     ).href;
     const label = r.frequency === "weekly" ? "Weekly" : "Monthly";
     const money = (minor: number) => minorAmount(minor, r.currency);
-    const summary = `${r.orders} settled order${r.orders === 1 ? "" : "s"} · total ${money(r.totalMinor)} (subtotal ${money(r.subtotalMinor)}, discounts ${money(r.discountMinor)})`;
+    const summary = `${r.orders} settled order${r.orders === 1 ? "" : "s"} · net sales ${money(r.totalMinor)} (subtotal ${money(r.subtotalMinor)}, discounts ${money(r.discountMinor)}, verified refunds ${money(r.refundedMinor)})`;
     const lines = r.topProducts.map(
       (p) => `${p.name} | ${p.units} units | ${money(p.netMinor)}`,
     );
     return {
       subject: `RIWAY ${label.toLowerCase()} sales report · ${r.market} · ${r.from} to ${r.to}`,
-      text: `${label} sales report for ${r.market}, ${r.from} to ${r.to} (UTC order dates, settled orders only).\n${summary}\n\n${lines.length ? `Top products:\n${lines.join("\n")}` : "No product sales in this period."}\n\nFull report, channel breakdown and CSV (sign-in and authenticator required): ${link}`,
-      html: `<h1>${label} sales report · ${r.market}</h1><p>${r.from} to ${r.to} · UTC order dates · settled orders only</p><p>${escaped(summary)}</p>${
+      text: `${label} sales report for ${r.market}, ${r.from} to ${r.to} (UTC order dates, settled orders only).\n${summary}\nSnapshot when queued; later refunds may change the online report. Units count goods sold.\n\n${lines.length ? `Top products:\n${lines.join("\n")}` : "No product sales in this period."}\n\nFull report, channel breakdown and CSV (sign-in and authenticator required): ${link}`,
+      html: `<h1>${label} sales report · ${r.market}</h1><p>${r.from} to ${r.to} · UTC order dates · settled orders only</p><p>${escaped(summary)}</p><p>Snapshot when queued; later refunds may change the online report. Units count goods sold.</p>${
         lines.length
           ? `<table><thead><tr><th>Product</th><th>Units</th><th>Net sales</th></tr></thead><tbody>${r.topProducts.map((p) => `<tr><td>${escaped(p.name)}</td><td>${p.units}</td><td>${escaped(money(p.netMinor))}</td></tr>`).join("")}</tbody></table>`
           : "<p>No product sales in this period.</p>"

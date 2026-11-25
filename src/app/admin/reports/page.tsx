@@ -53,9 +53,10 @@ export default async function SalesReports({
     <>
       <h1>Sales reports</h1>
       <p className="muted">
-        Settled orders only: paid, and not cancelled, refunded or under payment
-        review. Dates are order-placement days in UTC. Amounts stay in each
-        market&apos;s currency.
+        Dates are original order-placement days in UTC. Amounts stay in each
+        market&apos;s currency. When refund reporting is available, verified
+        successful refunds reduce net sales in that original period. Units count
+        goods sold; monetary refunds do not imply goods received back.
       </p>
       <form className="admin-actions" method="get">
         <label>
@@ -91,6 +92,13 @@ export default async function SalesReports({
             Markets in this report: {report.data.markets.join(", ")}. Period{" "}
             {report.data.from} to {report.data.to}.
           </p>
+          {!report.data.refundsIncluded && (
+            <p className="notice">
+              Refund-adjusted reporting is not available in this database yet.
+              These figures exclude fully refunded orders and do not deduct
+              partial refunds.
+            </p>
+          )}
           <section className="stack">
             <div className="admin-actions">
               <h2>By market</h2>
@@ -105,7 +113,8 @@ export default async function SalesReports({
                       <th>Orders</th>
                       <th>Subtotal</th>
                       <th>Discounts</th>
-                      <th>Total</th>
+                      <th>Refunds</th>
+                      <th>Net sales</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -115,6 +124,7 @@ export default async function SalesReports({
                         <td>{r.orders}</td>
                         <td>{money(r.subtotalMinor, r.currency)}</td>
                         <td>{money(r.discountMinor, r.currency)}</td>
+                        <td>{money(r.refundedMinor ?? 0, r.currency)}</td>
                         <td>{money(r.totalMinor, r.currency)}</td>
                       </tr>
                     ))}
@@ -146,7 +156,8 @@ export default async function SalesReports({
                       <th>Orders</th>
                       <th>With voucher</th>
                       <th>Discounts</th>
-                      <th>Total</th>
+                      <th>Refunds</th>
+                      <th>Net sales</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -157,6 +168,7 @@ export default async function SalesReports({
                         <td>{r.orders}</td>
                         <td>{r.voucherOrders}</td>
                         <td>{money(r.discountMinor, r.currency)}</td>
+                        <td>{money(r.refundedMinor ?? 0, r.currency)}</td>
                         <td>{money(r.totalMinor, r.currency)}</td>
                       </tr>
                     ))}
@@ -245,7 +257,8 @@ export default async function SalesReports({
                       <th>Distributor</th>
                       <th>Code</th>
                       <th>Orders</th>
-                      <th>Total</th>
+                      <th>Refunds</th>
+                      <th>Net sales</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -255,6 +268,7 @@ export default async function SalesReports({
                         <td>{r.name ?? "No recorded distributor"}</td>
                         <td>{r.code ?? ""}</td>
                         <td>{r.orders}</td>
+                        <td>{money(r.refundedMinor ?? 0, r.currency)}</td>
                         <td>{money(r.totalMinor, r.currency)}</td>
                       </tr>
                     ))}

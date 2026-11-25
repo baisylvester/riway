@@ -9,6 +9,7 @@ import { CancelOrderForm } from "./cancel-order-form";
 import { orderCancellationSchema } from "@/lib/cancellation";
 import { fulfilmentSnapshotSchema } from "@/lib/checkout-fulfilment";
 import { BonusItems } from "./bonus-items";
+import { OrderReturns } from "./order-returns";
 
 type Address = Partial<
   Record<
@@ -57,6 +58,9 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
       <div className="two-column">
         <div className="panel stack">
           <BonusItems items={order.bonus_items} />
+          {["paid", "refunded"].includes(order.payment_status) && (
+            <OrderReturns orderId={orderId} staff />
+          )}
           <p>
             <span className="status">
               {orderStatusLabels[order.status] ?? order.status}

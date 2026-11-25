@@ -44,7 +44,8 @@ describe("sales report email", () => {
     expect(email.subject).toBe(
       "RIWAY weekly sales report · PH · 2026-11-09 to 2026-11-15",
     );
-    expect(email.text).toContain("3 settled orders · total ₱1,400.00");
+    expect(email.text).toContain("3 settled orders · net sales ₱1,400.00");
+    expect(email.text).toContain("verified refunds ₱0.00");
     expect(email.html).toContain("&lt;b&gt;Sample&lt;/b&gt;");
     expect(email.html).not.toContain("<b>Sample</b>");
     expect(email.text).toContain(

@@ -2,7 +2,7 @@
 
 ## Current proposal candidate — 25 November 2026
 
-Current candidate: [PROPOSAL-DELIVERY.md](PROPOSAL-DELIVERY.md). All five enhancements are addressed, but paid tickets remain missing and AI requires configuration/content/provider acceptance. New guest, collection, consultation, library/stories, attendance, reminder and export code is locally tested; six migrations are unapplied remotely. The [matrix](PROPOSAL-MATRIX.md) separates missing code from content, configuration and acceptance. Historical releases below remain historical.
+Current candidate: [PROPOSAL-DELIVERY.md](PROPOSAL-DELIVERY.md). All five enhancements are addressed, but paid tickets remain missing and AI requires configuration/content/provider acceptance. New guest, collection, consultation, library/stories, attendance, reminder, bonus, returns/refunds and export code is locally tested; eight migrations are unapplied remotely. The [matrix](PROPOSAL-MATRIX.md) separates missing code from content, configuration and acceptance. Historical releases below remain historical.
 
 ## Remaining proposal scope - 24 November 2026
 

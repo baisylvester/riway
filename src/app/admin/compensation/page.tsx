@@ -19,8 +19,10 @@ export default async function CompensationSync() {
       <h1>RIWAY volume sync</h1>
       <p className="muted">
         Each paid order queues its order facts for RIWAY&apos;s compensation
-        system, and a refund or paid-order cancellation queues a reversal. RIWAY
-        calculates and pays all bonuses; this site does not.
+        system. A fully refunded order or supported paid-order cancellation
+        queues a full reversal. Partial refunds require separate RIWAY
+        adjustment and reconciliation; automatic partial adjustments are
+        unavailable. RIWAY calculates and pays all bonuses; this site does not.
       </p>
       {!enabled && (
         <p className="notice">

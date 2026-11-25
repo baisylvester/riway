@@ -43,6 +43,12 @@ export function CheckoutQuote({ quote }: { quote: CommerceQuote }) {
         <span>{money(quote.subtotalMinor, quote.currency)}</span>
       </div>
       <BonusItems items={quote.bonusItems} />
+      {quote.refundPolicy && (
+        <aside className="notice">
+          <h3>Return and refund terms · {quote.refundPolicy.version}</h3>
+          <p className="content-body">{quote.refundPolicy.terms}</p>
+        </aside>
+      )}
       {quote.promotion && (
         <div className="order-row">
           <span>

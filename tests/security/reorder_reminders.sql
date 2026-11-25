@@ -34,6 +34,13 @@ do $$declare j private.notification_jobs;u uuid:=current_setting('reorder.user')
  if j.id is null then raise exception 'FAIL: missing reorder notification';end if;
  update private.notification_jobs set status='processing',lease=gen_random_uuid(),lease_until=now()+interval '5 minutes'where id=j.id returning * into j;
  if not public.notification_authorized(j.id,j.lease)then raise exception 'FAIL: authorized reminder refused';end if;
+ perform public.request_order_return(current_setting('reorder.order')::uuid,'return','Synthetic active return suppresses reminder');
+ if public.notification_authorized(j.id,j.lease)then raise exception 'FAIL: reminder from an actively returned purchase';end if;
+ update private.return_cases set status='rejected',resolution='Synthetic closure for reminder recheck',revision=revision+1 where order_id=current_setting('reorder.order')::uuid;
+ if not public.notification_authorized(j.id,j.lease)then raise exception 'FAIL: resolved unrefunded purchase reminder refused';end if;
+ update public.orders set refunded_minor=1 where id=current_setting('reorder.order')::uuid;
+ if public.notification_authorized(j.id,j.lease)then raise exception 'FAIL: reminder from a partially refunded purchase';end if;
+ update public.orders set refunded_minor=0 where id=current_setting('reorder.order')::uuid;
  update public.inventory set on_hand=0 where product_id=current_setting('reorder.product')::uuid;
  if public.notification_authorized(j.id,j.lease)then raise exception 'FAIL: out of stock reminder';end if;
  update public.inventory set on_hand=10 where product_id=current_setting('reorder.product')::uuid;

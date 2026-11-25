@@ -51,6 +51,167 @@ async function identity(context: BrowserContext, role: keyof typeof users) {
   ]);
 }
 test.describe.configure({ mode: "serial" });
+test("customer requests a return; staff approve, cancel before dispatch and record actual goods", async ({
+  page,
+  context,
+}) => {
+  test.setTimeout(90000);
+  await identity(context, "customer");
+  await page.goto("/account/orders");
+  const orderLink = page
+    .locator('a.order-row[href^="/account/orders/"]')
+    .nth(test.info().project.name === "mobile" ? 0 : 1);
+  const orderPath = await orderLink.getAttribute("href");
+  expect(orderPath).toMatch(/\/account\/orders\/[0-9a-f-]{36}$/);
+  await orderLink.click();
+  const returns = page.getByRole("region", { name: "Returns and refunds" });
+  await returns
+    .getByText("Request a return, refund or paid cancellation", { exact: true })
+    .click();
+  const intake = returns.locator("form").filter({
+    has: page.getByRole("button", { name: "Submit request for review" }),
+  });
+  await intake
+    .getByLabel("Reason", { exact: true })
+    .fill("Synthetic return request for disposable browser verification.");
+  await intake.getByLabel(/I request review/).check();
+  await intake
+    .getByRole("button", { name: "Submit request for review" })
+    .click();
+  await expect(returns.getByText(/Synthetic return request/)).toBeVisible();
+  await expect(
+    returns.getByRole("button", { name: "Approve refund amounts" }),
+  ).toHaveCount(0);
+  await identity(context, "distributor");
+  await page.goto(orderPath!);
+  await expect(
+    page.getByRole("region", { name: "Returns and refunds" }),
+  ).toHaveCount(0);
+  await identity(context, "reviewer");
+  await page.goto("/admin/returns");
+  await page.getByText("Approve market refund policy", { exact: true }).click();
+  const policy = page.locator("form").filter({
+    has: page.getByRole("button", {
+      name: "Approve refund policy",
+      exact: true,
+    }),
+  });
+  await policy
+    .getByLabel("Policy version", { exact: true })
+    .fill(`QA-BROWSER-${test.info().project.name}`);
+  await policy
+    .getByLabel("Approved customer-facing terms", { exact: true })
+    .fill("Synthetic refund terms for a disposable local browser test only.");
+  await policy
+    .getByLabel("This policy permits partial refunds.", { exact: true })
+    .check();
+  await policy
+    .getByLabel("Approval reference", { exact: true })
+    .fill("QA-BROWSER-POLICY");
+  await policy.getByLabel(/I verified RIWAY finance/).check();
+  await policy
+    .getByRole("button", { name: "Approve refund policy", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: /Current policy/ }),
+  ).toBeVisible();
+  await page.goto(`/admin/returns?order=${orderPath!.split("/").at(-1)}`);
+  await page
+    .getByText("Approve full or partial refund", { exact: true })
+    .click();
+  const approval = page.locator("form").filter({
+    has: page.getByRole("button", {
+      name: "Approve refund amounts",
+      exact: true,
+    }),
+  });
+  await approval.locator('input[type="number"]').fill("0.40");
+  await approval
+    .getByLabel("Refund authorization reference", { exact: true })
+    .fill("QA-BROWSER-REFUND");
+  await approval.getByLabel(/I verified eligibility/).check();
+  await approval
+    .getByRole("button", { name: "Approve refund amounts", exact: true })
+    .click();
+  await expect(page.getByText(/Approved, awaiting dispatch/)).toBeVisible();
+  await page.getByText("Refund management", { exact: true }).click();
+  const management = page.locator("form").filter({
+    has: page.getByRole("button", {
+      name: "Record refund management",
+      exact: true,
+    }),
+  });
+  await management
+    .getByRole("combobox", { name: "Action", exact: true })
+    .selectOption("cancel");
+  await management.getByLabel(/I checked the original merchant/).check();
+  await management
+    .getByRole("button", { name: "Record refund management", exact: true })
+    .click();
+  await expect(page.getByText(/Cancelled before dispatch/)).toBeVisible();
+  await page
+    .getByText("Record physical goods received", { exact: true })
+    .click();
+  const receipt = page.locator("form").filter({
+    has: page.getByRole("button", {
+      name: "Record goods receipt",
+      exact: true,
+    }),
+  });
+  await receipt.getByLabel("Quantity received", { exact: true }).fill("1");
+  await receipt
+    .getByLabel("Unique receipt reference", { exact: true })
+    .fill("QA-BROWSER-RECEIPT");
+  await receipt.getByLabel(/I verified the physical quantity/).check();
+  await receipt
+    .getByRole("button", { name: "Record goods receipt", exact: true })
+    .click();
+  await expect(receipt.getByRole("status")).toContainText(
+    "Returned-goods receipt recorded",
+  );
+  await page.getByText("Resolve this case", { exact: true }).click();
+  const resolution = page.locator("form").filter({
+    has: page.getByRole("button", {
+      name: "Record case resolution",
+      exact: true,
+    }),
+  });
+  await resolution
+    .getByLabel("Customer-facing explanation", { exact: true })
+    .fill("Synthetic review completed. No gateway refund was dispatched.");
+  await resolution.getByLabel(/I checked all refunds/).check();
+  await resolution
+    .getByRole("button", { name: "Record case resolution", exact: true })
+    .click();
+  await expect(
+    page.getByText(
+      "Synthetic review completed. No gateway refund was dispatched.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  const withdraw = page.locator("form").filter({
+    has: page.getByRole("button", {
+      name: "Withdraw future policy",
+      exact: true,
+    }),
+  });
+  await withdraw.getByLabel(/Withdraw from future quotes/).check();
+  await withdraw
+    .getByRole("button", { name: "Withdraw future policy", exact: true })
+    .click();
+  await expect(
+    page.getByText("Approve market refund policy", { exact: true }),
+  ).toBeVisible();
+  await identity(context, "customer");
+  await page.goto(orderPath!);
+  await expect(
+    page.getByText(
+      "Synthetic review completed. No gateway refund was dispatched.",
+      { exact: true },
+    ),
+  ).toBeVisible();
+  await expect(page.getByText(/Cancelled before dispatch/)).toBeVisible();
+});
 test("market staff approve and withdraw a bonus campaign; customers cannot access its controls", async ({
   page,
   context,
@@ -65,14 +226,12 @@ test("market staff approve and withdraw a bonus campaign; customers cannot acces
   await identity(context, "reviewer");
   await page.goto("/admin/bonuses");
   await page.getByText("Approve a campaign", { exact: true }).click();
-  const form = page
-    .locator("form")
-    .filter({
-      has: page.getByRole("button", {
-        name: "Approve bonus campaign",
-        exact: true,
-      }),
-    });
+  const form = page.locator("form").filter({
+    has: page.getByRole("button", {
+      name: "Approve bonus campaign",
+      exact: true,
+    }),
+  });
   const name = `Synthetic campaign ${test.info().project.name}`;
   await form.getByLabel("Name", { exact: true }).fill(name);
   await form

@@ -1,7 +1,11 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const f = vi.hoisted(() => ({ access: vi.fn(), session: vi.fn(), rpc: vi.fn() }));
+const f = vi.hoisted(() => ({
+  access: vi.fn(),
+  session: vi.fn(),
+  rpc: vi.fn(),
+}));
 vi.mock("server-only", () => ({}));
 vi.mock("@/lib/data", () => ({ staffAccess: f.access, session: f.session }));
 
@@ -22,20 +26,65 @@ const report = () => ({
   to: "2026-11-17",
   markets: ["PH"],
   byMarket: [
-    { market: "PH", currency: "PHP", orders: 2, subtotalMinor: 75000, discountMinor: 5000, totalMinor: 70000 },
+    {
+      market: "PH",
+      currency: "PHP",
+      orders: 2,
+      subtotalMinor: 75000,
+      discountMinor: 5000,
+      totalMinor: 70000,
+    },
   ],
   byChannel: [
-    { market: "PH", currency: "PHP", channel: "first_purchase", orders: 1, voucherOrders: 1, discountMinor: 5000, totalMinor: 20000 },
-    { market: "PH", currency: "PHP", channel: "repeat_purchase", orders: 1, voucherOrders: 0, discountMinor: 0, totalMinor: 50000 },
+    {
+      market: "PH",
+      currency: "PHP",
+      channel: "first_purchase",
+      orders: 1,
+      voucherOrders: 1,
+      discountMinor: 5000,
+      totalMinor: 20000,
+    },
+    {
+      market: "PH",
+      currency: "PHP",
+      channel: "repeat_purchase",
+      orders: 1,
+      voucherOrders: 0,
+      discountMinor: 0,
+      totalMinor: 50000,
+    },
   ],
   byProduct: [
-    { market: "PH", currency: "PHP", productId, name: "=HYPERLINK(\"x\")", units: 3, netMinor: 70000 },
+    {
+      market: "PH",
+      currency: "PHP",
+      productId,
+      name: '=HYPERLINK("x")',
+      units: 3,
+      netMinor: 70000,
+    },
   ],
   byPackage: [
-    { market: "PH", currency: "PHP", packageOfferId: offerId, name: "Fixture package", units: 1, netMinor: 50000 },
+    {
+      market: "PH",
+      currency: "PHP",
+      packageOfferId: offerId,
+      name: "Fixture package",
+      units: 1,
+      netMinor: 50000,
+    },
   ],
   byDistributor: [
-    { market: "PH", currency: "PHP", distributorId, code: "QA-1", name: "<b>Fixture</b>", orders: 2, totalMinor: 70000 },
+    {
+      market: "PH",
+      currency: "PHP",
+      distributorId,
+      code: "QA-1",
+      name: "<b>Fixture</b>",
+      orders: 2,
+      totalMinor: 70000,
+    },
   ],
 });
 const request = (query: string) =>
@@ -63,8 +112,12 @@ describe("report date range", () => {
   });
   it("falls back for reversed, malformed or impossible dates", () => {
     expect(reportRange("2026-11-18", "2026-11-17", now).adjusted).toBe(true);
-    expect(reportRange("2026-02-30", "2026-03-01", now).from).toBe("2026-01-31");
-    expect(reportRange("17/11/2026", "2026-11-17", now).from).toBe("2026-10-19");
+    expect(reportRange("2026-02-30", "2026-03-01", now).from).toBe(
+      "2026-01-31",
+    );
+    expect(reportRange("17/11/2026", "2026-11-17", now).from).toBe(
+      "2026-10-19",
+    );
   });
 });
 
@@ -75,14 +128,38 @@ describe("report CSV", () => {
     expect(csvCell(null)).toBe('""');
   });
   it("keeps amounts in minor units with their currency", () => {
-    const { columns, rows } = reportRows(salesReportSchema.parse(report()), "market");
+    const { columns, rows } = reportRows(
+      salesReportSchema.parse(report()),
+      "market",
+    );
     expect(columns).toContain("total_minor");
-    expect(rows[0]).toEqual(["PH", "PHP", 2, 75000, 5000, 70000]);
+    expect(rows[0]).toEqual(["PH", "PHP", 2, 75000, 5000, 70000, 0]);
   });
   it("exports channel rows and rejects unknown channels", () => {
-    const { columns, rows } = reportRows(salesReportSchema.parse(report()), "channel");
-    expect(columns).toEqual(["market", "currency", "channel", "orders", "voucher_orders", "discount_minor", "total_minor"]);
-    expect(rows[0]).toEqual(["PH", "PHP", "first_purchase", 1, 1, 5000, 20000]);
+    const { columns, rows } = reportRows(
+      salesReportSchema.parse(report()),
+      "channel",
+    );
+    expect(columns).toEqual([
+      "market",
+      "currency",
+      "channel",
+      "orders",
+      "voucher_orders",
+      "discount_minor",
+      "total_minor",
+      "refunded_minor",
+    ]);
+    expect(rows[0]).toEqual([
+      "PH",
+      "PHP",
+      "first_purchase",
+      1,
+      1,
+      5000,
+      20000,
+      0,
+    ]);
     const bad = report();
     bad.byChannel[0].channel = "offline";
     expect(salesReportSchema.safeParse(bad).success).toBe(false);
@@ -92,7 +169,11 @@ describe("report CSV", () => {
     expect(salesReportSchema.parse(older).byChannel).toEqual([]);
   });
   it("requires staff MFA, a breakdown and a bounded range", async () => {
-    f.access.mockResolvedValueOnce({ user: { id: "u" }, allowed: true, mfa: false });
+    f.access.mockResolvedValueOnce({
+      user: { id: "u" },
+      allowed: true,
+      mfa: false,
+    });
     expect((await GET(request("kind=market"))).status).toBe(403);
     expect((await GET(request("kind=everything"))).status).toBe(400);
     expect(
@@ -101,7 +182,9 @@ describe("report CSV", () => {
     expect(f.rpc).not.toHaveBeenCalled();
   });
   it("exports a safe private CSV for the requested breakdown", async () => {
-    const response = await GET(request("kind=product&from=2026-11-01&to=2026-11-17"));
+    const response = await GET(
+      request("kind=product&from=2026-11-01&to=2026-11-17"),
+    );
     expect(response.status).toBe(200);
     expect(response.headers.get("cache-control")).toBe("private, no-store");
     expect(response.headers.get("content-disposition")).toContain(
@@ -130,7 +213,13 @@ describe("reports page", () => {
         searchParams: Promise.resolve({ from: "2026-11-01", to: "2026-11-17" }),
       }),
     );
-    for (const heading of ["By market", "By channel", "By product", "By package", "By distributor"])
+    for (const heading of [
+      "By market",
+      "By channel",
+      "By product",
+      "By package",
+      "By distributor",
+    ])
       expect(html).toContain(heading);
     expect(html).toContain("First purchase");
     expect(html).toContain("Repeat purchase");
@@ -143,11 +232,15 @@ describe("reports page", () => {
   it("shows access and setup problems instead of empty tables", async () => {
     f.rpc.mockResolvedValueOnce({ data: null, error: { code: "42501" } });
     expect(
-      renderToStaticMarkup(await SalesReports({ searchParams: Promise.resolve({}) })),
+      renderToStaticMarkup(
+        await SalesReports({ searchParams: Promise.resolve({}) }),
+      ),
     ).toContain("verified MFA is required");
     f.rpc.mockResolvedValueOnce({ data: null, error: { code: "PGRST202" } });
     expect(
-      renderToStaticMarkup(await SalesReports({ searchParams: Promise.resolve({}) })),
+      renderToStaticMarkup(
+        await SalesReports({ searchParams: Promise.resolve({}) }),
+      ),
     ).toContain("setup may be pending");
   });
 });

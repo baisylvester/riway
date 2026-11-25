@@ -2,7 +2,7 @@
 
 ## Current proposal candidate — 25 November 2026
 
-The current task authorizes completion work; the 2 November payment deferral below is historical, not a new task prohibition. Existing Stripe/Xendit and durable notification/compensation work from later merged releases is retained. Actual RIWAY member/volume/SSO contracts remain absent; disabled adapters are not completed integrations. The new OpenAI Responses/transcription adapter is real code but disabled and unaccepted without credentials, privacy approval and approved corpus. See [EXTERNAL-DEPENDENCIES.md](EXTERNAL-DEPENDENCIES.md) and [PROPOSAL-DELIVERY.md](PROPOSAL-DELIVERY.md) for current gates and configuration.
+The current task authorizes completion work; the 2 November payment deferral below is historical, not a new task prohibition. Existing Stripe/Xendit and durable notification/compensation work from later merged releases is retained. Actual RIWAY member/volume/SSO contracts remain absent; disabled adapters are not completed integrations. The new OpenAI Responses/transcription adapter is real code but disabled and unaccepted without credentials, privacy approval and approved corpus. The real Stripe/Xendit refund adapters and verified callbacks are now supplied, with default-off minute dispatch/reconciliation; actual merchant/channel acceptance and approved policies remain pending. See [REFUNDS.md](REFUNDS.md). See [EXTERNAL-DEPENDENCIES.md](EXTERNAL-DEPENDENCIES.md) and [PROPOSAL-DELIVERY.md](PROPOSAL-DELIVERY.md) for current gates and configuration.
 
 **User direction, 2026-11-02: skip payment features for now; client API documentation will follow.** No gateway was selected, no merchant account was created, no financial transaction was sent and no fake payment success is exposed.
 

@@ -16,6 +16,7 @@ export function AdminNav() {
         ["inventory", "Inventory"],
         ["centres", "Service centres"],
         ["orders", "Orders"],
+        ["returns", "Returns and refunds"],
         ["payments", "Payments"],
         ["reports", "Sales reports"],
         ["compensation", "RIWAY volume sync"],

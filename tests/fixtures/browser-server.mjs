@@ -2,15 +2,70 @@
 // deliberately synthetic Auth/REST HTTP boundary. NEVER a provider-auth pass.
 // No hosted database, secret, gateway, email service or real account is used.
 import { PGlite } from "@electric-sql/pglite";
-import { readFileSync, readdirSync } from "node:fs";
+import { readFileSync, readdirSync, existsSync } from "node:fs";
 import { createServer } from "node:http";
 import { spawn } from "node:child_process";
-import { resolve } from "node:path";
+import { resolve, dirname, extname, isAbsolute } from "node:path";
+import { createRequire } from "node:module";
+import { build } from "esbuild";
 const root = resolve(import.meta.dirname, "../..");
 if (process.env.RIWAY_DISPOSABLE_BROWSER !== "1")
   throw new Error(
     "Set RIWAY_DISPOSABLE_BROWSER=1 to start the isolated fixture.",
   );
+const voiceHarness = await build({
+  absWorkingDir: root,
+  entryPoints: [resolve(root, "tests/fixtures/assistant-voice.tsx")],
+  tsconfig: resolve(root, "tsconfig.json"),
+  preserveSymlinks: true,
+  bundle: true,
+  write: false,
+  platform: "browser",
+  format: "iife",
+  define: { "process.env.NODE_ENV": '"production"' },
+  alias: { "next/link": resolve(root, "tests/fixtures/harness-link.tsx") },
+  // Resolve/read with the same Node host as the fixture. The esbuild binary
+  // otherwise scans inaccessible parent directories on restricted Windows.
+  plugins: [
+    {
+      name: "fixture-source-reader",
+      setup(builder) {
+        builder.onResolve({ filter: /.*/ }, (args) => {
+          let name = args.path;
+          if (name === "next/link")
+            name = resolve(root, "tests/fixtures/harness-link.tsx");
+          if (name.startsWith("@/")) name = resolve(root, "src", name.slice(2));
+          let path;
+          if (isAbsolute(name) || name.startsWith(".")) {
+            const base = isAbsolute(name)
+              ? name
+              : resolve(args.importer ? dirname(args.importer) : root, name);
+            path = [base, base + ".ts", base + ".tsx", base + ".js"].find(
+              (candidate) => existsSync(candidate),
+            );
+            if (!path) throw new Error("Fixture source not found: " + name);
+          } else
+            path = createRequire(
+              args.importer || resolve(root, "package.json"),
+            ).resolve(name);
+          return { path, namespace: "fixture-source" };
+        });
+        builder.onLoad(
+          { filter: /.*/, namespace: "fixture-source" },
+          (args) => ({
+            contents: readFileSync(args.path, "utf8"),
+            loader:
+              extname(args.path) === ".tsx"
+                ? "tsx"
+                : extname(args.path) === ".ts"
+                  ? "ts"
+                  : "js",
+          }),
+        );
+      },
+    },
+  ],
+});
 const pg = new PGlite();
 await pg.exec(
   readFileSync(resolve(root, "tests/security/local-bootstrap.sql"), "utf8"),
@@ -37,7 +92,7 @@ await pg.exec(`insert into auth.users(id,email,email_confirmed_at)values ${Objec
  insert into private.consultation_slots(id,distributor_id,starts_at,ends_at,timezone)values
  ('82000000-0000-4000-8000-000000000001','${users.distributor}',now()+interval '2 days',now()+interval '2 days 1 hour','UTC'),
  ('82000000-0000-4000-8000-000000000002','${users.distributor}',now()+interval '3 days',now()+interval '3 days 1 hour','UTC');
- insert into public.content_entries(id,slug,kind,title,body,market,starts_at,status)values('83000000-0000-4000-8000-000000000001','synthetic-event','event','Synthetic browser event','Synthetic event used only in a disposable local database.','PH',now()+interval '5 days','published');`);
+ insert into public.content_entries(id,slug,kind,title,body,market,starts_at,status)values('83000000-0000-4000-8000-000000000001','synthetic-event','event','Synthetic browser event','Synthetic event used only in a disposable local database.','PH',now()+interval '5 days','published'),('83000000-0000-4000-8000-000000000002','synthetic-event-mobile','event','Synthetic mobile browser event','Synthetic event used only in a disposable local database.','PH',now()+interval '5 days','published');`);
 const identifier = (value) => {
   if (!/^[a-z_][a-z0-9_]*$/.test(value))
     throw new Error("Invalid fixture identifier");
@@ -64,6 +119,25 @@ const server = createServer((req, res) => {
       res.setHeader("content-type", "application/json");
       res.setHeader("cache-control", "no-store");
       const url = new URL(req.url, "http://127.0.0.1:4682");
+      if (req.method === "GET" && url.pathname === "/fixture/assistant-voice") {
+        res.setHeader("content-type", "text/html; charset=utf-8");
+        res.setHeader(
+          "content-security-policy",
+          "default-src 'self'; script-src 'self'; connect-src 'self'; object-src 'none'; base-uri 'none'",
+        );
+        res.end(
+          '<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>Isolated voice consent test</title><div id="root"></div><script src="/fixture/assistant-voice.js" defer></script></html>',
+        );
+        return;
+      }
+      if (
+        req.method === "GET" &&
+        url.pathname === "/fixture/assistant-voice.js"
+      ) {
+        res.setHeader("content-type", "application/javascript; charset=utf-8");
+        res.end(voiceHarness.outputFiles[0].contents);
+        return;
+      }
       let user = null;
       try {
         const payload = JSON.parse(

@@ -51,7 +51,7 @@ async function identity(context: BrowserContext, role: keyof typeof users) {
   ]);
 }
 test.describe.configure({ mode: "serial" });
-test("customer books and cancels; records persist through page reload", async ({
+test("customer books, reschedules and cancels; records persist through page reload", async ({
   page,
   context,
 }) => {
@@ -78,6 +78,23 @@ test("customer books and cancels; records persist through page reload", async ({
     .filter({ hasText: "Booking reference:" })
     .first();
   await expect(booking).toContainText("booked");
+  const previousTime = await booking.getByRole("status").first().textContent();
+  await booking.getByLabel(/New time/).selectOption({ index: 1 });
+  await booking
+    .getByLabel(
+      "I confirm this time and agree to share my booking with this distributor.",
+    )
+    .check();
+  await booking
+    .getByRole("button", { name: "Reschedule consultation" })
+    .click();
+  await expect(booking.getByRole("status").first()).not.toHaveText(
+    previousTime!,
+  );
+  await page.reload();
+  await expect(booking.getByRole("status").first()).not.toHaveText(
+    previousTime!,
+  );
   await booking.getByLabel("Confirm cancellation").check();
   await booking.getByRole("button", { name: "Cancel consultation" }).click();
   await expect(booking).toContainText("cancelled");
@@ -90,6 +107,71 @@ test("customer books and cancels; records persist through page reload", async ({
       () => document.documentElement.scrollWidth <= innerWidth + 1,
     ),
   ).toBe(true);
+});
+
+test("event capacity, cancellation and staff check-in persist across customer and staff views", async ({
+  page,
+  context,
+}) => {
+  const mobile = test.info().project.name === "mobile";
+  const eventId = mobile
+    ? "83000000-0000-4000-8000-000000000002"
+    : "83000000-0000-4000-8000-000000000001";
+  const slug = mobile ? "synthetic-event-mobile" : "synthetic-event";
+  await identity(context, "reviewer");
+  await page.goto(`/admin/events?event=${eventId}`);
+  await page.getByLabel("Capacity", { exact: true }).fill("1");
+  await page
+    .getByLabel("Approval reference", { exact: true })
+    .fill("SYNTHETIC-CAPACITY");
+  await page.getByRole("button", { name: "Approve capacity" }).click();
+  await expect(
+    page.getByText("Capacity approved.", { exact: true }),
+  ).toBeVisible();
+  await identity(context, "customer");
+  await page.goto(`/events/${slug}`);
+  await page.getByRole("button", { name: "Register for event" }).click();
+  await expect(
+    page.getByText("Your registration is confirmed.", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("1 registered / 1 places", { exact: true }),
+  ).toBeVisible();
+  await identity(context, "distributor");
+  await page.goto(`/events/${slug}`);
+  await page.getByRole("button", { name: "Register for event" }).click();
+  await expect(
+    page.getByText("Registration is unavailable for this event.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Cancel registration" }),
+  ).toHaveCount(0);
+  await identity(context, "customer");
+  await page.goto(`/events/${slug}`);
+  await page.getByLabel("I confirm cancellation.").check();
+  await page.getByRole("button", { name: "Cancel registration" }).click();
+  await expect(
+    page.getByText("Your registration · cancelled", { exact: true }),
+  ).toBeVisible();
+  await identity(context, "distributor");
+  await page.goto(`/events/${slug}`);
+  await page.getByRole("button", { name: "Register for event" }).click();
+  await expect(
+    page.getByText("Your registration is confirmed.", { exact: true }),
+  ).toBeVisible();
+  await identity(context, "reviewer");
+  await page.goto(`/admin/events?event=${eventId}`);
+  await page.getByLabel("I verified this attendee’s registration.").check();
+  await page.getByRole("button", { name: "Check in attendee" }).click();
+  await expect(
+    page.getByText("Attendee · registered · Checked in", { exact: true }),
+  ).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByText("Attendee · registered · Checked in", { exact: true }),
+  ).toBeVisible();
 });
 test("communication consent saves and personal export stays in the current account", async ({
   page,
@@ -167,11 +249,9 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
   await identity(reviewerContext, "reviewer");
   const reviewer = await reviewerContext.newPage();
   await reviewer.goto("/admin/library");
-  const card = reviewer
-    .locator("article")
-    .filter({
-      has: reviewer.getByRole("heading", { name: title, exact: true }),
-    });
+  const card = reviewer.locator("article").filter({
+    has: reviewer.getByRole("heading", { name: title, exact: true }),
+  });
   await card
     .getByLabel("Approval / withdrawal reference")
     .fill("SYNTHETIC-REVIEW");
@@ -186,10 +266,17 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
     .locator("article")
     .filter({ has: page.getByRole("heading", { name: title, exact: true }) });
   await live.getByRole("link", { name: "Open sharing page" }).click();
+  await expect(page).toHaveURL(/\/materials\/[0-9a-f-]+\?market=PH$/);
   await expect(
     page.getByRole("heading", { name: title, exact: true }),
   ).toBeVisible();
   const share = page.url();
+  const publicContext = await browser.newContext();
+  const publicPage = await publicContext.newPage();
+  await publicPage.goto(share);
+  await expect(
+    publicPage.getByRole("heading", { name: title, exact: true }),
+  ).toBeVisible();
   await card
     .getByLabel("Approval / withdrawal reference")
     .fill("SYNTHETIC-WITHDRAW");
@@ -199,17 +286,21 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
   await expect(
     card.getByText("Asset withdrawn from the library and sharing page."),
   ).toBeVisible();
-  const result = await context.request.get(share);
+  const result = await publicContext.request.get(share);
   const withdrawn = await result.text();
   expect([200, 404]).toContain(result.status());
   expect(withdrawn).toContain("This page could not be found.");
   expect(withdrawn).not.toContain(title);
-  await page.reload();
+  await publicPage.reload();
   await expect(
-    page.getByRole("heading", {
+    publicPage.getByRole("heading", {
       name: "A different path awaits.",
       exact: true,
     }),
   ).toBeVisible();
+  await expect(
+    publicPage.getByRole("heading", { name: title, exact: true }),
+  ).toHaveCount(0);
+  await publicContext.close();
   await reviewerContext.close();
 });

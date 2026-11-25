@@ -70,6 +70,9 @@ declare actor uuid:=private.app_user_id(); e public.content_entries; r private.e
  if actor is null or p_staff is null then raise exception 'Sign in required' using errcode='42501'; end if;
  select * into e from public.content_entries where id=p_event;
  if not found or e.kind<>'event' or (p_staff and not private.has_role(e.market,array['admin','operations','compliance'])) then raise exception 'Event unavailable' using errcode='42501'; end if;
+ if not p_staff and not (e.status='published' and (e.publish_at is null or e.publish_at<=now()) and (e.unpublish_at is null or e.unpublish_at>now()))
+  and not exists(select 1 from public.event_registrations where event_id=e.id and user_id=actor) then
+  raise exception 'Event unavailable' using errcode='42501'; end if;
  select * into r from private.event_admission_rules where event_id=e.id;
  return jsonb_build_object('eventId',e.id,'title',e.title,'startsAt',e.starts_at,'capacity',r.capacity,'rulesRevision',coalesce(r.revision,0),
  'registered',(select count(*) from public.event_registrations where event_id=e.id and status='registered'),

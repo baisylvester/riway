@@ -12,24 +12,41 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
   const [answer, setAnswer] = useState<Answer | null>(null);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [voiceBusy, setVoiceBusy] = useState(false);
   const [recording, setRecording] = useState(false);
   const recorder = useRef<MediaRecorder | null>(null);
   const stream = useRef<MediaStream | null>(null);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const disposed = useRef(false);
   const voiceAllowed = useRef(false);
-  useEffect(() => {
-    voiceAllowed.current = voiceConsent;
-    if (!voiceConsent && recorder.current?.state === "recording")
-      recorder.current.stop();
-  }, [voiceConsent]);
+  const voiceSequence = useRef(0);
+  const transcription = useRef<AbortController | null>(null);
+  function discardVoice() {
+    voiceAllowed.current = false;
+    voiceSequence.current++;
+    transcription.current?.abort();
+    if (timer.current) clearTimeout(timer.current);
+    if (recorder.current?.state === "recording") recorder.current.stop();
+    stream.current?.getTracks().forEach((t) => t.stop());
+  }
+  function changeConsent(kind: "assistant" | "voice", checked: boolean) {
+    if (kind === "assistant") setConsent(checked);
+    else setVoiceConsent(checked);
+    // Update before stopping the recorder: onstop can run before effects.
+    const allowed =
+      kind === "assistant" ? checked && voiceConsent : consent && checked;
+    voiceAllowed.current = allowed;
+    if (!allowed) {
+      discardVoice();
+      setRecording(false);
+      setVoiceBusy(false);
+    }
+  }
   useEffect(() => {
     disposed.current = false;
     return () => {
       disposed.current = true;
-      if (timer.current) clearTimeout(timer.current);
-      if (recorder.current?.state === "recording") recorder.current.stop();
-      stream.current?.getTracks().forEach((t) => t.stop());
+      discardVoice();
       window.speechSynthesis?.cancel();
     };
   }, []);
@@ -65,8 +82,14 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
     }
   }
   async function startRecording() {
-    if (!voiceConsent || !consent) return;
+    if (!voiceAllowed.current || busy || voiceBusy || recording) return;
+    const sequence = ++voiceSequence.current;
+    const current = () =>
+      !disposed.current &&
+      voiceAllowed.current &&
+      voiceSequence.current === sequence;
     setMessage("");
+    setVoiceBusy(true);
     try {
       if (
         !navigator.mediaDevices?.getUserMedia ||
@@ -78,26 +101,28 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
         );
         return;
       }
-      stream.current = await navigator.mediaDevices.getUserMedia({
+      const captured = await navigator.mediaDevices.getUserMedia({
         audio: true,
       });
-      if (disposed.current || !voiceAllowed.current) {
-        stream.current.getTracks().forEach((t) => t.stop());
+      if (!current()) {
+        captured.getTracks().forEach((t) => t.stop());
         return;
       }
-      const r = new MediaRecorder(stream.current, { mimeType: "audio/webm" });
+      stream.current = captured;
+      const r = new MediaRecorder(captured, { mimeType: "audio/webm" });
       recorder.current = r;
       const parts: BlobPart[] = [];
       r.ondataavailable = (e) => {
         if (e.data.size) parts.push(e.data);
       };
       r.onstop = async () => {
-        stream.current?.getTracks().forEach((t) => t.stop());
+        captured.getTracks().forEach((t) => t.stop());
+        if (!current()) return;
         if (timer.current) clearTimeout(timer.current);
-        if (disposed.current) return;
         setRecording(false);
-        if (!voiceAllowed.current) return;
-        setBusy(true);
+        setVoiceBusy(true);
+        const controller = new AbortController();
+        transcription.current = controller;
         try {
           const response = await fetch("/api/assistant/voice", {
             method: "POST",
@@ -106,9 +131,13 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
               "X-Riway-Voice-Consent": "yes",
             },
             body: new Blob(parts, { type: "audio/webm" }),
-            signal: AbortSignal.timeout(20000),
+            signal: AbortSignal.any([
+              controller.signal,
+              AbortSignal.timeout(20000),
+            ]),
           });
           const data = await response.json();
+          if (!current() || controller.signal.aborted) return;
           if (!response.ok)
             throw new Error(
               data.error?.message ?? "Voice assistance unavailable.",
@@ -118,13 +147,16 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
             "Review the transcription, then select Ask about products.",
           );
         } catch (error) {
+          if (!current()) return;
           setMessage(
             error instanceof Error
               ? error.message
               : "Transcription failed. Type your question.",
           );
         } finally {
-          setBusy(false);
+          if (current()) setVoiceBusy(false);
+          if (transcription.current === controller)
+            transcription.current = null;
         }
       };
       r.start();
@@ -133,11 +165,14 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
         if (r.state === "recording") r.stop();
       }, 20000);
     } catch {
+      if (!current()) return;
       stream.current?.getTracks().forEach((t) => t.stop());
       setRecording(false);
       setMessage(
         "Microphone access was not granted. Please type your question.",
       );
+    } finally {
+      if (current()) setVoiceBusy(false);
     }
   }
   function speak() {
@@ -195,12 +230,15 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
           <input
             type="checkbox"
             checked={consent}
-            onChange={(e) => setConsent(e.target.checked)}
+            onChange={(e) => changeConsent("assistant", e.target.checked)}
             required
           />
           I agree to use the product assistant under the privacy notice.
         </label>
-        <button className="button" disabled={busy || recording || !consent}>
+        <button
+          className="button"
+          disabled={busy || voiceBusy || recording || !consent}
+        >
           Ask about products
         </button>
       </form>
@@ -214,17 +252,22 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
             retention controls are described in the privacy notice. Do not
             include personal or health information.
           </p>
+          <p>
+            Uncheck either consent to stop recording and cancel a pending
+            transcription request. Audio already received by the provider is
+            subject to its approved retention controls.
+          </p>
           <label className="check">
             <input
               type="checkbox"
               checked={voiceConsent}
-              onChange={(e) => setVoiceConsent(e.target.checked)}
+              onChange={(e) => changeConsent("voice", e.target.checked)}
             />
             I consent to sending this recording for transcription.
           </label>
           <button
             className="button button-outline"
-            disabled={busy || !voiceConsent || !consent}
+            disabled={busy || voiceBusy || !voiceConsent || !consent}
             onClick={() => {
               if (recording) recorder.current?.stop();
               else void startRecording();
@@ -257,12 +300,15 @@ export function ProductAssistant({ voiceEnabled }: { voiceEnabled: boolean }) {
           Order status comes directly from your signed-in account and is not
           sent to an AI provider.
         </p>
-        <button className="button button-outline" disabled={busy || recording}>
+        <button
+          className="button button-outline"
+          disabled={busy || voiceBusy || recording}
+        >
           Check order
         </button>
       </form>
       <p role="status" aria-live="polite">
-        {busy ? "Checking…" : message}
+        {busy || voiceBusy ? "Checking…" : message}
       </p>
       {answer && (
         <section className="panel stack" aria-label="Assistant answer">

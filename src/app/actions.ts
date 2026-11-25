@@ -79,6 +79,10 @@ export async function registerEvent(_: Result, f: FormData): Promise<Result> {
   const { error } = await client
     .from("event_registrations")
     .insert({ user_id: user.id, event_id: id });
+  if (!error) {
+    revalidatePath("/events/[slug]", "page");
+    revalidatePath("/admin/events");
+  }
   return {
     message: error
       ? error.code === "23505"

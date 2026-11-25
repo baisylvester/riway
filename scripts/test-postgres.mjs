@@ -144,6 +144,7 @@ try {
     "story_event_assistant_privacy.sql",
     "reorder_reminders.sql",
     "checkout_collection.sql",
+    "bonus_campaigns.sql",
     "checkout.sql",
     "operations.sql",
     "tenant_inventory.sql",
@@ -736,11 +737,94 @@ try {
     6,
     "No event oversell under concurrency",
   );
+  // A campaign's last two gift units must not be promised to eight concurrent
+  // checkouts. Old quotes fail; no order silently loses an advertised gift.
+  const bonusQualifier = randomUUID(),
+    bonusGift = randomUUID();
+  sql(`insert into public.products(id,slug,name,category,status)values('${bonusQualifier}','qa-bonus-${bonusQualifier}','Concurrent qualifying goods','Nutrition','published'),('${bonusGift}','qa-bonus-${bonusGift}','Concurrent gift goods','Nutrition','published');
+    insert into public.product_offers(product_id,market,currency,retail_minor,regulatory_approved,approval_reference,max_quantity)values('${bonusQualifier}','PH','PHP',100,true,'QA-BONUS',24),('${bonusGift}','PH','PHP',50,true,'QA-BONUS',24);
+    insert into public.inventory(product_id,market,on_hand)values('${bonusQualifier}','PH',100),('${bonusGift}','PH',100);
+    insert into public.sponsor_attributions(user_id,distributor_id)values ${consultationUsers.map((id) => `('${id}','${consultationDistributor}')`).join(",")};
+    update public.markets set online_sales_approved=true,payments_ready=true,policy_reference='QA-BONUS'where code='PH';
+    ${asUser}select public.approve_bonus_campaign('PH',jsonb_build_object('name','Concurrent bonus campaign','qualifyingProductId','${bonusQualifier}','minimumQuantity',1,'bonusProductId','${bonusGift}','bonusQuantity',1,'maximumPerOrder',1,'maximumUnits',2,'startsAt',now()-interval '1 day','endsAt',now()+interval '1 day','allowVoucher',false,'returnTerms','Synthetic approved terms for disposable concurrency testing.','capacityAfterRefund','retain'),'QA-BONUS');`);
+  const bonusItems = JSON.stringify([
+    { productId: bonusQualifier, quantity: 1 },
+  ]);
+  const bonusAddress =
+    '{"full_name":"QA Customer","phone":"0000000000","line1":"QA fixture address","city":"Manila","postal_code":"1000","country":"PH"}';
+  const bonusHash = JSON.parse(
+    sql(
+      `${asCustomer(consultationUsers[0])}select public.quote_fulfilment_checkout('PH','${bonusItems}',null,'{"method":"delivery"}');`,
+    )
+      .split("\n")
+      .at(-1),
+  ).quoteHash;
+  const bonusTerms = sql(
+    "select checkout_terms_version from public.markets where code='PH';",
+  );
+  const bonusKeys = consultationUsers.map(() => randomUUID());
+  const bonusCreate = (i) =>
+    `${asCustomer(consultationUsers[i])}select public.create_fulfilment_order('PH','${bonusItems}','${bonusAddress}','${bonusKeys[i]}','${bonusTerms}',null,'${bonusHash}',null,'{"method":"delivery"}');`;
+  const bonusRaces = await Promise.all(
+    consultationUsers.map((_, i) => parallelSql(bonusCreate(i))),
+  );
+  assert.equal(
+    bonusRaces.filter((r) => r.code === 0).length,
+    2,
+    "Exactly two campaign units allocated",
+  );
+  assert.equal(
+    bonusRaces.filter((r) => r.code !== 0 && r.error.includes("prices changed"))
+      .length,
+    6,
+    "Stale gift promises must be reviewed",
+  );
+  assert.equal(
+    sql(
+      `select reserved from public.inventory where product_id='${bonusGift}'and market='PH';`,
+    ),
+    "2",
+  );
+  const bonusWinner = bonusRaces.findIndex((r) => r.code === 0),
+    bonusLoser = bonusRaces.findIndex((r) => r.code !== 0);
+  const bonusWinningOrder = bonusRaces[bonusWinner].output
+    .trim()
+    .split("\n")
+    .at(-1);
+  const bonusReplays = await Promise.all(
+    Array.from({ length: 4 }, () => parallelSql(bonusCreate(bonusWinner))),
+  );
+  for (const result of bonusReplays) {
+    assert.equal(result.code, 0);
+    assert.equal(result.output.trim().split("\n").at(-1), bonusWinningOrder);
+  }
+  sql(
+    `${asCustomer(consultationUsers[bonusWinner])}select public.cancel_order('${bonusWinningOrder}');`,
+  );
+  const reusedBonus = await parallelSql(bonusCreate(bonusLoser));
+  assert.equal(
+    reusedBonus.code,
+    0,
+    "Unpaid cancellation releases campaign capacity",
+  );
+  assert.equal(
+    sql(
+      `select reserved from public.inventory where product_id='${bonusGift}'and market='PH';`,
+    ),
+    "2",
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
         securitySuites: securitySuites.length,
+        parallelBonusCampaign: {
+          attempted: 8,
+          accepted: 2,
+          staleQuotesRefused: 6,
+          identicalReplays: 4,
+          capacityReusedAfterUnpaidCancellation: true,
+        },
         parallelConsultations: {
           attempted: 8,
           accepted: 1,

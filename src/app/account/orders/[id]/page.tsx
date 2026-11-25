@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { BonusItems } from "@/components/bonus-items";
 import { z } from "zod";
 import { requireSession } from "@/lib/data";
 import { money } from "@/lib/domain";
@@ -74,6 +75,7 @@ export default async function Order({
   return (
     <div className="panel">
       <h2>Order {id.slice(0, 8).toUpperCase()}</h2>
+      <BonusItems items={o.bonus_items} />
       {selectedFulfilment.success &&
         selectedFulfilment.data.method === "collection" && (
           <aside className="notice">

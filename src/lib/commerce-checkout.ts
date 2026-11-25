@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { membershipQualificationSchema } from "./membership";
+import { bonusItemsSchema } from "./bonus-campaigns";
 import {
   checkoutFulfilmentSchema,
   fulfilmentSnapshotSchema,
@@ -34,6 +35,7 @@ const minor = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 export const commerceQuoteSchema = z
   .object({
     fulfilment: fulfilmentSnapshotSchema.optional(),
+    bonusItems: bonusItemsSchema.optional(),
     market: marketSchema,
     currency: z.enum(["PHP", "SGD", "MYR"]),
     items: z

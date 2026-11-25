@@ -1,5 +1,6 @@
 import { money } from "@/lib/domain";
 import type { CommerceQuote } from "@/lib/commerce-checkout";
+import { BonusItems } from "./bonus-items";
 export function CheckoutQuote({ quote }: { quote: CommerceQuote }) {
   return (
     <div className="stack" aria-label="Current order total">
@@ -41,6 +42,7 @@ export function CheckoutQuote({ quote }: { quote: CommerceQuote }) {
         <span>Subtotal</span>
         <span>{money(quote.subtotalMinor, quote.currency)}</span>
       </div>
+      <BonusItems items={quote.bonusItems} />
       {quote.promotion && (
         <div className="order-row">
           <span>

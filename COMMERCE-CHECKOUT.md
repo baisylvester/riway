@@ -1,5 +1,7 @@
 # Approved package and promotion checkout
 
+The 25 November bonus increment (`20261125072929`) extends the shared authoritative planner with separately frozen free goods. Existing paid lines, money totals and voucher allocation remain unchanged. All entry points share gift stock/quantity/registration and campaign capacity enforcement; reviewed quotes bind exact gifts/return terms. See `PROPOSAL-DELIVERY.md` for evidence and limits.
+
 ## Current proposal candidate — 25 November 2026
 
 The current candidate adds verified passwordless guest access and delivery/collection choices using `20261125015757_checkout_collection_choice.sql`. Selected approved centre revisions and instructions are bound to authoritative quotes/orders; retries preserve the original frozen order. Only staff-approved no-additional-fee collection is supported. Existing package/voucher/stock/idempotency logic remains authoritative. Neither collection nor guest verification enables payments. Refunds/tax invoices/subscriptions/bonus-item campaigns remain missing; see [the handover](PROPOSAL-DELIVERY.md).

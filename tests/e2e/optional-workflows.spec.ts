@@ -51,6 +51,87 @@ async function identity(context: BrowserContext, role: keyof typeof users) {
   ]);
 }
 test.describe.configure({ mode: "serial" });
+test("market staff approve and withdraw a bonus campaign; customers cannot access its controls", async ({
+  page,
+  context,
+}) => {
+  const mobile = test.info().project.name === "mobile";
+  const qualifier = mobile
+    ? "84000000-0000-4000-8000-000000000003"
+    : "84000000-0000-4000-8000-000000000001";
+  const gift = mobile
+    ? "84000000-0000-4000-8000-000000000004"
+    : "84000000-0000-4000-8000-000000000002";
+  await identity(context, "reviewer");
+  await page.goto("/admin/bonuses");
+  await page.getByText("Approve a campaign", { exact: true }).click();
+  const form = page
+    .locator("form")
+    .filter({
+      has: page.getByRole("button", {
+        name: "Approve bonus campaign",
+        exact: true,
+      }),
+    });
+  const name = `Synthetic campaign ${test.info().project.name}`;
+  await form.getByLabel("Name", { exact: true }).fill(name);
+  await form
+    .getByLabel("Qualifying product ID", { exact: true })
+    .fill(qualifier);
+  await form
+    .getByLabel("Minimum qualifying quantity", { exact: true })
+    .fill("1");
+  await form
+    .getByLabel("Bonus physical product ID", { exact: true })
+    .fill(gift);
+  await form
+    .getByLabel("Bonus quantity per qualifying quantity", { exact: true })
+    .fill("1");
+  await form
+    .getByLabel("Maximum bonus units per order", { exact: true })
+    .fill("1");
+  await form
+    .getByLabel("Maximum campaign bonus units", { exact: true })
+    .fill("5");
+  await form
+    .getByLabel("Start timestamp (UTC ISO 8601)", { exact: true })
+    .fill(new Date(Date.now() - 3600000).toISOString());
+  await form
+    .getByLabel("End timestamp (UTC ISO 8601)", { exact: true })
+    .fill(new Date(Date.now() + 86400000).toISOString());
+  await form
+    .getByLabel("Approved return terms", { exact: true })
+    .fill("Synthetic return terms for disposable browser acceptance only.");
+  await form
+    .getByLabel("Approval reference", { exact: true })
+    .fill("SYNTHETIC-ONLY");
+  await form.getByLabel(/I approve retaining paid campaign/).check();
+  await form.getByLabel(/I approve these exact quantities/).check();
+  await form
+    .getByRole("button", { name: "Approve bonus campaign", exact: true })
+    .click();
+  const card = page
+    .locator("article")
+    .filter({ has: page.getByRole("heading", { name, exact: true }) });
+  await expect(card).toContainText("0 / 5 units allocated");
+  await card
+    .getByLabel("Withdrawal reference", { exact: true })
+    .fill("SYNTHETIC-WITHDRAW");
+  await card
+    .getByLabel("Confirm withdrawal from future quotes.", { exact: true })
+    .check();
+  await card
+    .getByRole("button", { name: "Withdraw bonus campaign", exact: true })
+    .click();
+  await expect(card).toContainText("Withdrawn");
+  await page.reload();
+  await expect(card).toContainText("Withdrawn");
+  await identity(context, "customer");
+  await page.goto("/admin/bonuses");
+  await expect(
+    page.getByRole("button", { name: "Approve bonus campaign", exact: true }),
+  ).toHaveCount(0);
+});
 test("customer books, reschedules and cancels; records persist through page reload", async ({
   page,
   context,

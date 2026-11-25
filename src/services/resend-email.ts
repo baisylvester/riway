@@ -205,6 +205,16 @@ function minorAmount(minor: number, currency: string) {
 // Frozen order snapshot queued by private.enqueue_order_confirmation. It holds
 // no address, phone or email; the recipient comes from the verified account.
 const orderConfirmedContext = z.object({
+  bonusItems: z
+    .array(
+      z.object({
+        name: z.string().min(1).max(120),
+        quantity: z.number().int().min(1).max(24),
+        returnTerms: z.string().min(20).max(2000),
+      }),
+    )
+    .max(30)
+    .optional(),
   orderId: z.uuid(),
   market: z.enum(["PH", "SG", "MY"]),
   currency: z.string().regex(/^[A-Z]{3}$/),
@@ -339,13 +349,17 @@ export function notificationContent(notification: Notification) {
         `Thank you. Payment for your RIWAY order ${number} (placed ${o.placedAt}, ${o.market}) has been confirmed.`,
         "",
         ...lines,
+        ...(o.bonusItems ?? []).map(
+          (b) =>
+            `Bonus: ${b.name} × ${b.quantity} | No additional charge\n${b.returnTerms}`,
+        ),
         totals,
         "",
         `We will email you when it is dispatched or ready for collection. Order details and delivery progress: ${link}`,
         "",
         ...statements,
       ].join("\n"),
-      html: `<h1>Order ${number} confirmed</h1><p>Payment for your RIWAY order placed ${o.placedAt} (${o.market}) has been confirmed.</p><table><thead><tr><th>Product</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${o.items.map((i) => `<tr><td>${escaped(i.name)}</td><td>${i.quantity}</td><td>${escaped(money(i.netMinor))}</td></tr>`).join("")}</tbody></table><p>${escaped(totals)}</p><p>We will email you when it is dispatched or ready for collection.</p><p><a href="${escaped(link)}">View your order</a></p>${statements.map((s) => `<p><small>${escaped(s)}</small></p>`).join("")}`,
+      html: `<h1>Order ${number} confirmed</h1><p>Payment for your RIWAY order placed ${o.placedAt} (${o.market}) has been confirmed.</p><table><thead><tr><th>Product</th><th>Qty</th><th>Amount</th></tr></thead><tbody>${o.items.map((i) => `<tr><td>${escaped(i.name)}</td><td>${i.quantity}</td><td>${escaped(money(i.netMinor))}</td></tr>`).join("")}</tbody></table>${(o.bonusItems ?? []).map((b) => `<p>Bonus: ${escaped(b.name)} × ${b.quantity} · No additional charge</p><p>${escaped(b.returnTerms)}</p>`).join("")}<p>${escaped(totals)}</p><p>We will email you when it is dispatched or ready for collection.</p><p><a href="${escaped(link)}">View your order</a></p>${statements.map((s) => `<p><small>${escaped(s)}</small></p>`).join("")}`,
     };
   }
   if (notification.type === "corporate_low_stock") {

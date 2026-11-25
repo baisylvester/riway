@@ -223,11 +223,11 @@
     "id": "C06",
     "proposal_section": "5.1",
     "requirement": "Bonus-item/bonus-bottle promotions",
-    "implementation_evidence": "REMAINING-SCOPE.md G13",
-    "remaining_work_dependencies": "Bonus engine and approved campaign definitions",
+    "implementation_evidence": "20261125072929_bonus_item_campaigns.sql; /admin/bonuses; quote/order/stock and bonus snapshots; confirmations/export/compensation facts; bonus_campaigns.sql; PostgreSQL campaign race and desktop/mobile approval/withdrawal",
+    "remaining_work_dependencies": "Approved campaign definitions/return terms and hosted acceptance; full returns/refund/credit-note workflow remains missing and must use frozen physical bonus facts",
     "acceptance_criteria": "Bonus physical stock, limits, discounts and returns reconcile",
-    "status": "missing",
-    "gap_category": "code/policy"
+    "status": "partial",
+    "gap_category": "code/policy/content/acceptance"
   },
   {
     "id": "M01",
@@ -943,7 +943,7 @@
     "id": "H02",
     "proposal_section": "11;12",
     "requirement": "Functional/integration/authorization/transaction/concurrency verification",
-    "implementation_evidence": "656 tests/75 files; 38 migrations/27 real PostgreSQL suites; 18 desktop/mobile disposable/component browser cases; typecheck and production build",
+    "implementation_evidence": "657 tests/75 files; 39 migrations/28 real PostgreSQL suites; 20 desktop/mobile disposable/component browser cases; typecheck and production build",
     "remaining_work_dependencies": "Real-provider/auth and wider role/browser acceptance; accessibility, agreed performance/load, independent pentest and restore evidence",
     "acceptance_criteria": "Evidence by requirement including negative cases and concurrency",
     "status": "partial",

@@ -93,6 +93,14 @@ await pg.exec(`insert into auth.users(id,email,email_confirmed_at)values ${Objec
  ('82000000-0000-4000-8000-000000000001','${users.distributor}',now()+interval '2 days',now()+interval '2 days 1 hour','UTC'),
  ('82000000-0000-4000-8000-000000000002','${users.distributor}',now()+interval '3 days',now()+interval '3 days 1 hour','UTC');
  insert into public.content_entries(id,slug,kind,title,body,market,starts_at,status)values('83000000-0000-4000-8000-000000000001','synthetic-event','event','Synthetic browser event','Synthetic event used only in a disposable local database.','PH',now()+interval '5 days','published'),('83000000-0000-4000-8000-000000000002','synthetic-event-mobile','event','Synthetic mobile browser event','Synthetic event used only in a disposable local database.','PH',now()+interval '5 days','published');`);
+await pg.exec(`insert into public.products(id,slug,name,category,status)values
+ ('84000000-0000-4000-8000-000000000001','synthetic-qualifier-desktop','Synthetic qualifying goods','Nutrition','published'),
+ ('84000000-0000-4000-8000-000000000002','synthetic-gift-desktop','Synthetic gift goods','Nutrition','published'),
+ ('84000000-0000-4000-8000-000000000003','synthetic-qualifier-mobile','Synthetic mobile qualifying goods','Nutrition','published'),
+ ('84000000-0000-4000-8000-000000000004','synthetic-gift-mobile','Synthetic mobile gift goods','Nutrition','published');
+ insert into public.product_offers(product_id,market,currency,retail_minor,regulatory_approved,approval_reference,max_quantity)
+ select id,'PH','PHP',100,true,'SYNTHETIC-DISPOSABLE',24 from public.products where slug like 'synthetic-%';
+ insert into public.inventory(product_id,market,on_hand)select id,'PH',10 from public.products where slug like 'synthetic-%';`);
 const identifier = (value) => {
   if (!/^[a-z_][a-z0-9_]*$/.test(value))
     throw new Error("Invalid fixture identifier");

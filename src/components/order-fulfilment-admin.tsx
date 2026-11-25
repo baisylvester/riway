@@ -8,6 +8,7 @@ import { FulfilmentForm } from "./fulfilment-form";
 import { CancelOrderForm } from "./cancel-order-form";
 import { orderCancellationSchema } from "@/lib/cancellation";
 import { fulfilmentSnapshotSchema } from "@/lib/checkout-fulfilment";
+import { BonusItems } from "./bonus-items";
 
 type Address = Partial<
   Record<
@@ -28,7 +29,7 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
   const { data: order, error } = await client
     .from("orders")
     .select(
-      "id,market,currency,total_minor,status,payment_status,created_at,address,checkout_fulfilment,order_items(product_name,quantity,net_minor)",
+      "id,market,currency,total_minor,status,payment_status,created_at,address,checkout_fulfilment,bonus_items,order_items(product_name,quantity,net_minor)",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -55,6 +56,7 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
       </div>
       <div className="two-column">
         <div className="panel stack">
+          <BonusItems items={order.bonus_items} />
           <p>
             <span className="status">
               {orderStatusLabels[order.status] ?? order.status}

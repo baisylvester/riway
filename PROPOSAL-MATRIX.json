@@ -493,21 +493,21 @@
     "id": "R02",
     "proposal_section": "5.5",
     "requirement": "Auto-replenishment recurring consent and billing",
-    "implementation_evidence": "No subscription tables/worker",
-    "remaining_work_dependencies": "Approved intervals/products/consent plus merchant recurring capability",
+    "implementation_evidence": "Versioned product/market schedule approval, buyer consent, due date, current checkout quote, payment and preserved sponsor",
+    "remaining_work_dependencies": "Approved products/intervals, recurring consent and mandate, approved merchant capability, retry policy and tax treatment",
     "acceptance_criteria": "Gateway-supported recurring mandate; each renewal quoted/paid safely",
-    "status": "blocked",
+    "status": "partial",
     "gap_category": "policy/provider/code"
   },
   {
     "id": "R03",
     "proposal_section": "5.5",
     "requirement": "Pause/skip/resume/cancel and failed-payment recovery",
-    "implementation_evidence": "No recurring orchestration",
-    "remaining_work_dependencies": "R02 and subscription lifecycle implementation",
+    "implementation_evidence": "Customer schedule controls, close/retry unpaid renewal, advance only after verified settlement, disposable browser clock control",
+    "remaining_work_dependencies": "Provider-managed recurring dunning and mandate lifecycle, confirmed reminder policy and delivery",
     "acceptance_criteria": "No charge after cancellation; retries/notifications accurate",
-    "status": "missing",
-    "gap_category": "code"
+    "status": "partial",
+    "gap_category": "policy/provider/code"
   },
   {
     "id": "R04",

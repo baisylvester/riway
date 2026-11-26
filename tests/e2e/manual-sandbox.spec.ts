@@ -118,5 +118,93 @@ test("guest checkout verifies a code from the local inbox", async ({
     page.getByRole("heading", { name: "Continue as a guest" }),
   ).toHaveCount(0);
   await page.goto("/account");
-  await expect(page.getByText("guest@example.invalid")).toBeVisible();
+  await expect(
+    page
+      .getByText("guest@example.invalid", { exact: true })
+      .filter({ visible: true }),
+  ).toBeVisible();
+});
+
+test("a customer reviews and settles a due replenishment order", async ({
+  page,
+}, testInfo) => {
+  test.skip(
+    process.env.RIWAY_MANUAL_SANDBOX !== "1" ||
+      testInfo.project.name !== "chromium",
+    "Requires one fresh manual sandbox with disposable identities.",
+  );
+  await page.goto(consoleUrl);
+  await page
+    .getByRole("button", { name: "PH reviewer with MFA", exact: true })
+    .click();
+  await page.goto("/admin/replenishment");
+  await page.getByText("Approve a product schedule", { exact: true }).click();
+  await page
+    .getByLabel("Approved product")
+    .selectOption({ label: "Synthetic qualifying goods" });
+  await page.getByLabel("Interval in days").fill("30");
+  await page.getByLabel("Terms version").fill("SYNTHETIC-RENEWAL-1");
+  await page
+    .getByLabel("Approved schedule terms")
+    .fill("Synthetic schedule terms for this disposable browser test.");
+  await page.getByLabel("Approval reference").fill("SYNTHETIC-RENEWAL");
+  await page
+    .getByRole("checkbox", { name: /I verified RIWAY approval/ })
+    .check();
+  await page.getByRole("button", { name: "Approve schedule terms" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Synthetic qualifying goods" }),
+  ).toBeVisible();
+
+  await page.goto(consoleUrl);
+  await page.getByRole("button", { name: "Existing customer" }).click();
+  await page.goto(consoleUrl);
+  await page.locator('select[name="product"]').selectOption("standard");
+  await page.getByLabel("Accept synthetic Terms of Sale").check();
+  await page.getByRole("button", { name: "Create pending order" }).click();
+  const status = page.getByRole("status");
+  await expect(status).toContainText("Created pending order");
+  const original = (await status.innerText()).match(
+    /order ([a-f0-9-]{36})/,
+  )?.[1];
+  expect(original).toBeTruthy();
+  await page.locator('select[name="order"]').selectOption(original!);
+  await page.getByRole("button", { name: "Simulate payment" }).click();
+  await expect(status).toContainText(": paid.");
+
+  await page.goto(`/account/orders/${original}`);
+  await page
+    .getByRole("link", { name: "Start a replenishment schedule" })
+    .click();
+  await page
+    .getByRole("checkbox", { name: "I accept these schedule terms." })
+    .check();
+  await page.getByRole("button", { name: "Start schedule" }).click();
+  await expect(
+    page.getByText(/Next renewal/).filter({ visible: true }),
+  ).toBeVisible();
+  await page.goto(consoleUrl);
+  await page.getByRole("button", { name: "Make next renewal due" }).click();
+  await expect(status).toContainText("The sandbox renewal is due");
+  await page.getByRole("link", { name: "Your schedules" }).click();
+  await page.getByRole("link", { name: "Review renewal", exact: true }).click();
+  await expect(
+    page.getByLabel("Current order total").filter({ visible: true }),
+  ).toBeVisible();
+  await page.getByRole("checkbox", { name: /I confirm this address/ }).check();
+  await page.getByRole("button", { name: "Create order for payment" }).click();
+  await expect(page).toHaveURL(/\/account\/orders\/[a-f0-9-]{36}$/);
+  const renewal = new URL(page.url()).pathname.split("/").at(-1);
+  expect(renewal).not.toBe(original);
+  await page.goto(consoleUrl);
+  await page.locator('select[name="order"]').selectOption(renewal!);
+  await page.getByRole("button", { name: "Simulate payment" }).click();
+  await expect(status).toContainText(": paid.");
+  await page.getByRole("link", { name: "Your schedules" }).click();
+  await expect(
+    page.getByText(/Next renewal/).filter({ visible: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("link", { name: "Review renewal", exact: true }),
+  ).toHaveCount(0);
 });

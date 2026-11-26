@@ -143,6 +143,7 @@ try {
     "consultations_library.sql",
     "story_event_assistant_privacy.sql",
     "reorder_reminders.sql",
+    "replenishment.sql",
     "checkout_collection.sql",
     "bonus_campaigns.sql",
     "returns_refunds.sql",

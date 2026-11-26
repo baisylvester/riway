@@ -46,17 +46,18 @@ export async function POST(request: Request) {
   const current = z
     .object({ channel: z.string().regex(/^[A-Z0-9_]{2,40}$/) })
     .safeParse(xendit.error ? null : xendit.data);
-  const usesXendit = current.success;
+  // Renewal orders can exist before any payment attempt. A selected Xendit
+  // channel can start the first attempt. The database prevents either gateway
+  // from opening an attempt after the other has reserved the order.
+  const channel =
+    input.data.channel ?? (current.success ? current.data.channel : undefined);
+  const usesXendit = !!channel;
   if (usesXendit ? !xenditReadiness().enabled : !stripeReadiness().enabled)
     return failure("Checkout is disabled.", 409);
   try {
     return NextResponse.json(
       usesXendit
-        ? await startXenditCheckout(
-            order.data.id,
-            user.id,
-            input.data.channel ?? current.data!.channel,
-          )
+        ? await startXenditCheckout(order.data.id, user.id, channel)
         : await startStripeCheckout(order.data.id, user.id),
       { headers: { "Cache-Control": "no-store" } },
     );

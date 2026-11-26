@@ -178,6 +178,23 @@ export async function createManualSandbox(pg, users, onlineOrigin) {
   });
   const buyerIds = [users.manualBuyer, users.customer, users.guest];
 
+  async function makeRenewalDue(form, identity) {
+    const id = form.get("schedule");
+    if (
+      !identity ||
+      !buyerIds.includes(identity.id) ||
+      !/^[a-f0-9-]{36}$/.test(id ?? "")
+    )
+      throw new Error("Choose one of your active sandbox schedules.");
+    const result = await pg.query(
+      "update private.replenishment_schedules set next_due_at=clock_timestamp(),revision=revision+1 where id=$1 and user_id=$2 and state='active' returning id",
+      [id, identity.id],
+    );
+    if (!result.rows.length)
+      throw new Error("Active sandbox schedule unavailable.");
+    return "The sandbox renewal is due. Review it from Replenishment.";
+  }
+
   async function guestAuth(req, res, pathname) {
     if (req.headers.origin !== app) {
       res.writeHead(403).end();
@@ -433,6 +450,10 @@ export async function createManualSandbox(pg, users, onlineOrigin) {
   }
 
   async function render(res, identity, message) {
+    const { rows: schedules } = await pg.query(
+      "select s.id,p.name from private.replenishment_schedules s join public.products p on p.id=s.product_id where s.user_id=$1 and s.state='active' order by p.name",
+      [identity?.id ?? null],
+    );
     const { rows: orders } = await pg.query(
       `select id, user_id, status, payment_status, total_minor, currency, refunded_minor
       from public.orders where user_id=any($1::uuid[]) order by created_at desc limit 15`,
@@ -508,6 +529,16 @@ export async function createManualSandbox(pg, users, onlineOrigin) {
       ${form(`<label>Order <select name="order">${orders.map((o) => `<option value="${o.id}">${o.id.slice(0, 8)} · ${escape(o.payment_status)} · ${escape(o.status)}</option>`).join("")}</select></label>
       ${button("pay", "Simulate payment")} ${button("expire", "Simulate expiry")}`)}
       <p>Repeat a payment event for the same order to check duplicate handling.</p></section>
+      <section><h2>Replenishment</h2><p>${links([
+        ["Your schedules", "/account/replenishment"],
+        ["Staff schedule rules", "/admin/replenishment"],
+      ])}</p>
+      ${
+        schedules.length
+          ? form(`<label>Active schedule <select name="schedule">${schedules.map((s) => `<option value="${s.id}">${escape(s.name)}</option>`).join("")}</select></label>
+      ${button("renewal-due", "Make next renewal due")}`)
+          : "<p>Start a schedule from an eligible paid delivery order first.</p>"
+      }</section>
       <section><h2>Provider outcomes</h2><p>${links([
         ["Membership review", "/admin/memberships"],
         ["Compensation", "/admin/compensation"],
@@ -594,6 +625,8 @@ export async function createManualSandbox(pg, users, onlineOrigin) {
     let message;
     try {
       if (action === "create") message = await createOrder(form, identity);
+      else if (action === "renewal-due")
+        message = await makeRenewalDue(form, identity);
       else if (action === "pay" || action === "expire")
         message = await payment(form, action);
       else if (

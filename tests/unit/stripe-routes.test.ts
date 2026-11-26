@@ -8,12 +8,22 @@ const f = vi.hoisted(() => ({
   reconcile: vi.fn(),
   ready: vi.fn(),
   referral: vi.fn(),
+  xenditReady: vi.fn(),
+  xenditStart: vi.fn(),
 }));
 vi.mock("@/lib/data", () => ({ session: f.session }));
 vi.mock("@/lib/referral-continuity", () => ({
   completePendingReferral: f.referral,
 }));
 vi.mock("@/lib/stripe-config", () => ({ stripeReadiness: f.ready }));
+vi.mock("@/lib/xendit-config", async (original) => ({
+  ...(await original<typeof import("@/lib/xendit-config")>()),
+  xenditReadiness: f.xenditReady,
+}));
+vi.mock("@/services/xendit-payments", async (original) => ({
+  ...(await original<typeof import("@/services/xendit-payments")>()),
+  startXenditCheckout: f.xenditStart,
+}));
 vi.mock("@/services/stripe-payments", () => ({
   paymentClients: f.clients,
   startStripeCheckout: f.start,
@@ -68,6 +78,11 @@ beforeEach(() => {
   });
   f.clients.mockReturnValue({ config: { terms: "qa-terms-v1" } });
   f.ready.mockReturnValue({ enabled: true });
+  f.xenditReady.mockReturnValue({ enabled: false });
+  f.xenditStart.mockResolvedValue({
+    orderId,
+    url: "https://checkout.xendit.co/fixture",
+  });
   f.referral.mockResolvedValue({ state: "none", message: "" });
   f.start.mockResolvedValue({
     orderId,
@@ -191,6 +206,16 @@ describe("checkout authority boundaries", () => {
     maybeSingle.mockResolvedValue({ data: { id: orderId }, error: null });
     expect((await resume(request({ orderId }))).status).toBe(200);
     expect(f.start).toHaveBeenCalledWith(orderId, userId);
+  });
+  it("starts a selected Xendit channel for an owned order without a payment attempt", async () => {
+    rpc.mockResolvedValue({ data: null, error: null });
+    const selection = { orderId, channel: "GCASH" };
+    expect((await resume(request(selection))).status).toBe(409);
+    expect(f.xenditStart).not.toHaveBeenCalled();
+    f.xenditReady.mockReturnValue({ enabled: true });
+    expect((await resume(request(selection))).status).toBe(200);
+    expect(f.xenditStart).toHaveBeenCalledWith(orderId, userId, "GCASH");
+    expect(f.start).not.toHaveBeenCalled();
   });
 });
 describe("Stripe webhook acknowledgement", () => {

@@ -34,6 +34,8 @@ The tunnel depends on the machine and both processes staying online. A new Quick
 
 ## Manual feature checklist
 
+To test a replenishment schedule, approve a synthetic product and terms at **Staff schedule rules**. Use **Existing customer** to place and pay for a single **Synthetic qualifying goods** delivery order. From its order page start a schedule and review the terms. Try pause, resume and skip. In the console select **Make next renewal due**, open **Your schedules**, review the current quote and delivery address, then create the renewal order. Simulate expiry to exercise recovery, then retry and settle a new order. Verify sponsor continuity and that payment advances the due date. This path requires the buyer to approve and pay for every renewal.
+
 The IDs below refer to [the proposal matrix](PROPOSAL-MATRIX.md). Record the scenario, role, order or record ID, expected and observed result, and browser/device when you run a case. The matrix describes what is still missing for full acceptance.
 
 | Proposal IDs                                        | Exercise now                                                                                                                                                                                                                                                                                                                                                                                                                                               | Full acceptance still needs                                                                                                                                                                                                |

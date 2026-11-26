@@ -17,7 +17,9 @@ To test guest checkout, sign out and request a code at **Checkout review** using
 
 The online launcher serves the same synthetic environment through one HTTPS origin. It puts an access-code screen in front of the console, the application, assets and APIs. The two app processes and the gateway bind to loopback. Browser requests for guest verification go through the protected gateway. App database calls stay on the local machine.
 
-Start a [Cloudflare Quick Tunnel](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/) to `http://127.0.0.1:4189`. Set `RIWAY_SANDBOX_ORIGIN` to its exact HTTPS URL and set `RIWAY_SANDBOX_ACCESS_CODE` to a newly generated random URL-safe code of at least 24 characters. Run `npm run sandbox:online` from the repository. Open `/fixture/manual` on the tunnel origin and share the access code separately from the link. Stop an existing manual fixture before starting online mode because both modes use the same local ports.
+Start a [Cloudflare Quick Tunnel](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/) to `http://127.0.0.1:4189`. Set `RIWAY_SANDBOX_ORIGIN` to its exact HTTPS URL and set `RIWAY_SANDBOX_ACCESS_CODE` to a newly generated random URL-safe code of at least 24 characters. Run `npm run sandbox:online` from the repository. Open `/fixture/manual` on the tunnel origin and share the access code separately from the link.
+
+To run an independent online instance alongside an existing one, use a separate checkout and set `RIWAY_SANDBOX_APP_PORT`, `RIWAY_SANDBOX_FIXTURE_PORT` and `RIWAY_SANDBOX_GATEWAY_PORT` to distinct free loopback ports. Point its Quick Tunnel to the new gateway port. The defaults are 4174, 4682 and 4189.
 
 The tunnel depends on the machine and both processes staying online. A new Quick Tunnel has a new URL. Restarting the fixture clears the synthetic database and revokes existing access sessions.
 

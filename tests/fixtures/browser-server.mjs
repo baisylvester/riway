@@ -19,6 +19,10 @@ const online = process.argv.includes("--online")
   ? onlineSandboxSettings()
   : null;
 const manual = online || process.argv.includes("--manual");
+const appPort = online?.appPort ?? 4174;
+const fixturePort = online?.fixturePort ?? 4682;
+const fixtureHost = `127.0.0.1:${fixturePort}`;
+const fixtureOrigin = `http://${fixtureHost}`;
 if (!manual && process.env.RIWAY_DISPOSABLE_BROWSER !== "1")
   throw new Error(
     "Set RIWAY_DISPOSABLE_BROWSER=1 to start the isolated fixture.",
@@ -236,11 +240,11 @@ const server = createServer((req, res) => {
     .then(async () => {
       res.setHeader("content-type", "application/json");
       res.setHeader("cache-control", "no-store");
-      if (req.headers.host !== "127.0.0.1:4682") {
+      if (req.headers.host !== fixtureHost) {
         res.writeHead(403).end();
         return;
       }
-      const url = new URL(req.url, "http://127.0.0.1:4682");
+      const url = new URL(req.url, fixtureOrigin);
       if (manualSandbox && (await manualSandbox(req, res, url))) return;
       if (req.method === "GET" && url.pathname === "/fixture/assistant-voice") {
         res.setHeader("content-type", "text/html; charset=utf-8");
@@ -616,11 +620,15 @@ const server = createServer((req, res) => {
       res.end(JSON.stringify({ message: error.message }));
     });
 });
-await new Promise((resolve) => server.listen(4682, "127.0.0.1", resolve));
+await new Promise((resolve, reject) => {
+  server.once("error", reject);
+  server.listen(fixturePort, "127.0.0.1", resolve);
+});
 const gateway = online ? await startOnlineGateway(online) : null;
 const next = resolve(root, "node_modules/next/dist/bin/next");
-const site = online?.origin ?? "http://127.0.0.1:4174";
-const authUrl = online ? site + "/fixture-service" : "http://127.0.0.1:4682";
+const appOrigin = `http://127.0.0.1:${appPort}`;
+const site = online?.origin ?? appOrigin;
+const authUrl = online ? site + "/fixture-service" : fixtureOrigin;
 const childOptions = {
   cwd: root,
   windowsHide: true,
@@ -640,6 +648,7 @@ const childOptions = {
     }),
     RIWAY_SANDBOX_ACCESS_CODE: "",
     RIWAY_SANDBOX_ORIGIN: online?.origin ?? "",
+    RIWAY_SANDBOX_FIXTURE_PORT: String(fixturePort),
     NEXT_PUBLIC_SUPABASE_URL: authUrl,
     RIWAY_MANUAL_SANDBOX: manual ? "1" : "0",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_disposable_fixture",
@@ -695,7 +704,7 @@ try {
     throw new Error("Disposable browser production build failed.");
   child = spawn(
     process.execPath,
-    [next, "start", "--hostname", "127.0.0.1", "--port", "4174"],
+    [next, "start", "--hostname", "127.0.0.1", "--port", String(appPort)],
     childOptions,
   );
   child.once("error", (error) => {
@@ -704,12 +713,12 @@ try {
   });
   child.once("exit", (code) => void stop(code ?? 1));
   console.log(
-    "Disposable browser fixture API: http://127.0.0.1:4682; production app: http://127.0.0.1:4174. Auth is synthetic; database RLS/RPCs are real.",
+    `Disposable browser fixture API: ${fixtureOrigin}; production app: ${appOrigin}. Auth is synthetic; database RLS/RPCs are real.`,
   );
   if (manual)
     console.log(
       "Open manual sandbox: " +
-        (online?.origin ?? "http://127.0.0.1:4682") +
+        (online?.origin ?? fixtureOrigin) +
         "/fixture/manual",
     );
 } catch (error) {

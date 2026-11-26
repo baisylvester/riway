@@ -138,26 +138,39 @@ test("a customer receives one queued reminder and settles a due replenishment or
   await page
     .getByRole("button", { name: "PH reviewer with MFA", exact: true })
     .click();
+  // The Next router can keep a hidden copy of the previous route mounted.
+  const main = page.locator("#main").filter({ visible: true });
   await page.goto("/admin/replenishment");
-  await page.getByText("Approve a product schedule", { exact: true }).click();
-  await page
+  await main
+    .getByText("Approve a product schedule", { exact: true })
+    .filter({ visible: true })
+    .click();
+  const approval = main
+    .locator("form")
+    .filter({
+      has: page.getByRole("button", { name: "Approve schedule terms" }),
+      visible: true,
+    });
+  await approval
     .getByLabel("Approved product")
     .selectOption({ label: "Synthetic qualifying goods" });
-  await page.getByLabel("Interval in days").fill("30");
-  await page.getByLabel("Terms version").fill("SYNTHETIC-RENEWAL-1");
-  await page
+  await approval.getByLabel("Interval in days").fill("30");
+  await approval.getByLabel("Terms version").fill("SYNTHETIC-RENEWAL-1");
+  await approval
     .getByLabel("Approved schedule terms")
     .fill("Synthetic schedule terms for this disposable browser test.");
-  await page.getByLabel("Approval reference").fill("SYNTHETIC-RENEWAL");
-  await page
+  await approval.getByLabel("Approval reference").fill("SYNTHETIC-RENEWAL");
+  await approval
     .getByRole("checkbox", { name: /I verified RIWAY approval/ })
     .check();
-  await page.getByRole("button", { name: "Approve schedule terms" }).click();
+  await approval
+    .getByRole("button", { name: "Approve schedule terms" })
+    .click();
   await expect(
-    page.getByRole("heading", { name: "Synthetic qualifying goods" }),
+    main.getByRole("heading", { name: "Synthetic qualifying goods" }),
   ).toBeVisible();
   await page.goto("/admin/distributors");
-  const product = page.getByRole("row").filter({
+  const product = main.getByRole("row").filter({
     has: page.getByRole("cell", {
       name: "Synthetic qualifying goods",
       exact: true,
@@ -177,8 +190,11 @@ test("a customer receives one queued reminder and settles a due replenishment or
   await page.goto(consoleUrl);
   await page.getByRole("button", { name: "Existing customer" }).click();
   await page.goto("/account/preferences");
-  await page.getByLabel(/Email me a reorder reminder/).check();
-  await page.getByRole("button", { name: "Save preferences" }).click();
+  await main
+    .getByLabel(/Email me a reorder reminder/)
+    .filter({ visible: true })
+    .check();
+  await main.getByRole("button", { name: "Save preferences" }).click();
   await expect(
     page.getByText("Reorder email preference saved.").filter({ visible: true }),
   ).toBeVisible();
@@ -197,13 +213,13 @@ test("a customer receives one queued reminder and settles a due replenishment or
   await expect(status).toContainText(": paid.");
 
   await page.goto(`/account/orders/${original}`);
-  await page
+  await main
     .getByRole("link", { name: "Start a replenishment schedule" })
     .click();
-  await page
+  await main
     .getByRole("checkbox", { name: "I accept these schedule terms." })
     .check();
-  await page.getByRole("button", { name: "Start schedule" }).click();
+  await main.getByRole("button", { name: "Start schedule" }).click();
   await expect(
     page.getByText(/Next renewal/).filter({ visible: true }),
   ).toBeVisible();
@@ -218,7 +234,7 @@ test("a customer receives one queued reminder and settles a due replenishment or
   await queue.click();
   await expect(status).toContainText("0 renewal reminders queued");
   await page.getByRole("link", { name: "Your schedules" }).click();
-  const review = await page
+  const review = await main
     .getByRole("link", { name: "Review renewal", exact: true })
     .getAttribute("href");
   expect(review).toMatch(/^\/account\/replenishment\?review=[a-f0-9-]{36}$/);
@@ -229,10 +245,10 @@ test("a customer receives one queued reminder and settles a due replenishment or
   expect(login.searchParams.get("next")).toBe(review);
   await page.goto(`/auth/login?next=${encodeURIComponent(review!)}`);
   await expect(
-    page.getByLabel("Current order total").filter({ visible: true }),
+    main.getByLabel("Current order total").filter({ visible: true }),
   ).toBeVisible();
-  await page.getByRole("checkbox", { name: /I confirm this address/ }).check();
-  await page.getByRole("button", { name: "Create order for payment" }).click();
+  await main.getByRole("checkbox", { name: /I confirm this address/ }).check();
+  await main.getByRole("button", { name: "Create order for payment" }).click();
   await expect(page).toHaveURL(/\/account\/orders\/[a-f0-9-]{36}$/);
   const renewal = new URL(page.url()).pathname.split("/").at(-1);
   expect(renewal).not.toBe(original);
@@ -245,6 +261,6 @@ test("a customer receives one queued reminder and settles a due replenishment or
     page.getByText(/Next renewal/).filter({ visible: true }),
   ).toBeVisible();
   await expect(
-    page.getByRole("link", { name: "Review renewal", exact: true }),
+    main.getByRole("link", { name: "Review renewal", exact: true }),
   ).toHaveCount(0);
 });

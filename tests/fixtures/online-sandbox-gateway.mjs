@@ -12,6 +12,14 @@ const fixtureAuthPaths = new Set([
 ]);
 const digest = (value) => createHash("sha256").update(value).digest();
 
+function loopbackPort(env, key, fallback) {
+  const raw = env[key] ?? String(fallback);
+  const port = Number(raw);
+  if (!/^\d{4,5}$/.test(raw) || port < 1024 || port > 65535)
+    throw new Error(`${key} must be a loopback port between 1024 and 65535.`);
+  return port;
+}
+
 export function onlineSandboxSettings(env = process.env) {
   const origin = env.RIWAY_SANDBOX_ORIGIN;
   const passphrase = env.RIWAY_SANDBOX_ACCESS_CODE;
@@ -23,10 +31,23 @@ export function onlineSandboxSettings(env = process.env) {
     throw new Error(
       "Set RIWAY_SANDBOX_ACCESS_CODE to a random access code of at least 24 characters.",
     );
-  return { origin, passphrase };
+  const appPort = loopbackPort(env, "RIWAY_SANDBOX_APP_PORT", 4174);
+  const fixturePort = loopbackPort(env, "RIWAY_SANDBOX_FIXTURE_PORT", 4682);
+  const gatewayPort = loopbackPort(env, "RIWAY_SANDBOX_GATEWAY_PORT", 4189);
+  if (new Set([appPort, fixturePort, gatewayPort]).size !== 3)
+    throw new Error(
+      "The online sandbox app, fixture, and gateway ports must be distinct.",
+    );
+  return { origin, passphrase, appPort, fixturePort, gatewayPort };
 }
 
-export async function startOnlineGateway({ origin, passphrase }) {
+export async function startOnlineGateway({
+  origin,
+  passphrase,
+  appPort,
+  fixturePort,
+  gatewayPort,
+}) {
   const hostname = new URL(origin).hostname;
   const password = digest(passphrase);
   const session = randomBytes(32).toString("base64url");
@@ -124,7 +145,7 @@ export async function startOnlineGateway({ origin, passphrase }) {
     const toFixture = fixtureApi || fixturePage;
     const headers = {
       ...req.headers,
-      host: toFixture ? "127.0.0.1:4682" : hostname,
+      host: toFixture ? `127.0.0.1:${fixturePort}` : hostname,
       "x-forwarded-host": hostname,
       "x-forwarded-proto": "https",
       "x-forwarded-port": "443",
@@ -145,7 +166,7 @@ export async function startOnlineGateway({ origin, passphrase }) {
     const upstream = request(
       {
         hostname: "127.0.0.1",
-        port: toFixture ? 4682 : 4174,
+        port: toFixture ? fixturePort : appPort,
         method: req.method,
         path: upstreamPath + url.search,
         headers,
@@ -189,7 +210,7 @@ export async function startOnlineGateway({ origin, passphrase }) {
   });
   await new Promise((resolve, reject) => {
     server.once("error", reject);
-    server.listen(4189, "127.0.0.1", resolve);
+    server.listen(gatewayPort, "127.0.0.1", resolve);
   });
   return server;
 }

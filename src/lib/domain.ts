@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { membershipConsentSchema } from "./membership-consent";
+import { checkoutFulfilmentSchema } from "./checkout-fulfilment";
 export const markets = {
   PH: { name: "Philippines", currency: "PHP" },
   SG: { name: "Singapore", currency: "SGD" },
@@ -46,6 +47,7 @@ export const paymentSelectionSchema = z.discriminatedUnion("gateway", [
 export type PaymentSelection = z.infer<typeof paymentSelectionSchema>;
 export const checkoutSchema = z
   .object({
+    fulfilment: checkoutFulfilmentSchema.optional(),
     market: marketSchema,
     items: cartSchema.min(1),
     address: addressSchema,
@@ -90,10 +92,10 @@ export interface Offer {
   approval_reference: string | null;
   max_quantity: number;
 }
-export function money(minor: number | null, currency: string) {
+export function money(minor: number | null, currency: string, locale = "en") {
   return minor === null
     ? "Pricing to be confirmed"
-    : new Intl.NumberFormat("en", { style: "currency", currency }).format(
+    : new Intl.NumberFormat(locale, { style: "currency", currency }).format(
         minor / 100,
       );
 }

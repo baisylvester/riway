@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
-const base = process.env.TEST_BASE_URL ?? "http://127.0.0.1:4173";
+// Next normalizes loopback callback redirects to localhost. Use that same
+// origin by default so callback-origin checks work without an env override.
+const base = process.env.TEST_BASE_URL ?? "http://localhost:4173";
 const checks = [];
 async function check(name, path, options, status) {
   const response = await fetch(base + path, { redirect: "manual", ...options });

@@ -1,3 +1,4 @@
+import { LocalizedAnchor } from "@/components/localized-link";
 import type { Market, Product } from "@/lib/domain";
 import { ProductComplianceNotice } from "@/components/product-compliance-notice";
 
@@ -19,13 +20,13 @@ export function ReferenceProductInformation({
           <p className="lede" style={{ marginTop: 22, whiteSpace: "pre-line" }}>
             {product.description}
           </p>
-          <a
+          <LocalizedAnchor
             className="btn magnetic"
             href={`/shop/${product.slug}`}
             style={{ marginTop: 26 }}
           >
             Product details & review bag
-          </a>
+          </LocalizedAnchor>
         </div>
         <ProductComplianceNotice market={market} />
       </div>

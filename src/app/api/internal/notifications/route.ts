@@ -76,6 +76,18 @@ export async function POST(request: Request) {
     )
       return failure("Low-stock alert queue is unavailable.", 503);
   }
+  const reorders = await client.rpc("queue_reorder_reminders");
+  if (
+    reorders.error &&
+    !["PGRST202", "42883"].includes(String(reorders.error.code ?? ""))
+  )
+    return failure("Reorder reminders are unavailable.", 503);
+  const consultations = await client.rpc("queue_consultation_reminders");
+  if (
+    consultations.error &&
+    !["PGRST202", "42883"].includes(String(consultations.error.code ?? ""))
+  )
+    return failure("Consultation reminders are unavailable.", 503);
   const { data: jobs, error } = await client.rpc("claim_notifications");
   if (error || !Array.isArray(jobs))
     return failure("Notification queue is unavailable.", 503);

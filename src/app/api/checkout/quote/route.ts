@@ -18,11 +18,17 @@ export async function POST(request: Request) {
   const { user, client } = await session();
   if (!user) return failure("Please sign in to review current prices.", 401);
   const { data, error } = await Promise.resolve(
-    client.rpc("quote_commerce_checkout", {
-      m: input.data.market,
-      items: input.data.items,
-      promotion_code: input.data.promotionCode ?? null,
-    }),
+    client.rpc(
+      input.data.fulfilment
+        ? "quote_fulfilment_checkout"
+        : "quote_commerce_checkout",
+      {
+        m: input.data.market,
+        items: input.data.items,
+        promotion_code: input.data.promotionCode ?? null,
+        ...(input.data.fulfilment ? { selection: input.data.fulfilment } : {}),
+      },
+    ),
   ).catch(() => ({ data: null, error: { code: "TRANSPORT" } }));
   if (error) {
     // A fixed, non-sensitive rule refusal: tell the shopper what to change.

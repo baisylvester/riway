@@ -138,6 +138,7 @@ interface Entry {
   image_url?: string | null;
   publish_at?: string | null;
   unpublish_at?: string | null;
+  story_asset_id?: string | null;
 }
 export interface PublishedImage {
   url: string;
@@ -261,6 +262,20 @@ export function ContentForm({
         <label className="full">
           Body (plain text)
           <textarea name="body" maxLength={30000} defaultValue={entry?.body} />
+        </label>
+        <label className="full">
+          Reviewed story media asset ID (optional)
+          <input
+            name="story_asset_id"
+            defaultValue={entry?.story_asset_id ?? ""}
+            pattern="[0-9a-fA-F-]{36}"
+            maxLength={36}
+          />
+          <span className="small muted">
+            For a story, use a live campaign-library asset with approved rights,
+            accessible transcript and disclaimer. Choose its market before
+            publication.
+          </span>
         </label>
       </div>
       <p className="small muted">

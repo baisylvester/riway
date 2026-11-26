@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { z } from "zod";
 import { currentMarket } from "@/lib/data";
 import { markets } from "@/lib/domain";

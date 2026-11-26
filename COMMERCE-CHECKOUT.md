@@ -1,5 +1,11 @@
 # Approved package and promotion checkout
 
+The 25 November bonus increment (`20261125072929`) extends the shared authoritative planner with separately frozen free goods. Existing paid lines, money totals and voucher allocation remain unchanged. All entry points share gift stock/quantity/registration and campaign capacity enforcement; reviewed quotes bind exact gifts/return terms. See `PROPOSAL-DELIVERY.md` for evidence and limits.
+
+## Current proposal candidate — 25 November 2026
+
+The current candidate adds verified passwordless guest access and delivery/collection choices using `20261125015757_checkout_collection_choice.sql`. Selected approved centre revisions and instructions are bound to authoritative quotes/orders; retries preserve the original frozen order. Only staff-approved no-additional-fee collection is supported. Existing package/voucher/stock/idempotency logic remains authoritative. Neither collection nor guest verification enables payments. Bonus campaigns and returns/refunds now extend this path; approved refund terms are bound to quotes/orders by `20261125075200`. Official tax invoices/credit notes, subscriptions and RIWAY partial-refund adjustments remain outstanding; see [the handover](PROPOSAL-DELIVERY.md).
+
 Drafts remain preparation records. A market administrator or compliance user with verified MFA must review the exact draft revision, select its published package SKU where applicable, enter an approval reference and acknowledge the checkout contract. Approval stores a separate immutable version. Editing a draft does not edit that approved version. Withdraw an existing package/voucher configuration before approving its replacement.
 
 For packages, approval copies the proposed retail/member prices into market pricing without granting product registration or opening sales. Subsequent authorized market-price edits remain authoritative. Package composition is taken from the approved snapshot. Catalogue details show approved composition; checkout expands packages into physical components and aggregates overlaps with other packages and loose products. Component publication, country registration, quantity limits and stock are checked independently of the package SKU. Corporate stock is used; the separate third-party tenant inventory is unchanged.

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { currentMarket, requireSession } from "@/lib/data";
 import { privacyListSchema, privacyPage } from "@/lib/privacy-requests";
 import { PrivacyIntakeForm } from "@/components/privacy-request-forms";
@@ -17,6 +17,17 @@ export default async function PrivacyPage({
   return (
     <div className="stack">
       <h2>Your privacy choices</h2>
+      <p>
+        <a className="button button-outline" href="/api/account/export">
+          Download my account data
+        </a>
+      </p>
+      <p className="small muted">
+        The JSON download contains your account data held in this website. It
+        does not include external RIWAY system records or erase retained
+        transaction records. For a broader request, use the privacy case form
+        below.
+      </p>
       <p>
         Request access to your data, a correction, deletion or restricted use.
         Follow progress and reply to RIWAY's privacy team here. Requests are

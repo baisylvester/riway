@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { notFound } from "next/navigation";
 import { session } from "@/lib/data";
 import { money } from "@/lib/domain";
@@ -7,6 +7,9 @@ import { FulfilmentTimeline } from "./fulfilment-timeline";
 import { FulfilmentForm } from "./fulfilment-form";
 import { CancelOrderForm } from "./cancel-order-form";
 import { orderCancellationSchema } from "@/lib/cancellation";
+import { fulfilmentSnapshotSchema } from "@/lib/checkout-fulfilment";
+import { BonusItems } from "./bonus-items";
+import { OrderReturns } from "./order-returns";
 
 type Address = Partial<
   Record<
@@ -27,7 +30,7 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
   const { data: order, error } = await client
     .from("orders")
     .select(
-      "id,market,currency,total_minor,status,payment_status,created_at,address,order_items(product_name,quantity,net_minor)",
+      "id,market,currency,total_minor,status,payment_status,created_at,address,checkout_fulfilment,bonus_items,order_items(product_name,quantity,net_minor)",
     )
     .eq("id", orderId)
     .maybeSingle();
@@ -41,6 +44,9 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
       )
     : null;
   const address = (order.address ?? {}) as Address;
+  const selected = fulfilmentSnapshotSchema.safeParse(
+    order.checkout_fulfilment,
+  );
   return (
     <>
       <div className="admin-actions">
@@ -51,6 +57,10 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
       </div>
       <div className="two-column">
         <div className="panel stack">
+          <BonusItems items={order.bonus_items} />
+          {["paid", "refunded"].includes(order.payment_status) && (
+            <OrderReturns orderId={orderId} staff />
+          )}
           <p>
             <span className="status">
               {orderStatusLabels[order.status] ?? order.status}
@@ -72,7 +82,19 @@ export async function OrderFulfilmentAdmin({ orderId }: { orderId: string }) {
           <p className="price">
             Total {money(order.total_minor, order.currency)}
           </p>
-          <h3>Deliver to</h3>
+          <h3>
+            {selected.success && selected.data.method === "collection"
+              ? "Customer selected collection"
+              : "Deliver to"}
+          </h3>
+          {selected.success && selected.data.method === "collection" && (
+            <div className="notice">
+              <p>
+                {selected.data.name} · Centre revision {selected.data.revision}
+              </p>
+              <p>{selected.data.instructions}</p>
+            </div>
+          )}
           <address style={{ fontStyle: "normal", overflowWrap: "anywhere" }}>
             {address.full_name}
             <br />

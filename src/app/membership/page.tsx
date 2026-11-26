@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { currentLocale } from "@/lib/locale-server";
+import Link from "@/components/localized-link";
 import { currentMarket } from "@/lib/data";
 import { cmsSections, pageKeys } from "@/lib/cms-pages";
 import { CmsSections } from "@/components/cms-sections";
@@ -8,6 +9,7 @@ export default async function Membership() {
   const sections = await cmsSections(
     pageKeys.membership,
     await currentMarket(),
+    await currentLocale(),
   );
   return (
     <>

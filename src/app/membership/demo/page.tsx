@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { MembershipDemo } from "@/components/membership-demo";
 
 export const metadata = { title: "Sample membership journey" };

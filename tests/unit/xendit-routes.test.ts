@@ -99,7 +99,11 @@ beforeEach(() => {
       ? { data: ["GCASH", "BPI_ONLINE_BANKING"], error: null }
       : { data: orderId, error: null },
   );
-  f.session.mockResolvedValue({ user: { id: userId }, client: { rpc } });
+  f.session.mockResolvedValue({
+    user: { id: userId },
+    contactVerified: true,
+    client: { rpc },
+  });
   f.referral.mockResolvedValue({ state: "none", message: "" });
   f.stripeClients.mockReturnValue({ config: { terms: "qa-terms-v1" } });
   f.stripeReady.mockReturnValue({ enabled: true });

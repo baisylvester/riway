@@ -19,6 +19,30 @@ const context = {
 };
 
 describe("order confirmation email", () => {
+  it("includes escaped bonus goods and their frozen return terms in both email formats", () => {
+    const mail = notificationContent({
+      type: "order_confirmed",
+      reference: orderId,
+      context: {
+        ...context,
+        bonusItems: [
+          {
+            name: "Bonus <script>goods</script>",
+            quantity: 1,
+            returnTerms: "Synthetic approved return terms <b>only</b>.",
+          },
+        ],
+      },
+    });
+    expect(mail.text).toContain(
+      "Bonus: Bonus <script>goods</script> × 1 | No additional charge",
+    );
+    expect(mail.html).toContain("Bonus &lt;script&gt;goods&lt;/script&gt;");
+    expect(mail.html).toContain(
+      "Synthetic approved return terms &lt;b&gt;only&lt;/b&gt;.",
+    );
+    expect(mail.html).not.toContain("<script>");
+  });
   it("summarises the frozen snapshot, escapes names and links to the owned order", () => {
     vi.stubEnv("NEXT_PUBLIC_SITE_URL", "https://shop.example.invalid");
     const mail = notificationContent({

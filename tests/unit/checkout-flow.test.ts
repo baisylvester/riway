@@ -20,7 +20,11 @@ const holder = vi.hoisted(() => ({
   service: null as unknown,
 }));
 vi.mock("@/lib/data", () => ({
-  session: async () => ({ user: holder.user, client: userClient() }),
+  session: async () => ({
+    user: holder.user,
+    contactVerified: !!holder.user,
+    client: userClient(),
+  }),
 }));
 vi.mock("@/lib/referral-continuity", () => ({
   completePendingReferral: async () => ({ state: "none", message: "" }),

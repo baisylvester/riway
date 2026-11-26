@@ -23,7 +23,7 @@ const r2Origin =
 const measurement = measurementCspOrigins(analyticsConfig(process.env));
 const policy = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline' ${clerkOrigin ? `${clerkOrigin} https://challenges.cloudflare.com https://*.protect.clerk.com` : ""} ${measurement.script.join(" ")}`,
+  `script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === "development" ? "'unsafe-eval'" : ""} ${clerkOrigin ? `${clerkOrigin} https://challenges.cloudflare.com https://*.protect.clerk.com` : ""} ${measurement.script.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: https://static.wixstatic.com https://skiimthwadramxdzhgoy.supabase.co ${r2Origin} ${clerkOrigin ? "https://img.clerk.com" : ""} ${measurement.img.join(" ")}`,
   `connect-src 'self' https://skiimthwadramxdzhgoy.supabase.co ${clerkOrigin ? `${clerkOrigin} https://*.protect.clerk.com:*` : ""} ${measurement.connect.join(" ")}`,
@@ -64,6 +64,15 @@ const config: NextConfig = {
           {
             key: "Content-Security-Policy",
             value: policy,
+          },
+        ],
+      },
+      {
+        source: "/account/assistant",
+        headers: [
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(self), geolocation=()",
           },
         ],
       },

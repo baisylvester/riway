@@ -1,0 +1,58 @@
+begin;
+set local lock_timeout='5s';set local statement_timeout='45s';
+select set_config('request.jwt.claims','{}',true);
+do $$declare u uuid:=gen_random_uuid();a uuid:=gen_random_uuid();s uuid:=gen_random_uuid();p uuid:=gen_random_uuid();begin
+ insert into auth.users(id,email,email_confirmed_at)select x,'collection-qa-'||x||'@example.invalid',now()from unnest(array[u,a,s])x;
+ insert into public.staff_roles(user_id,market,role)values(a,'PH','admin');
+ insert into public.distributor_profiles(user_id,external_member_id,code,display_name,market,active,verified_at)values(s,'QA-'||s,'Q'||replace(s::text,'-',''),'QA sponsor','PH',true,now());
+ insert into public.sponsor_attributions(user_id,distributor_id)values(u,s);
+ insert into public.products(id,slug,name,category,status)values(p,'collection-qa-'||p,'QA collection product','Nutrition','published');
+ insert into public.product_offers(product_id,market,currency,retail_minor,regulatory_approved,approval_reference,max_quantity)values(p,'PH','PHP',100,true,'ROLLBACK-QA',24);
+ insert into public.inventory(product_id,market,on_hand)values(p,'PH',10);
+ update public.markets set online_sales_approved=true,payments_ready=true,policy_reference='ROLLBACK-QA'where code='PH';
+ perform set_config('collection.user',u::text,true);perform set_config('collection.admin',a::text,true);perform set_config('collection.product',p::text,true);
+ perform set_config('collection.items',jsonb_build_array(jsonb_build_object('productId',p,'quantity',1))::text,true);
+ perform set_config('collection.address','{"full_name":"QA Customer","phone":"0000000000","line1":"Untrusted browser address","city":"Browser city","postal_code":"9999","country":"PH"}',true);
+ perform set_config('collection.details','{"name":"QA Centre","line1":"Approved centre address","city":"Manila","postalCode":"1000","instructions":"Collect only after receiving confirmation.","noFeeApproved":true}',true);
+ perform set_config('collection.key',gen_random_uuid()::text,true);
+end $$;
+set local role authenticated;
+do $$declare c uuid;q jsonb;o uuid;items jsonb:=current_setting('collection.items')::jsonb;address jsonb:=current_setting('collection.address')::jsonb;k uuid:=current_setting('collection.key')::uuid;terms text;begin
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.user'),'role','authenticated','aal','aal1')::text,true);
+ begin perform public.save_service_centre(null,0,'PH',current_setting('collection.details')::jsonb,true,'QA-APPROVAL');raise exception 'FAIL: customer centre approval';exception when insufficient_privilege then null;end;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.admin'),'role','authenticated','aal','aal2')::text,true);
+ c:=public.save_service_centre(null,0,'PH',current_setting('collection.details')::jsonb,true,'QA-APPROVAL');perform set_config('collection.centre',c::text,true);
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.user'),'role','authenticated','aal','aal1')::text,true);
+ q:=public.quote_fulfilment_checkout('PH',items,null,jsonb_build_object('method','collection','centreId',c));perform set_config('collection.quote',q::text,true);
+ if q->'fulfilment'->>'line1'<>'Approved centre address'then raise exception 'FAIL: centre quote';end if;
+ begin perform public.quote_fulfilment_checkout('SG',items,null,jsonb_build_object('method','collection','centreId',c));raise exception 'FAIL: cross market collection';exception when invalid_parameter_value then null;end;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.admin'),'role','authenticated','aal','aal2')::text,true);
+ perform public.save_service_centre(c,1,'PH',current_setting('collection.details')::jsonb||'{"instructions":"New approved collection instructions."}'::jsonb,true,'QA-REVISION');
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.user'),'role','authenticated','aal','aal1')::text,true);
+ select checkout_terms_version into terms from public.markets where code='PH';
+ begin perform public.create_fulfilment_order('PH',items,address,k,terms,null,q->>'quoteHash',null,jsonb_build_object('method','collection','centreId',c));raise exception 'FAIL: stale centre quote';exception when serialization_failure then null;end;
+ q:=public.quote_fulfilment_checkout('PH',items,null,jsonb_build_object('method','collection','centreId',c));
+ o:=public.create_fulfilment_order('PH',items,address,k,terms,null,q->>'quoteHash',null,jsonb_build_object('method','collection','centreId',c));perform set_config('collection.order',o::text,true);
+ if(select checkout_fulfilment->>'revision'from public.orders where id=o)<>'2'or(select ord.address->>'line1'from public.orders ord where id=o)<>'Approved centre address'then raise exception 'FAIL: authoritative collection snapshot';end if;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.admin'),'role','authenticated','aal','aal2')::text,true);
+ perform public.save_service_centre(c,2,'PH',current_setting('collection.details')::jsonb,false,'QA-WITHDRAW');
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.user'),'role','authenticated','aal','aal1')::text,true);
+ if public.create_fulfilment_order('PH',items,address,k,terms,null,q->>'quoteHash',null,jsonb_build_object('method','collection','centreId',c))<>o then raise exception 'FAIL: frozen retry after withdrawal';end if;
+ begin perform public.create_fulfilment_order('PH',items,address,k,terms,null,q->>'quoteHash',null,'{"method":"delivery"}');raise exception 'FAIL: changed retry selection';exception when invalid_parameter_value then null;end;
+end $$;
+reset role;
+do $$declare o uuid:=current_setting('collection.order')::uuid;r jsonb;begin
+ if(select reserved from public.inventory where product_id=current_setting('collection.product')::uuid)<>1 then raise exception 'FAIL: stock reserved twice';end if;
+ begin update public.orders set checkout_fulfilment='{"method":"delivery"}'where id=o;raise exception 'FAIL: immutable collection snapshot';exception when raise_exception then if SQLERRM<>'Checkout fulfilment snapshot is immutable'then raise;end if;end;
+ perform set_config('request.jwt.claims','{}',true);
+ r:=public.prepare_stripe_checkout(o,current_setting('collection.user')::uuid,false,'https://example.invalid');
+ perform public.apply_stripe_checkout_event('evt_collection_'||o,(r->>'id')::uuid,o,'cs_test_collection_'||replace(o::text,'-',''),false,100,'php','complete','paid','pi_collection'||replace(o::text,'-',''));
+end $$;
+set local role authenticated;
+select set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('collection.admin'),'role','authenticated','aal','aal2')::text,true);
+do $$declare o uuid:=current_setting('collection.order')::uuid;begin
+ perform public.advance_order_fulfilment(o,'fulfilling');
+ begin perform public.advance_order_fulfilment(o,'shipped','courier','QA Courier','QA123456','https://example.invalid/track',null);raise exception 'FAIL: dispatch changed customer selection';exception when invalid_parameter_value then null;end;
+ perform public.advance_order_fulfilment(o,'shipped','collection',null,null,null,'Ready at the original approved centre.');
+end $$;
+rollback;

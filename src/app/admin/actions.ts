@@ -1,6 +1,6 @@
 "use server";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { session, staffAccess } from "@/lib/data";
 import { eventDateSchema, marketSchema } from "@/lib/domain";
 import {
@@ -113,6 +113,7 @@ export async function saveContent(_: Result, f: FormData): Promise<Result> {
       title: z.string().trim().min(2).max(160),
       excerpt: z.string().trim().max(1000),
       body: z.string().trim().max(30000),
+      story_asset_id: z.union([z.uuid(), z.literal("")]).default(""),
       status: z.enum(["draft", "review", "published", "archived"]),
       market: z.union([marketSchema, z.literal("")]),
       location: z.string().max(300),
@@ -130,6 +131,7 @@ export async function saveContent(_: Result, f: FormData): Promise<Result> {
   const data = {
     ...raw,
     market: raw.market || null,
+    story_asset_id: raw.story_asset_id || null,
     image_url: raw.image_url || null,
     starts_at: utcInputToIso(raw.starts_at),
     publish_at: utcInputToIso(raw.publish_at),
@@ -150,6 +152,7 @@ export async function saveContent(_: Result, f: FormData): Promise<Result> {
   if (!error) {
     revalidatePath("/");
     revalidatePath("/events/[slug]", "page");
+    revalidatePath("/stories/[slug]", "page");
   }
   return {
     message: !error

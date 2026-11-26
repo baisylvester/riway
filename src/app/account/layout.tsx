@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { redirect } from "next/navigation";
 import { session } from "@/lib/data";
 import { SignOut } from "@/components/auth-form";
@@ -29,6 +29,9 @@ export default async function AccountLayout({
         <Link href="/account/addresses">Addresses</Link>
         <Link href="/account/security">Security</Link>
         <Link href="/account/privacy">Privacy</Link>
+        <Link href="/account/consultations">Consultations</Link>
+        <Link href="/account/assistant">Product assistant</Link>
+        <Link href="/account/preferences">Communications</Link>
         <Link href="/operations">Store management</Link>
         <Link href="/distributor">Distributor</Link>
       </nav>

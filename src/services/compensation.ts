@@ -1,6 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { ProviderNotConfigured } from "./production-integrations";
+import { bonusItemsSchema } from "@/lib/bonus-campaigns";
 
 /**
  * RIWAY compensation order-volume delivery (audit G02).
@@ -25,6 +26,7 @@ const line = z.object({
 
 export const compensationPayloadSchema = z.object({
   schemaVersion: z.literal(1),
+  bonusItems: bonusItemsSchema.optional(),
   eventType: z.enum(["order_paid", "order_reversed"]),
   orderId: z.uuid(),
   market: z.enum(["PH", "SG", "MY"]),

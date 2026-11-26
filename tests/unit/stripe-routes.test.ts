@@ -63,6 +63,7 @@ beforeEach(() => {
   };
   f.session.mockResolvedValue({
     user: { id: userId },
+    contactVerified: true,
     client: { rpc, from: vi.fn(() => query) },
   });
   f.clients.mockReturnValue({ config: { terms: "qa-terms-v1" } });
@@ -114,6 +115,17 @@ describe("checkout authority boundaries", () => {
     expect(
       (await checkout(request({ ...input, termsVersion: "outdated" }))).status,
     ).toBe(409);
+    expect(rpc).not.toHaveBeenCalled();
+    expect(f.start).not.toHaveBeenCalled();
+  });
+  it("refuses unverified contacts before creating orders or contacting a gateway", async () => {
+    f.session.mockResolvedValue({
+      user: { id: userId },
+      contactVerified: false,
+      client: { rpc },
+    });
+    expect((await checkout(request())).status).toBe(403);
+    expect((await resume(request({ orderId }))).status).toBe(403);
     expect(rpc).not.toHaveBeenCalled();
     expect(f.start).not.toHaveBeenCalled();
   });

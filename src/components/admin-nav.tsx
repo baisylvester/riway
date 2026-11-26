@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { usePathname } from "next/navigation";
 export function AdminNav() {
   const path = usePathname();
@@ -11,15 +11,20 @@ export function AdminNav() {
         ["pricing", "Pricing"],
         ["packages", "Package drafts"],
         ["promotions", "Promotion drafts"],
+        ["bonuses", "Bonus campaigns"],
         ["memberships", "Membership"],
         ["inventory", "Inventory"],
+        ["centres", "Service centres"],
         ["orders", "Orders"],
+        ["returns", "Returns and refunds"],
         ["payments", "Payments"],
         ["reports", "Sales reports"],
         ["compensation", "RIWAY volume sync"],
         ["distributors", "Distributor tools"],
+        ["library", "Campaign library"],
         ["product-content", "Product content"],
         ["content", "Content"],
+        ["events", "Event attendance"],
         ["media", "Media library"],
         ["support", "Support requests"],
         ["privacy", "Privacy requests"],

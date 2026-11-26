@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { useState } from "react";
 import { cartSchema, mergeCart, type CartItem } from "@/lib/domain";
 import { useStore } from "./store-provider";

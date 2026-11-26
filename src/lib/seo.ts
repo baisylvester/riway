@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { configuredSiteUrl } from "./site-url";
+import { locales, localizedHref, localizedSeoLocales } from "./locales";
 
 // Search indexing stays off until RIWAY approves launch. Setting
 // SEARCH_INDEXING=enabled opens public pages to crawlers and publishes the
@@ -58,10 +59,8 @@ export const privateRobotsPaths = [
   "/operations",
 ];
 
-// The site is English-only and the PH/SG/MY market is chosen by cookie on
-// the same URL, so each page has a single language version. hreflang therefore
-// lists English plus x-default; add one entry per locale once localized URLs
-// exist (proposal §4.2).
+// English is canonical without a prefix. Other complete translated pages must
+// be explicitly reviewed before sitemap/hreflang publication.
 export const siteLanguages = ["en"] as const;
 
 type Slugged = {
@@ -82,31 +81,37 @@ export function crawlerVisible<T extends Slugged>(
 export function sitemapEntries(
   origin: string,
   dynamic: { products?: Slugged[]; stories?: Slugged[]; events?: Slugged[] },
+  env: Record<string, string | undefined> = process.env,
 ): MetadataRoute.Sitemap {
   const entry = (
     path: string,
     lastModified?: string | null,
-  ): MetadataRoute.Sitemap[number] => {
+  ): MetadataRoute.Sitemap => {
     const url = path === "/" ? origin : `${origin}${path}`;
     const languages: Record<string, string> = { "x-default": url };
-    for (const lang of siteLanguages) languages[lang] = url;
-    return {
-      url,
+    const approved = localizedSeoLocales(path, env);
+    for (const lang of approved)
+      languages[lang] = new URL(localizedHref(path, lang), origin).href;
+    return approved.map((locale) => ({
+      url:
+        locale === "en"
+          ? url
+          : new URL(localizedHref(path, locale), origin).href,
       ...(lastModified ? { lastModified } : {}),
       alternates: { languages },
-    };
+    }));
   };
   const slugs = (prefix: string, items: Slugged[] = []) => {
     const seen = new Set<string>();
     return items
       .filter((i) => i.slug && !seen.has(i.slug) && seen.add(i.slug))
-      .map((i) =>
+      .flatMap((i) =>
         entry(`${prefix}/${encodeURIComponent(i.slug)}`, i.updated_at),
       );
   };
   return [
-    ...staticPublicPaths.map((p) => entry(p)),
-    ...legalSlugs.map((s) => entry(`/legal/${s}`)),
+    ...staticPublicPaths.flatMap((p) => entry(p)),
+    ...legalSlugs.flatMap((s) => entry(`/legal/${s}`)),
     ...slugs("/shop", dynamic.products),
     ...slugs("/stories", crawlerVisible(dynamic.stories ?? [])),
     ...slugs("/events", crawlerVisible(dynamic.events ?? [])),
@@ -120,7 +125,16 @@ export function robotsRules(
     return { rules: { userAgent: "*", disallow: "/" } };
   }
   return {
-    rules: { userAgent: "*", allow: "/", disallow: privateRobotsPaths },
+    rules: {
+      userAgent: "*",
+      allow: "/",
+      disallow: [
+        ...privateRobotsPaths,
+        ...locales
+          .filter((l) => l !== "en")
+          .flatMap((l) => privateRobotsPaths.map((path) => `/${l}${path}`)),
+      ],
+    },
     sitemap: `${siteOrigin(env)}/sitemap.xml`,
   };
 }

@@ -69,6 +69,7 @@ export interface TransactionalEmailProvider {
     html: string;
     text: string;
     replyTo?: string;
+    headers?: { "List-Unsubscribe": string; "List-Unsubscribe-Post": string };
   }): Promise<{ providerMessageId: string }>;
 }
 

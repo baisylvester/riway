@@ -3,6 +3,7 @@ import { session } from "@/lib/data";
 import { StaffActionForm } from "@/components/staff-action-form";
 import { productContentSchema } from "@/lib/product-content";
 import { saveProductContent } from "./actions";
+import { isLocale, locales, localeNames } from "@/lib/locales";
 
 export const metadata = { title: "Product content" };
 
@@ -11,9 +12,11 @@ const markets = ["PH", "SG", "MY"] as const;
 export default async function ProductContentAdmin({
   searchParams,
 }: {
-  searchParams: Promise<{ market?: string }>;
+  searchParams: Promise<{ market?: string; locale?: string }>;
 }) {
-  const requested = (await searchParams).market;
+  const query = await searchParams;
+  const requested = query.market;
+  const locale = isLocale(query.locale) ? query.locale : "en";
   const market = markets.find((m) => m === requested) ?? "PH";
   const { client } = await session();
   const [products, rows] = await Promise.all([
@@ -26,7 +29,7 @@ export default async function ProductContentAdmin({
       .from("product_market_content")
       .select("*")
       .eq("market", market)
-      .eq("locale", "en"),
+      .eq("locale", locale),
   ]);
   const content = z.array(productContentSchema).safeParse(rows.data);
   const byProduct = new Map(
@@ -51,6 +54,16 @@ export default async function ProductContentAdmin({
             ))}
           </select>
         </label>
+        <label>
+          Language
+          <select name="locale" defaultValue={locale}>
+            {locales.map((l) => (
+              <option key={l} value={l}>
+                {localeNames[l]}
+              </option>
+            ))}
+          </select>
+        </label>
         <button className="button button-outline">Show</button>
       </form>
       {products.error ? (
@@ -61,12 +74,13 @@ export default async function ProductContentAdmin({
           return (
             <section className="panel stack" key={p.id}>
               <h2>
-                {p.name} · {market}{" "}
+                {p.name} · {market} · {localeNames[locale]}{" "}
                 <span className="status">{c?.status ?? "none"}</span>
               </h2>
               <StaffActionForm action={saveProductContent} submit="Save">
                 <input type="hidden" name="productId" value={p.id} />
                 <input type="hidden" name="market" value={market} />
+                <input type="hidden" name="locale" value={locale} />
                 <label>
                   Ingredients
                   <textarea

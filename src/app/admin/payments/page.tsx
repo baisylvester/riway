@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { session } from "@/lib/data";
 import { money, markets, type Market } from "@/lib/domain";
 import { stripeReadiness } from "@/lib/stripe-config";

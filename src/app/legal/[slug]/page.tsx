@@ -1,3 +1,4 @@
+import { currentLocale } from "@/lib/locale-server";
 import { notFound } from "next/navigation";
 import { analyticsConfig } from "@/lib/consent";
 import { currentMarket } from "@/lib/data";
@@ -85,10 +86,14 @@ export default async function Notice({
   const [approved] = await cmsSections(
     [`legal-${slug}`],
     await currentMarket(),
+    await currentLocale(),
   );
   if (approved)
     return (
-      <section className="section page-prose page-section">
+      <section
+        className="section page-prose page-section"
+        lang={approved.locale ?? "en"}
+      >
         <span className="eyebrow">POLICIES &amp; CONDUCT</span>
         <h1>{approved.title}</h1>
         {bodyBlocks(approved.body).map((b, i) =>

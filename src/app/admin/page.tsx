@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { session } from "@/lib/data";
 import { inventoryAlertSubscriptionsSchema } from "@/lib/inventory-alerts";
 import { InventoryAlertForm } from "@/components/inventory-alert-form";

@@ -24,6 +24,9 @@ const store = vi.hoisted(() => ({
 vi.mock("react", async (original) => ({
   ...(await original<typeof import("react")>()),
   useId: () => "quantity-error-fixture",
+  // This handler-only harness fixes locale; real provider/rendering is covered
+  // by locale SSR and browser tests.
+  useContext: () => ({ locale: "en", available: ["en"] }),
   useRef: (initial: unknown) => {
     const slot = (hooks.slots[hooks.cursor++] ??= {
       value: { current: initial },

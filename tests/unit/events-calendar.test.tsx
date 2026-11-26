@@ -12,7 +12,11 @@ import {
   type EventEntry,
 } from "../../src/lib/events";
 
-const mocks = vi.hoisted(() => ({ content: vi.fn(), currentMarket: vi.fn() }));
+const mocks = vi.hoisted(() => ({
+  content: vi.fn(),
+  currentMarket: vi.fn(),
+  session: vi.fn(async () => ({ user: null })),
+}));
 vi.mock("../../src/lib/data", () => mocks);
 vi.mock("next/navigation", () => ({
   notFound: () => {

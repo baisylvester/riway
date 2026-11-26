@@ -27,8 +27,10 @@ export async function POST(request: Request) {
   );
   if (!input.success)
     return failure("Check your bag, delivery details and terms acceptance.");
-  const { user, client } = await session();
+  const { user, client, contactVerified } = await session();
   if (!user) return failure("Please sign in before checkout.", 401);
+  if (!contactVerified)
+    return failure("Verify your email before placing an order.", 403);
   const payment = input.data.payment ?? { gateway: "stripe" as const };
   if (!configuredGateways().has(payment.gateway))
     return failure(
@@ -105,16 +107,22 @@ export async function POST(request: Request) {
     );
   }
   const order = await Promise.resolve(
-    client.rpc("create_membership_commerce_order", {
-      m: input.data.market,
-      items: input.data.items,
-      delivery: input.data.address,
-      key: input.data.idempotencyKey,
-      terms,
-      promotion_code: input.data.promotionCode ?? null,
-      quote_hash: input.data.quoteHash,
-      membership_consent: input.data.membershipConsent ?? null,
-    }),
+    client.rpc(
+      input.data.fulfilment
+        ? "create_fulfilment_order"
+        : "create_membership_commerce_order",
+      {
+        m: input.data.market,
+        items: input.data.items,
+        delivery: input.data.address,
+        key: input.data.idempotencyKey,
+        terms,
+        promotion_code: input.data.promotionCode ?? null,
+        quote_hash: input.data.quoteHash,
+        membership_consent: input.data.membershipConsent ?? null,
+        ...(input.data.fulfilment ? { selection: input.data.fulfilment } : {}),
+      },
+    ),
   ).catch(() => ({ data: null, error: { code: "TRANSPORT" } }));
   if (order.error?.code === "40001")
     return failure(

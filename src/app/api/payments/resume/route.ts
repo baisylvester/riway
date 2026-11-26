@@ -28,8 +28,10 @@ export async function POST(request: Request) {
         .catch(() => null),
     );
   if (!input.success) return failure("Invalid order reference.");
-  const { client, user } = await session();
+  const { client, user, contactVerified } = await session();
   if (!user) return failure("Please sign in.", 401);
+  if (!contactVerified)
+    return failure("Verify your email before resuming payment.", 403);
   const order = await client
     .from("orders")
     .select("id")

@@ -1,3 +1,4 @@
+import { LocalizedAnchor } from "@/components/localized-link";
 import type React from "react";
 import { ReferenceShell } from "./reference-shell";
 import { ReferenceStage } from "./reference-stage";
@@ -104,7 +105,7 @@ export function ReferenceHome({
       </section>
 
       <section className="houses" id="houses">
-        <a
+        <LocalizedAnchor
           className="house"
           href="#story"
           style={
@@ -143,8 +144,8 @@ export function ReferenceHome({
               <path d="M1 7h12M8 2l5 5-5 5" />
             </svg>
           </span>
-        </a>
-        <a
+        </LocalizedAnchor>
+        <LocalizedAnchor
           className="house"
           href="/purtier"
           style={
@@ -183,8 +184,8 @@ export function ReferenceHome({
               <path d="M1 7h12M8 2l5 5-5 5" />
             </svg>
           </span>
-        </a>
-        <a
+        </LocalizedAnchor>
+        <LocalizedAnchor
           className="house"
           href="/conscientious"
           style={
@@ -223,7 +224,7 @@ export function ReferenceHome({
               <path d="M1 7h12M8 2l5 5-5 5" />
             </svg>
           </span>
-        </a>
+        </LocalizedAnchor>
       </section>
 
       <section className="unbox compact" id="purtierUnbox">
@@ -266,9 +267,13 @@ export function ReferenceHome({
               Fourteen ingredients, <em>one</em> capsule.
             </h2>
             <p>Deer placenta and nature’s gifts, preserved at their best.</p>
-            <a className="btn magnetic" href="/purtier" data-cursor="Open">
+            <LocalizedAnchor
+              className="btn magnetic"
+              href="/purtier"
+              data-cursor="Open"
+            >
               Discover PURTIER
-            </a>
+            </LocalizedAnchor>
           </div>
         </div>
       </section>
@@ -315,13 +320,13 @@ export function ReferenceHome({
               Cleansing Repairing Mask for him. Brightening Firming Mask for
               her.
             </p>
-            <a
+            <LocalizedAnchor
               className="btn magnetic"
               href="/conscientious"
               data-cursor="Open"
             >
               Explore CONSCIENTIOUS
-            </a>
+            </LocalizedAnchor>
           </div>
         </div>
       </section>
@@ -681,7 +686,11 @@ export function ReferenceHome({
         <div className="ev-row" id="evrow">
           {upcoming.length
             ? upcoming.map((event, index) => (
-                <a className="ev" href={`/events/${event.slug}`} key={event.id}>
+                <LocalizedAnchor
+                  className="ev"
+                  href={`/events/${event.slug}`}
+                  key={event.id}
+                >
                   <img
                     src={`/design/riway/${moments[index].image}`}
                     alt=""
@@ -697,10 +706,14 @@ export function ReferenceHome({
                     <h3 className="display">{event.title}</h3>
                     <p>{event.location}</p>
                   </div>
-                </a>
+                </LocalizedAnchor>
               ))
             : moments.map((moment) => (
-                <a className="ev" href="/events" key={moment.image}>
+                <LocalizedAnchor
+                  className="ev"
+                  href="/events"
+                  key={moment.image}
+                >
                   <img
                     src={`/design/riway/${moment.image}`}
                     alt=""
@@ -710,7 +723,7 @@ export function ReferenceHome({
                     <small>From the archive · {moment.label}</small>
                     <h3 className="display">{moment.title}</h3>
                   </div>
-                </a>
+                </LocalizedAnchor>
               ))}
         </div>
         <div style={{ padding: "24px var(--gutter)" }}>
@@ -721,9 +734,13 @@ export function ReferenceHome({
                 ? "Event details are temporarily unavailable. Please try the calendar again later."
                 : "The photographs above are from the archive. No upcoming events are currently published for this market."}
           </p>
-          <a className="btn magnetic" href="/events" data-cursor="Open">
+          <LocalizedAnchor
+            className="btn magnetic"
+            href="/events"
+            data-cursor="Open"
+          >
             View regional calendar
-          </a>
+          </LocalizedAnchor>
         </div>
         <div className="marq marquee">
           <div>
@@ -747,9 +764,13 @@ export function ReferenceHome({
           <h2 className="display split">
             Find your <em>right way</em> in.
           </h2>
-          <a className="btn magnetic" href="/find-a-distributor" data-cursor="Open">
+          <LocalizedAnchor
+            className="btn magnetic"
+            href="/find-a-distributor"
+            data-cursor="Open"
+          >
             Find a distributor
-          </a>
+          </LocalizedAnchor>
         </div>
       </section>
     </ReferenceShell>

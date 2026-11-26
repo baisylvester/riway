@@ -1,5 +1,11 @@
 import { z } from "zod";
 import { membershipQualificationSchema } from "./membership";
+import { bonusItemsSchema } from "./bonus-campaigns";
+import {
+  checkoutFulfilmentSchema,
+  fulfilmentSnapshotSchema,
+  type CheckoutFulfilment,
+} from "./checkout-fulfilment";
 import {
   cartSchema,
   marketSchema,
@@ -14,6 +20,7 @@ export const promotionCodeSchema = z
   .toUpperCase()
   .regex(/^[A-Z0-9-]{3,40}$/);
 export const quoteRequestSchema = z.object({
+  fulfilment: checkoutFulfilmentSchema.optional(),
   market: marketSchema,
   items: cartSchema
     .min(1)
@@ -27,6 +34,16 @@ export const quoteRequestSchema = z.object({
 const minor = z.number().int().min(0).max(Number.MAX_SAFE_INTEGER);
 export const commerceQuoteSchema = z
   .object({
+    fulfilment: fulfilmentSnapshotSchema.optional(),
+    bonusItems: bonusItemsSchema.optional(),
+    refundPolicy: z
+      .object({
+        policyId: z.uuid(),
+        version: z.string().min(3).max(120),
+        terms: z.string().min(20).max(8000),
+        allowPartial: z.boolean(),
+      })
+      .optional(),
     market: marketSchema,
     currency: z.enum(["PHP", "SGD", "MYR"]),
     items: z
@@ -113,17 +130,20 @@ export function quoteSelection(
   market: Market,
   items: CartItem[],
   code: string,
+  fulfilment?: CheckoutFulfilment,
 ) {
   return {
     market,
     items,
     promotionCode: code.trim().toUpperCase() || undefined,
+    ...(fulfilment ? { fulfilment } : {}),
   };
 }
 export function quoteFingerprint(
   market: Market,
   items: CartItem[],
   code: string,
+  fulfilment?: CheckoutFulfilment,
 ) {
-  return JSON.stringify(quoteSelection(market, items, code));
+  return JSON.stringify(quoteSelection(market, items, code, fulfilment));
 }

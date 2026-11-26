@@ -1,6 +1,6 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { session, staffAccess } from "@/lib/data";
 import { productContentRequestSchema } from "@/lib/product-content";
 
@@ -28,7 +28,7 @@ export async function saveProductContent(
     {
       product_id: v.productId,
       market: v.market,
-      locale: "en",
+      locale: v.locale,
       ingredients: v.ingredients,
       usage: v.usage,
       label_notes: v.labelNotes,

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { requireSession } from "@/lib/data";
 import { ProfileForm } from "@/components/forms";
 export const metadata = { title: "Your account" };

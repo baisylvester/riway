@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { notFound } from "next/navigation";
 import { session, staffAccess } from "@/lib/data";
 import { commerceDraftListSchema, type DraftKind } from "@/lib/commerce-drafts";

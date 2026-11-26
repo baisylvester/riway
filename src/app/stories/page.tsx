@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { content, currentMarket } from "@/lib/data";
 export const metadata = { title: "Our stories" };
 export default async function Stories() {

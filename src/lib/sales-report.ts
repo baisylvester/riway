@@ -57,6 +57,7 @@ export const salesReportSchema = z.object({
   from: z.string().regex(isoDay),
   to: z.string().regex(isoDay),
   markets: z.array(market).min(1).max(3),
+  refundsIncluded: z.boolean().optional(),
   byMarket: z.array(
     z.object({
       market,
@@ -65,6 +66,7 @@ export const salesReportSchema = z.object({
       subtotalMinor: amount,
       discountMinor: amount,
       totalMinor: amount,
+      refundedMinor: amount.optional(),
     }),
   ),
   // Absent before the channel migration; an empty list keeps the page usable.
@@ -78,6 +80,7 @@ export const salesReportSchema = z.object({
         voucherOrders: count,
         discountMinor: amount,
         totalMinor: amount,
+        refundedMinor: amount.optional(),
       }),
     )
     .default([]),
@@ -110,6 +113,7 @@ export const salesReportSchema = z.object({
       name: z.string().max(200).nullable(),
       orders: count,
       totalMinor: amount,
+      refundedMinor: amount.optional(),
     }),
   ),
 });
@@ -126,6 +130,7 @@ export function reportRows(report: SalesReport, kind: ReportKind) {
         "subtotal_minor",
         "discount_minor",
         "total_minor",
+        "refunded_minor",
       ],
       rows: report.byMarket.map((r) => [
         r.market,
@@ -134,6 +139,7 @@ export function reportRows(report: SalesReport, kind: ReportKind) {
         r.subtotalMinor,
         r.discountMinor,
         r.totalMinor,
+        r.refundedMinor ?? 0,
       ]),
     };
   if (kind === "channel")
@@ -146,6 +152,7 @@ export function reportRows(report: SalesReport, kind: ReportKind) {
         "voucher_orders",
         "discount_minor",
         "total_minor",
+        "refunded_minor",
       ],
       rows: report.byChannel.map((r) => [
         r.market,
@@ -155,6 +162,7 @@ export function reportRows(report: SalesReport, kind: ReportKind) {
         r.voucherOrders,
         r.discountMinor,
         r.totalMinor,
+        r.refundedMinor ?? 0,
       ]),
     };
   if (kind === "product")
@@ -204,6 +212,7 @@ export function reportRows(report: SalesReport, kind: ReportKind) {
       "distributor",
       "orders",
       "total_minor",
+      "refunded_minor",
     ],
     rows: report.byDistributor.map((r) => [
       r.market,
@@ -213,6 +222,7 @@ export function reportRows(report: SalesReport, kind: ReportKind) {
       r.name,
       r.orders,
       r.totalMinor,
+      r.refundedMinor ?? 0,
     ]),
   };
 }

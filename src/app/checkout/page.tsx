@@ -1,4 +1,7 @@
-import { currentMarket } from "@/lib/data";
+import { currentMarket, session } from "@/lib/data";
+import { GuestCheckout } from "@/components/guest-checkout";
+import { authProvider } from "@/lib/auth-config";
+import { centreSchema } from "@/lib/checkout-fulfilment";
 import { db } from "@/lib/supabase/server";
 import { Checkout } from "@/components/checkout";
 import { stripeReadiness } from "@/lib/stripe-config";
@@ -7,6 +10,18 @@ import { eligibleChannels } from "@/lib/xendit-channels";
 export const metadata = { title: "Checkout review" };
 export default async function CheckoutPage() {
   const market = await currentMarket();
+  const { user } = await session();
+  const centresResult = await (
+    await db()
+  )
+    .from("service_centres")
+    .select(
+      "id,market,name,line1,city,postal_code,instructions,active,revision",
+    )
+    .eq("market", market)
+    .eq("active", true)
+    .order("name");
+  const centres = centreSchema.array().safeParse(centresResult.data);
   const readiness = xenditReadiness();
   let channels: ReturnType<typeof eligibleChannels> = [];
   if (readiness.enabled) {
@@ -29,8 +44,10 @@ export default async function CheckoutPage() {
     <section className="section page-section">
       <span className="eyebrow">A CONSIDERED NEXT STEP</span>
       <h1>Checkout review.</h1>
+      {!user && authProvider() === "supabase" && <GuestCheckout />}
       <Checkout
         market={market}
+        centres={centres.success ? centres.data : []}
         payment={stripeReadiness()}
         xendit={{
           enabled: readiness.enabled && channels.length > 0,

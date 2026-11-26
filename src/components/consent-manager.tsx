@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
+import { useUi, useLocale } from "./locale-provider";
 import {
   analyticsConfig,
   consentCookieString,
@@ -108,14 +109,17 @@ function clearMeasurementCookies() {
 
 /** Footer control that reopens the choices. Only rendered when measurement exists. */
 export function CookieSettingsButton() {
+  const t = useUi(),
+    { locale } = useLocale();
   if (!measurementConfigured(analyticsConfig(publicEnv()))) return null;
   return (
     <button
       type="button"
+      lang={locale}
       className="link-button"
       onClick={() => window.dispatchEvent(new Event(openEvent))}
     >
-      Cookie settings
+      {t("cookieSettings")}
     </button>
   );
 }
@@ -198,6 +202,7 @@ export function ConsentManager({
   return (
     <div
       className="consent-banner"
+      lang="en"
       role="dialog"
       aria-modal="false"
       aria-labelledby="consent-title"

@@ -1,4 +1,11 @@
-import { mkdtempSync, mkdirSync, readFileSync, readdirSync } from "node:fs";
+import {
+  mkdtempSync,
+  mkdirSync,
+  readFileSync,
+  readdirSync,
+  openSync,
+  closeSync,
+} from "node:fs";
 import { resolve, join } from "node:path";
 import { spawn, execFileSync } from "node:child_process";
 import { createServer } from "node:net";
@@ -76,6 +83,7 @@ function parallelSql(text) {
   });
 }
 let started = false;
+let ownedServer;
 try {
   if (!external) {
     execFileSync(
@@ -94,21 +102,35 @@ try {
       ],
       { stdio: "pipe", windowsHide: true },
     );
-    execFileSync(
-      binary("pg_ctl"),
-      [
-        "-D",
-        data,
-        "-l",
-        join(data, "server.log"),
-        "-o",
-        `-h 127.0.0.1 -p ${port}`,
-        "-w",
-        "start",
-      ],
-      { stdio: "pipe", windowsHide: true },
-    );
+    // Own the server directly: pg_ctl can inherit Windows output handles and
+    // keep an execFileSync caller waiting even after startup succeeds.
+    const log = openSync(join(data, "server.log"), "a");
+    try {
+      ownedServer = spawn(
+        binary("postgres"),
+        ["-D", data, "-h", "127.0.0.1", "-p", String(port)],
+        { stdio: ["ignore", log, log], windowsHide: true },
+      );
+    } finally {
+      closeSync(log);
+    }
     started = true;
+    let ready = false;
+    for (let attempt = 0; attempt < 100; attempt++) {
+      if (ownedServer.exitCode !== null)
+        throw new Error(
+          "Disposable PostgreSQL exited during startup. See server.log.",
+        );
+      try {
+        sql("select 1;");
+        ready = true;
+        break;
+      } catch {
+        /* bounded readiness probe */
+      }
+      await new Promise((resolve) => setTimeout(resolve, 100));
+    }
+    if (!ready) throw new Error("Disposable PostgreSQL startup timed out.");
   }
   sql(readFileSync("tests/security/local-bootstrap.sql", "utf8"));
   const migrations = readdirSync("supabase/migrations")
@@ -116,8 +138,15 @@ try {
     .sort();
   for (const file of migrations)
     sql(readFileSync(join("supabase/migrations", file), "utf8"));
-  for (const file of [
+  const securitySuites = [
     "rls.sql",
+    "consultations_library.sql",
+    "story_event_assistant_privacy.sql",
+    "reorder_reminders.sql",
+    "checkout_collection.sql",
+    "bonus_campaigns.sql",
+    "returns_refunds.sql",
+    "locale_content.sql",
     "checkout.sql",
     "operations.sql",
     "tenant_inventory.sql",
@@ -140,7 +169,8 @@ try {
     "distributor_photo_independent_review.sql",
     "privacy_requests.sql",
     "content_scheduling_media.sql",
-  ])
+  ];
+  for (const file of securitySuites)
     sql(readFileSync(join("tests/security", file), "utf8"));
   sql(`insert into auth.users(id,email) values('${admin}','concurrency@example.invalid');
  insert into private.platform_admins values('${admin}');
@@ -619,11 +649,309 @@ try {
     "2",
     "Only accepted privacy edits add events",
   );
+  const consultationDistributor = randomUUID(),
+    consultationUsers = Array.from({ length: 8 }, () => randomUUID());
+  const consultationSlot = randomUUID(),
+    consultationNext = [randomUUID(), randomUUID()],
+    capacityEvent = randomUUID();
+  sql(`insert into auth.users(id,email,email_confirmed_at) values ${[consultationDistributor, ...consultationUsers].map((id) => `('${id}','concurrent-${id}@example.invalid',now())`).join(",")};
+    insert into public.distributor_profiles(user_id,code,display_name,market,external_member_id,active,verified_at)
+    values('${consultationDistributor}','Q${consultationDistributor.replaceAll("-", "")}','Concurrent distributor','PH','QA-${consultationDistributor}',true,now());
+    insert into private.consultation_slots(id,distributor_id,starts_at,ends_at,timezone)values
+    ('${consultationSlot}','${consultationDistributor}',now()+interval '2 days',now()+interval '2 days 1 hour','UTC'),
+    ('${consultationNext[0]}','${consultationDistributor}',now()+interval '3 days',now()+interval '3 days 1 hour','UTC'),
+    ('${consultationNext[1]}','${consultationDistributor}',now()+interval '4 days',now()+interval '4 days 1 hour','UTC');
+    insert into public.content_entries(id,slug,kind,title,status,market,starts_at) values('${capacityEvent}','qa-capacity-${capacityEvent}','event','Concurrent event','published','PH',now()+interval '5 days');
+    insert into private.event_admission_rules(event_id,capacity,approval_reference,updated_by) values('${capacityEvent}',2,'QA-CAPACITY','${admin}');`);
+  const asCustomer = (id) =>
+    `select set_config('request.jwt.claims','{"sub":"${id}","role":"authenticated","aal":"aal1"}',false);set role authenticated;set statement_timeout='10s';`;
+  const simultaneousBookings = await Promise.all(
+    consultationUsers.map((id) =>
+      parallelSql(
+        `${asCustomer(id)}select public.change_consultation(null,'${consultationSlot}',0,'UTC',false);`,
+      ),
+    ),
+  );
+  assert.equal(
+    simultaneousBookings.filter((r) => r.code === 0).length,
+    1,
+    "Exactly one simultaneous consultation may win",
+  );
+  assert.equal(
+    simultaneousBookings.filter(
+      (r) => r.code !== 0 && r.error.includes("no longer available"),
+    ).length,
+    7,
+    "Other consultation requests must report a conflict",
+  );
+  const winner =
+    consultationUsers[simultaneousBookings.findIndex((r) => r.code === 0)];
+  const booking = sql(
+    `select id from private.consultation_bookings where user_id='${winner}' and slot_id='${consultationSlot}';`,
+  );
+  const bookingReplays = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      parallelSql(
+        `${asCustomer(winner)}select public.change_consultation(null,'${consultationSlot}',0,'UTC',false);`,
+      ),
+    ),
+  );
+  assert.equal(
+    bookingReplays.filter((r) => r.code === 0 && r.output.includes(booking))
+      .length,
+    4,
+    "Identical consultation retries return the same booking",
+  );
+  const reschedules = await Promise.all(
+    consultationNext.map((slot) =>
+      parallelSql(
+        `${asCustomer(winner)}select public.change_consultation('${booking}','${slot}',0,'UTC',false);`,
+      ),
+    ),
+  );
+  assert.equal(
+    reschedules.filter((r) => r.code === 0).length,
+    1,
+    "One concurrent reschedule succeeds",
+  );
+  assert.equal(
+    reschedules.filter(
+      (r) => r.code !== 0 && r.error.includes("Booking changed"),
+    ).length,
+    1,
+    "Stale reschedule is refused",
+  );
+  const admissions = await Promise.all(
+    consultationUsers.map((id) =>
+      parallelSql(
+        `${asCustomer(id)}insert into public.event_registrations(user_id,event_id)values('${id}','${capacityEvent}');`,
+      ),
+    ),
+  );
+  assert.equal(
+    admissions.filter((r) => r.code === 0).length,
+    2,
+    "Event admits exactly its capacity under concurrent registration",
+  );
+  assert.equal(
+    admissions.filter((r) => r.code !== 0 && r.error.includes("event is full"))
+      .length,
+    6,
+    "No event oversell under concurrency",
+  );
+  // A campaign's last two gift units must not be promised to eight concurrent
+  // checkouts. Old quotes fail; no order silently loses an advertised gift.
+  const bonusQualifier = randomUUID(),
+    bonusGift = randomUUID();
+  sql(`insert into public.products(id,slug,name,category,status)values('${bonusQualifier}','qa-bonus-${bonusQualifier}','Concurrent qualifying goods','Nutrition','published'),('${bonusGift}','qa-bonus-${bonusGift}','Concurrent gift goods','Nutrition','published');
+    insert into public.product_offers(product_id,market,currency,retail_minor,regulatory_approved,approval_reference,max_quantity)values('${bonusQualifier}','PH','PHP',100,true,'QA-BONUS',24),('${bonusGift}','PH','PHP',50,true,'QA-BONUS',24);
+    insert into public.inventory(product_id,market,on_hand)values('${bonusQualifier}','PH',100),('${bonusGift}','PH',100);
+    insert into public.sponsor_attributions(user_id,distributor_id)values ${consultationUsers.map((id) => `('${id}','${consultationDistributor}')`).join(",")};
+    update public.markets set online_sales_approved=true,payments_ready=true,policy_reference='QA-BONUS'where code='PH';
+    ${asUser}select public.approve_bonus_campaign('PH',jsonb_build_object('name','Concurrent bonus campaign','qualifyingProductId','${bonusQualifier}','minimumQuantity',1,'bonusProductId','${bonusGift}','bonusQuantity',1,'maximumPerOrder',1,'maximumUnits',2,'startsAt',now()-interval '1 day','endsAt',now()+interval '1 day','allowVoucher',false,'returnTerms','Synthetic approved terms for disposable concurrency testing.','capacityAfterRefund','retain'),'QA-BONUS');`);
+  const bonusItems = JSON.stringify([
+    { productId: bonusQualifier, quantity: 1 },
+  ]);
+  const bonusAddress =
+    '{"full_name":"QA Customer","phone":"0000000000","line1":"QA fixture address","city":"Manila","postal_code":"1000","country":"PH"}';
+  const bonusHash = JSON.parse(
+    sql(
+      `${asCustomer(consultationUsers[0])}select public.quote_fulfilment_checkout('PH','${bonusItems}',null,'{"method":"delivery"}');`,
+    )
+      .split("\n")
+      .at(-1),
+  ).quoteHash;
+  const bonusTerms = sql(
+    "select checkout_terms_version from public.markets where code='PH';",
+  );
+  const bonusKeys = consultationUsers.map(() => randomUUID());
+  const bonusCreate = (i) =>
+    `${asCustomer(consultationUsers[i])}select public.create_fulfilment_order('PH','${bonusItems}','${bonusAddress}','${bonusKeys[i]}','${bonusTerms}',null,'${bonusHash}',null,'{"method":"delivery"}');`;
+  const bonusRaces = await Promise.all(
+    consultationUsers.map((_, i) => parallelSql(bonusCreate(i))),
+  );
+  assert.equal(
+    bonusRaces.filter((r) => r.code === 0).length,
+    2,
+    "Exactly two campaign units allocated",
+  );
+  assert.equal(
+    bonusRaces.filter((r) => r.code !== 0 && r.error.includes("prices changed"))
+      .length,
+    6,
+    "Stale gift promises must be reviewed",
+  );
+  assert.equal(
+    sql(
+      `select reserved from public.inventory where product_id='${bonusGift}'and market='PH';`,
+    ),
+    "2",
+  );
+  const bonusWinner = bonusRaces.findIndex((r) => r.code === 0),
+    bonusLoser = bonusRaces.findIndex((r) => r.code !== 0);
+  const bonusWinningOrder = bonusRaces[bonusWinner].output
+    .trim()
+    .split("\n")
+    .at(-1);
+  const bonusReplays = await Promise.all(
+    Array.from({ length: 4 }, () => parallelSql(bonusCreate(bonusWinner))),
+  );
+  for (const result of bonusReplays) {
+    assert.equal(result.code, 0);
+    assert.equal(result.output.trim().split("\n").at(-1), bonusWinningOrder);
+  }
+  sql(
+    `${asCustomer(consultationUsers[bonusWinner])}select public.cancel_order('${bonusWinningOrder}');`,
+  );
+  const reusedBonus = await parallelSql(bonusCreate(bonusLoser));
+  assert.equal(
+    reusedBonus.code,
+    0,
+    "Unpaid cancellation releases campaign capacity",
+  );
+  assert.equal(
+    sql(
+      `select reserved from public.inventory where product_id='${bonusGift}'and market='PH';`,
+    ),
+    "2",
+  );
+  // Approvals and physical receipts serialize on the original paid order.
+  // Provider responses are synthetic facts here; no gateway is contacted.
+  const returnCase = sql(
+    `${asCustomer(customer)}select public.request_order_return('${paymentOrder}','return','Disposable concurrent return request');`,
+  )
+    .split("\n")
+    .at(-1);
+  const refundPolicy = sql(
+    `${asUser}select public.approve_refund_policy('PH','QA-CONCURRENT-REFUNDS','Synthetic approved policy for disposable concurrent refund verification.',true,'QA-CONCURRENCY');`,
+  )
+    .split("\n")
+    .at(-1);
+  const refundItem = sql(
+    `select id from public.order_items where order_id='${paymentOrder}';`,
+  );
+  const approvalRaces = await Promise.all(
+    Array.from({ length: 8 }, (_, i) =>
+      parallelSql(
+        `${asUser}select public.approve_order_refund('${returnCase}','${refundPolicy}','[{"itemId":"${refundItem}","amountMinor":6000}]','QA-CONCURRENT-${i}');`,
+      ),
+    ),
+  );
+  assert.equal(
+    approvalRaces.filter((r) => r.code === 0).length,
+    1,
+    "One approval fits the remaining payment",
+  );
+  assert.equal(
+    approvalRaces.filter(
+      (r) => r.code !== 0 && r.error.includes("remaining line amount"),
+    ).length,
+    7,
+    "Concurrent over-refunds are refused",
+  );
+  const refundWinner = approvalRaces.findIndex((r) => r.code === 0);
+  const refundId = approvalRaces[refundWinner].output.trim().split("\n").at(-1);
+  const approvalReplays = await Promise.all(
+    Array.from({ length: 4 }, () =>
+      parallelSql(
+        `${asUser}select public.approve_order_refund('${returnCase}','${refundPolicy}','[{"itemId":"${refundItem}","amountMinor":6000}]','QA-CONCURRENT-${refundWinner}');`,
+      ),
+    ),
+  );
+  assert(
+    approvalReplays.every(
+      (r) => r.code === 0 && r.output.trim().endsWith(refundId),
+    ),
+    "Exact financial retries return the same refund",
+  );
+  const refundSettlements = await Promise.all(
+    Array.from({ length: 8 }, () =>
+      parallelSql(
+        `set role service_role;select public.apply_order_refund('${refundId}','re_concurrent','pi_concurrency',6000,'PHP','succeeded');`,
+      ),
+    ),
+  );
+  assert(
+    refundSettlements.every((r) => r.code === 0),
+    "Concurrent verified settlements are idempotent",
+  );
+  assert.equal(
+    sql(`select refunded_minor from public.orders where id='${paymentOrder}';`),
+    "6000",
+  );
+  assert.equal(
+    sql(
+      `select count(*) from public.audit_logs where action='REFUND_SUCCEEDED_COMPENSATION_REVIEW'and entity_id='${refundId}';`,
+    ),
+    "1",
+  );
+  const beforeReceipt = Number(
+    sql(
+      `select on_hand from public.inventory where product_id='${product}'and market='PH';`,
+    ),
+  );
+  const stockReturns = await Promise.all(
+    Array.from({ length: 8 }, (_, i) =>
+      parallelSql(
+        `${asUser}select public.record_return_stock('${returnCase}','${product}',1,'restock','QA-CONCURRENT-RECEIPT-${i}');`,
+      ),
+    ),
+  );
+  assert.equal(
+    stockReturns.filter((r) => r.code === 0).length,
+    1,
+    "Physical quantity cannot be restocked twice",
+  );
+  assert.equal(
+    stockReturns.filter(
+      (r) => r.code !== 0 && r.error.includes("Returned quantity exceeds"),
+    ).length,
+    7,
+  );
+  assert.equal(
+    Number(
+      sql(
+        `select on_hand from public.inventory where product_id='${product}'and market='PH';`,
+      ),
+    ),
+    beforeReceipt + 1,
+  );
   console.log(
     JSON.stringify(
       {
         migrations: migrations.length,
-        securitySuites: 22,
+        securitySuites: securitySuites.length,
+        parallelRefunds: {
+          approvals: 8,
+          accepted: 1,
+          overRefundsRefused: 7,
+          identicalApprovalReplays: 4,
+          verifiedSettlementReplays: 8,
+          refundedMinor: 6000,
+          physicalReceipts: 8,
+          acceptedReceipts: 1,
+        },
+        parallelBonusCampaign: {
+          attempted: 8,
+          accepted: 2,
+          staleQuotesRefused: 6,
+          identicalReplays: 4,
+          capacityReusedAfterUnpaidCancellation: true,
+        },
+        parallelConsultations: {
+          attempted: 8,
+          accepted: 1,
+          conflicts: 7,
+          identicalReplays: 4,
+          reschedulesAccepted: 1,
+          staleReschedulesRefused: 1,
+        },
+        parallelEventAdmissions: {
+          attempted: 8,
+          accepted: 2,
+          capacity: 2,
+          rejected: 6,
+        },
         parallelPrivacyRequests: {
           attempted: 4,
           cases: 1,
@@ -663,9 +991,13 @@ try {
     ),
   );
 } finally {
-  if (started)
+  if (started) {
     execFileSync(binary("pg_ctl"), ["-D", data, "-m", "fast", "-w", "stop"], {
       stdio: "pipe",
       windowsHide: true,
+      timeout: 15000,
     });
+    if (ownedServer && ownedServer.exitCode === null)
+      await new Promise((resolve) => ownedServer.once("close", resolve));
+  }
 }

@@ -16,7 +16,7 @@ export function StaffActionForm({
 }) {
   const [state, run, pending] = useActionState(action, { message: "" });
   return (
-    <form action={run} className="admin-actions" aria-busy={pending}>
+    <form action={run} className="admin-actions staff-form" aria-busy={pending}>
       {children}
       <button className="button button-outline" disabled={pending}>
         {pending ? "Saving…" : submit}

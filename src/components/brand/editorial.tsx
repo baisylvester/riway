@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { ProductStage } from "./product-stage";
 import { EditionWheel, ThemeGallery } from "./brand-interactions";
 export function Unboxing({

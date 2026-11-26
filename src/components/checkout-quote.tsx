@@ -1,8 +1,26 @@
 import { money } from "@/lib/domain";
 import type { CommerceQuote } from "@/lib/commerce-checkout";
+import { BonusItems } from "./bonus-items";
 export function CheckoutQuote({ quote }: { quote: CommerceQuote }) {
   return (
     <div className="stack" aria-label="Current order total">
+      {quote.fulfilment && (
+        <div className="notice">
+          {quote.fulfilment.method === "collection" ? (
+            <>
+              <strong>Collection: {quote.fulfilment.name}</strong>
+              <p>
+                {quote.fulfilment.line1}, {quote.fulfilment.city},{" "}
+                {quote.fulfilment.postalCode}
+              </p>
+              <p>{quote.fulfilment.instructions}</p>
+              <p>No additional collection fee.</p>
+            </>
+          ) : (
+            "Delivery to the address entered at checkout."
+          )}
+        </div>
+      )}
       {quote.items.map((item) => (
         <div className="order-row" key={item.productId}>
           <span>
@@ -24,6 +42,13 @@ export function CheckoutQuote({ quote }: { quote: CommerceQuote }) {
         <span>Subtotal</span>
         <span>{money(quote.subtotalMinor, quote.currency)}</span>
       </div>
+      <BonusItems items={quote.bonusItems} />
+      {quote.refundPolicy && (
+        <aside className="notice">
+          <h3>Return and refund terms · {quote.refundPolicy.version}</h3>
+          <p className="content-body">{quote.refundPolicy.terms}</p>
+        </aside>
+      )}
       {quote.promotion && (
         <div className="order-row">
           <span>

@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { z } from "zod";
 import { session } from "@/lib/data";
 import { addressSchema, marketSchema } from "@/lib/domain";
@@ -79,6 +79,10 @@ export async function registerEvent(_: Result, f: FormData): Promise<Result> {
   const { error } = await client
     .from("event_registrations")
     .insert({ user_id: user.id, event_id: id });
+  if (!error) {
+    revalidatePath("/events/[slug]", "page");
+    revalidatePath("/admin/events");
+  }
   return {
     message: error
       ? error.code === "23505"

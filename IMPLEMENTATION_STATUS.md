@@ -1,5 +1,9 @@
 # Implementation status
 
+## Current proposal candidate — 26 November 2026
+
+Current candidate: [PROPOSAL-DELIVERY.md](PROPOSAL-DELIVERY.md). All five enhancements are addressed, but paid tickets remain missing and AI requires configuration/content/provider acceptance. New guest, collection, consultation, library/stories, attendance, reminder, bonus, returns/refunds, regional language support and export code is locally tested; nine migrations are unapplied remotely. The [matrix](PROPOSAL-MATRIX.md) separates missing code from content, configuration and acceptance. Historical releases below remain historical.
+
 ## Remaining proposal scope - 24 November 2026
 
 PRs #41 and #42 are merged and deployed to staging and production. They add paid-order confirmation emails, corporate low-stock alerts, the RIWAY compensation order-volume outbox (delivery fail-closed until RIWAY supplies its API contract), consent-gated conversion events, Product JSON-LD with a validated legacy-redirect map, and the distributor dashboard with approved reorder cycles, materials and store photos. Hosted migrations `20261124090000`, `20261124100000` and `20261124110000` are applied. Email and RIWAY volume delivery remain off. Release evidence is in `ROLLOUT-STATUS.md`. Feature matrix, plan, runbook and RIWAY inputs: `REMAINING-SCOPE.md`.

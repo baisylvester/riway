@@ -1,4 +1,6 @@
 import { notFound } from "next/navigation";
+import { BonusItems } from "@/components/bonus-items";
+import { OrderReturns } from "@/components/order-returns";
 import { z } from "zod";
 import { requireSession } from "@/lib/data";
 import { money } from "@/lib/domain";
@@ -13,6 +15,7 @@ import { FulfilmentTimeline } from "@/components/fulfilment-timeline";
 import { orderCancellationSchema } from "@/lib/cancellation";
 import { CancelOrderForm } from "@/components/cancel-order-form";
 import { TrackPurchase } from "@/components/commerce-tracking";
+import { fulfilmentSnapshotSchema } from "@/lib/checkout-fulfilment";
 export const metadata = { title: "Order details" };
 export default async function Order({
   params,
@@ -39,6 +42,9 @@ export default async function Order({
   const unpaid =
     o.status === "awaiting_payment" && o.payment_status === "pending";
   const market = asMarket(o.market);
+  const selectedFulfilment = fulfilmentSnapshotSchema.safeParse(
+    o.checkout_fulfilment,
+  );
   // Other channels the customer may switch to, if this order is still open.
   const switchable =
     gateway === "xendit" && unpaid && xenditReadiness().enabled
@@ -70,6 +76,28 @@ export default async function Order({
   return (
     <div className="panel">
       <h2>Order {id.slice(0, 8).toUpperCase()}</h2>
+      <BonusItems items={o.bonus_items} />
+      {["paid", "refunded"].includes(o.payment_status) && (
+        <OrderReturns orderId={id} />
+      )}
+      {selectedFulfilment.success &&
+        selectedFulfilment.data.method === "collection" && (
+          <aside className="notice">
+            <h3>Service-centre collection</h3>
+            <p>
+              {selectedFulfilment.data.name}: {selectedFulfilment.data.line1},{" "}
+              {selectedFulfilment.data.city},{" "}
+              {selectedFulfilment.data.postalCode}
+            </p>
+            <p className="content-body">
+              {selectedFulfilment.data.instructions}
+            </p>
+            <p>
+              Wait for the ready-for-collection status before collecting your
+              order.
+            </p>
+          </aside>
+        )}
       <p>
         <span className="status">
           {orderStatusLabels[o.status] ?? o.status}

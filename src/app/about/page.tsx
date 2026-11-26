@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { currentLocale } from "@/lib/locale-server";
+import Link from "@/components/localized-link";
 import Image from "next/image";
 import { currentMarket } from "@/lib/data";
 import { cmsSections, pageKeys } from "@/lib/cms-pages";
@@ -7,7 +8,11 @@ export const metadata = { title: "Our world" };
 export default async function About() {
   // Approved history, leadership, Golden Deer Award, Foundation and Baby
   // Pegasus sections, when published.
-  const sections = await cmsSections(pageKeys.about, await currentMarket());
+  const sections = await cmsSections(
+    pageKeys.about,
+    await currentMarket(),
+    await currentLocale(),
+  );
   return (
     <>
       <section className="section page-section">

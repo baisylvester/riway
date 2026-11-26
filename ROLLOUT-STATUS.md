@@ -1,5 +1,9 @@
 # RIWAY provider rollout — 24 November 2026
 
+## Current proposal candidate — 26 November 2026
+
+The 25 November proposal candidate has not been deployed or applied to hosted Supabase. Latest inspected hosted migration remains `20261124150000`; nine candidate migrations exist only in source/local disposable tests. Staging and production share the same hosted database. All market sales/payment gates remain false. See [current evidence and rollout/rollback](PROPOSAL-DELIVERY.md). The 24 November release below remains the last recorded live release.
+
 ## Live - PRs #51, #53, #54 and #56 (privacy requests, content scheduling, public editorial media)
 
 Released 24 November 2026 from `main` at `464ea939a0f058109be65e604084ef2ea936ec4f` (PR #56 merge). This release also makes the earlier merged PRs #51, #53 and #54 live, so the "awaiting deployment" sections below are superseded.

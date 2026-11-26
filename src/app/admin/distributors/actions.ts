@@ -1,6 +1,7 @@
 "use server";
+import { z } from "zod";
 
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { session, staffAccess } from "@/lib/data";
 import {
   cycleRequestSchema,
@@ -9,6 +10,42 @@ import {
 } from "@/lib/distributor-dashboard";
 
 export type StaffFormResult = { message: string; ok?: boolean };
+
+export async function saveReorderTiming(
+  _: StaffFormResult,
+  f: FormData,
+): Promise<StaffFormResult> {
+  if (!(await verified())) return { message: "Staff verification required." };
+  const parsed = z
+    .object({
+      id: z.uuid(),
+      days: z.number().int().min(0).max(30).nullable(),
+      reference: z.string().trim().max(120),
+    })
+    .safeParse({
+      id: f.get("productId"),
+      days: f.get("leadDays") === "" ? null : Number(f.get("leadDays")),
+      reference: f.get("reference") ?? "",
+    });
+  if (!parsed.success)
+    return {
+      message:
+        "Choose a lead time of 0–30 days, or clear it to stop reminders for this product.",
+    };
+  const { client } = await session();
+  const { error } = await client.rpc("set_reorder_timing", {
+    p_product: parsed.data.id,
+    p_days: parsed.data.days,
+    p_reference: parsed.data.reference || null,
+  });
+  if (error)
+    return {
+      message:
+        "Timing could not be approved. Administrator/compliance access and an approval reference are required.",
+    };
+  revalidatePath("/admin/distributors");
+  return { ok: true, message: "Reminder timing saved." };
+}
 
 async function verified() {
   const access = await staffAccess();

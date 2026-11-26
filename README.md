@@ -1,5 +1,9 @@
 # RIWAY International platform
 
+## Current proposal candidate — 26 November 2026
+
+The 25 November proposal candidate adds verified guest access, collection choices, consultation booking, versioned campaign media, approved-content assistant code, attendance controls, reorder email preferences, bonus campaigns, returns/refund approvals/reconciliation, gated regional language support and private export. It is not deployed and does not complete the platform. Read [the current handover](PROPOSAL-DELIVERY.md), [100-row matrix](PROPOSAL-MATRIX.md), [remaining inputs/code](EXTERNAL-DEPENDENCIES.md) and [role guide](OPERATING-GUIDE.md). Older dated notes below describe earlier releases; current payment/launch gates remain off.
+
 Live Cloudflare development deployment: https://riway-platform.pages.dev. See CLOUDFLARE.md for verified release details. Payments remain disabled.
 
 Project BAI-RWY-2026-001. Built in the required directory:

@@ -1,9 +1,6 @@
 import { randomInt, randomUUID } from "node:crypto";
 
-const app = "http://127.0.0.1:4174";
-const fixture = "http://127.0.0.1:4682";
 const path = "/fixture/manual";
-const cookie = "sb-127-auth-token";
 const products = {
   standard: "84000000-0000-4000-8000-000000000001",
   membership: "84000000-0000-4000-8000-000000000005",
@@ -29,11 +26,6 @@ const escape = (value) =>
         "'": "&#39;",
       })[char],
   );
-
-const links = (entries) =>
-  entries
-    .map(([label, route]) => `<a href="${app}${route}">${label}</a>`)
-    .join(" ");
 
 function syntheticSession(user, name, aal) {
   const now = Math.floor(Date.now() / 1000);
@@ -67,7 +59,7 @@ function syntheticSession(user, name, aal) {
   };
 }
 
-function activeIdentity(req, identities) {
+function activeIdentity(req, identities, cookie) {
   try {
     const value = req.headers.cookie
       ?.split(/;\s*/)
@@ -92,7 +84,15 @@ function activeIdentity(req, identities) {
   }
 }
 
-export async function createManualSandbox(pg, users) {
+export async function createManualSandbox(pg, users, onlineOrigin) {
+  const app = onlineOrigin || "http://127.0.0.1:4174";
+  const fixture = onlineOrigin || "http://127.0.0.1:4682";
+  const cookie = `sb-${new URL(fixture).hostname.split(".")[0]}-auth-token`;
+  const secure = onlineOrigin ? "; Secure" : "";
+  const links = (entries) =>
+    entries
+      .map(([label, route]) => `<a href="${app}${route}">${label}</a>`)
+      .join(" ");
   const guest = {
     id: users.guest,
     name: "guest",
@@ -464,7 +464,7 @@ export async function createManualSandbox(pg, users) {
     res.setHeader("Content-Type", "text/html; charset=utf-8");
     res.setHeader(
       "Content-Security-Policy",
-      "default-src 'none'; style-src 'unsafe-inline'; form-action 'self' http://127.0.0.1:4174; frame-ancestors 'none'; base-uri 'none'",
+      `default-src 'none'; style-src 'unsafe-inline'; form-action 'self' ${app}; frame-ancestors 'none'; base-uri 'none'`,
     );
     res.setHeader("X-Content-Type-Options", "nosniff");
     res.end(`<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width">
@@ -542,7 +542,7 @@ export async function createManualSandbox(pg, users) {
       return true;
     }
     if (url.pathname !== path) return false;
-    const identity = activeIdentity(req, { ...identities, guest });
+    const identity = activeIdentity(req, { ...identities, guest }, cookie);
     if (req.method === "GET") {
       await render(
         res,
@@ -578,7 +578,7 @@ export async function createManualSandbox(pg, users) {
       ).toString("base64url");
       res.setHeader(
         "Set-Cookie",
-        `${cookie}=base64-${encoded}; Path=/; SameSite=Lax; Max-Age=3600`,
+        `${cookie}=base64-${encoded}; Path=/; SameSite=Lax; Max-Age=3600${secure}`,
       );
       res.writeHead(303, { Location: app + page }).end();
       return true;
@@ -586,7 +586,7 @@ export async function createManualSandbox(pg, users) {
     if (action === "sign-out") {
       res.setHeader(
         "Set-Cookie",
-        `${cookie}=; Path=/; SameSite=Lax; Max-Age=0`,
+        `${cookie}=; Path=/; SameSite=Lax; Max-Age=0${secure}`,
       );
       res.writeHead(303, { Location: path }).end();
       return true;

@@ -7,10 +7,18 @@ import { createServer } from "node:http";
 import { spawn } from "node:child_process";
 import { resolve, dirname, extname, isAbsolute } from "node:path";
 import { createRequire } from "node:module";
+import { pathToFileURL } from "node:url";
 import { build } from "esbuild";
 import { createManualSandbox } from "./manual-sandbox.mjs";
+import {
+  onlineSandboxSettings,
+  startOnlineGateway,
+} from "./online-sandbox-gateway.mjs";
 const root = resolve(import.meta.dirname, "../..");
-const manual = process.argv.includes("--manual");
+const online = process.argv.includes("--online")
+  ? onlineSandboxSettings()
+  : null;
+const manual = online || process.argv.includes("--manual");
 if (!manual && process.env.RIWAY_DISPOSABLE_BROWSER !== "1")
   throw new Error(
     "Set RIWAY_DISPOSABLE_BROWSER=1 to start the isolated fixture.",
@@ -189,7 +197,9 @@ if (manual)
     "insert into public.staff_roles(user_id,market,role)values($1,'SG','admin')",
     [users.manualSgStaff],
   );
-const manualSandbox = manual ? await createManualSandbox(pg, users) : null;
+const manualSandbox = manual
+  ? await createManualSandbox(pg, users, online?.origin)
+  : null;
 const tables = new Set([
   "markets",
   "products",
@@ -607,18 +617,34 @@ const server = createServer((req, res) => {
     });
 });
 await new Promise((resolve) => server.listen(4682, "127.0.0.1", resolve));
+const gateway = online ? await startOnlineGateway(online) : null;
 const next = resolve(root, "node_modules/next/dist/bin/next");
+const site = online?.origin ?? "http://127.0.0.1:4174";
+const authUrl = online ? site + "/fixture-service" : "http://127.0.0.1:4682";
 const childOptions = {
   cwd: root,
   windowsHide: true,
   stdio: "inherit",
   env: {
     ...process.env,
-    NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:4682",
+    ...(online && {
+      NODE_OPTIONS: [
+        process.env.NODE_OPTIONS,
+        "--import=" +
+          pathToFileURL(
+            resolve(import.meta.dirname, "online-sandbox-fetch.mjs"),
+          ).href,
+      ]
+        .filter(Boolean)
+        .join(" "),
+    }),
+    RIWAY_SANDBOX_ACCESS_CODE: "",
+    RIWAY_SANDBOX_ORIGIN: online?.origin ?? "",
+    NEXT_PUBLIC_SUPABASE_URL: authUrl,
     RIWAY_MANUAL_SANDBOX: manual ? "1" : "0",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_disposable_fixture",
-    NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:4174",
-    SITE_URL: "http://127.0.0.1:4174",
+    NEXT_PUBLIC_SITE_URL: site,
+    SITE_URL: site,
     PAYMENT_PROVIDER: "disabled",
     PAYMENT_PROVIDERS: "disabled",
     RIWAY_INTEGRATION: "disabled",
@@ -649,6 +675,7 @@ async function stop(code = 0) {
   if (stopping) return;
   stopping = true;
   child?.kill();
+  gateway?.close();
   server.close();
   await pg.close();
   process.exit(code);
@@ -680,7 +707,11 @@ try {
     "Disposable browser fixture API: http://127.0.0.1:4682; production app: http://127.0.0.1:4174. Auth is synthetic; database RLS/RPCs are real.",
   );
   if (manual)
-    console.log("Open manual sandbox: http://127.0.0.1:4682/fixture/manual");
+    console.log(
+      "Open manual sandbox: " +
+        (online?.origin ?? "http://127.0.0.1:4682") +
+        "/fixture/manual",
+    );
 } catch (error) {
   console.error(error);
   await stop(1);

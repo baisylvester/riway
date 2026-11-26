@@ -13,6 +13,14 @@ The console is part of the test fixture and listens only on loopback. It uses sy
 
 To test guest checkout, sign out and request a code at **Checkout review** using `guest@example.invalid`. Refresh the console in a second tab and read **Guest verification inbox**. Try an incorrect code, then enter the current six-digit code at checkout. It expires after five minutes or five unsuccessful attempts. Open the account to verify the guest identity. Signing in with this address again uses the same synthetic account.
 
+## Temporary online testing
+
+The online launcher serves the same synthetic environment through one HTTPS origin. It puts an access-code screen in front of the console, the application, assets and APIs. The two app processes and the gateway bind to loopback. Browser requests for guest verification go through the protected gateway. App database calls stay on the local machine.
+
+Start a [Cloudflare Quick Tunnel](https://developers.cloudflare.com/tunnel/get-started/quick-tunnels/) to `http://127.0.0.1:4189`. Set `RIWAY_SANDBOX_ORIGIN` to its exact HTTPS URL and set `RIWAY_SANDBOX_ACCESS_CODE` to a newly generated random URL-safe code of at least 24 characters. Run `npm run sandbox:online` from the repository. Open `/fixture/manual` on the tunnel origin and share the access code separately from the link. Stop an existing manual fixture before starting online mode because both modes use the same local ports.
+
+The tunnel depends on the machine and both processes staying online. A new Quick Tunnel has a new URL. Restarting the fixture clears the synthetic database and revokes existing access sessions.
+
 ## Membership, sponsor, compensation and reversal
 
 1. Choose **First-time buyer**. On the distributor store, wait for the introduction to link. The seeded sponsor uses referral code `QAFIXTURE` and RIWAY member ID `QA-BROWSER`.

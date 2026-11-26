@@ -4,7 +4,7 @@ export const libraryContentSchema = z
     title: z.string().trim().min(3).max(120),
     description: z.string().max(2000),
     campaign: z.string().max(120),
-    locale: z.string().regex(/^[a-z]{2}(-[A-Z]{2})?$/),
+    locale: z.string().regex(/^[a-z]{2,3}(-[A-Z]{2})?$/),
     mediaType: z.enum(["image", "video", "document"]),
     url: z
       .string()
@@ -39,7 +39,7 @@ export function libraryQuery(q: Record<string, string | string[] | undefined>) {
   const page = Number(scalar("page") || 0);
   return {
     search: scalar("q").slice(0, 120),
-    locale: /^[a-z]{2}(-[A-Z]{2})?$/.test(scalar("locale"))
+    locale: /^[a-z]{2,3}(-[A-Z]{2})?$/.test(scalar("locale"))
       ? scalar("locale")
       : null,
     type: ["image", "video", "document"].includes(scalar("type"))

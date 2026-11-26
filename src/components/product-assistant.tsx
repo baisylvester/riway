@@ -1,6 +1,6 @@
 "use client";
 import { useState, useRef, useEffect } from "react";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { assistantResponseSchema } from "@/lib/product-assistant";
 import type { z } from "zod";
 type Answer = z.infer<typeof assistantResponseSchema>;

@@ -1,3 +1,4 @@
+import { LocalizedAnchor } from "@/components/localized-link";
 import type { Market, Product } from "@/lib/domain";
 import { ReferenceShell } from "./reference-shell";
 import { ReferenceStage } from "./reference-stage";
@@ -89,13 +90,13 @@ export function ReferencePurtier({
               Discover the collection and review the product information for
               your market.
             </p>
-            <a
+            <LocalizedAnchor
               className="btn magnetic"
               href="#product-information"
               data-cursor="Open"
             >
               Product information
-            </a>
+            </LocalizedAnchor>
           </div>
           <div className="scroll" aria-hidden="true" />
         </div>
@@ -205,9 +206,13 @@ export function ReferencePurtier({
               A closer look at the colours, textures and details of the
               presentation archive.
             </p>
-            <a className="btn magnetic" href="#ingredients" data-cursor="Open">
+            <LocalizedAnchor
+              className="btn magnetic"
+              href="#ingredients"
+              data-cursor="Open"
+            >
               Explore the archive
-            </a>
+            </LocalizedAnchor>
           </div>
         </div>
       </section>
@@ -339,9 +344,13 @@ export function ReferencePurtier({
         <h2 className="display split">
           The collection, <em>in detail.</em>
         </h2>
-        <a className="btn magnetic" href="/support" data-cursor="Open">
+        <LocalizedAnchor
+          className="btn magnetic"
+          href="/support"
+          data-cursor="Open"
+        >
           Contact RIWAY
-        </a>
+        </LocalizedAnchor>
       </section>
     </ReferenceShell>
   );

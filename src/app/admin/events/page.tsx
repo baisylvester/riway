@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { z } from "zod";
 import { session, currentMarket } from "@/lib/data";
 import { eventAttendanceSchema } from "@/lib/event-attendance";

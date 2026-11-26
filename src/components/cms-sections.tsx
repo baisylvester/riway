@@ -10,6 +10,7 @@ export function CmsSections({ sections }: { sections: CmsSection[] }) {
           className="section page-section page-prose"
           key={s.key}
           data-cms-section={s.key}
+          lang={s.locale ?? "en"}
         >
           <h2>{s.title}</h2>
           {bodyBlocks(s.body).map((b, i) =>

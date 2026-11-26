@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 export const metadata = { title: "Policies & conduct" };
 export default function Legal() {
   return (

@@ -1,5 +1,5 @@
 import { SecurityPanel } from "@/components/auth-panel";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { authProvider } from "@/lib/auth-config";
 export const metadata = { title: "Account security" };
 export default function Security() {

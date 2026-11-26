@@ -1,6 +1,6 @@
 "use server";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { session, staffAccess } from "@/lib/data";
 import { bonusCampaignSchema } from "@/lib/bonus-campaigns";
 type Result = { message: string; ok?: boolean };

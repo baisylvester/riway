@@ -133,11 +133,11 @@
     "id": "W14",
     "proposal_section": "4.2",
     "requirement": "Language selection, translated UI and locale URLs",
-    "implementation_evidence": "src/components/cms-sections.tsx",
-    "remaining_work_dependencies": "Routing, dictionaries and approved translations",
+    "implementation_evidence": "Explicit localized App Router entrypoints; market-gated en/fil/ms/zh-CN dictionaries and language picker; localized navigation/catalogue/bag controls; published CMS/product language selection with labelled English fallback; locale_content.sql, proxy/SSR and desktop/mobile tests; LOCALIZATION.md",
+    "remaining_work_dependencies": "Professional dictionary/content review; complete English-only account/auth/checkout/staff and brand-copy translations still need code/content; enable only reviewed market languages and complete-page SEO paths; actual provider/device acceptance",
     "acceptance_criteria": "Locale URLs, translated UI and language selector agree",
     "status": "partial",
-    "gap_category": "code/content"
+    "gap_category": "code/content/acceptance"
   },
   {
     "id": "W15",
@@ -813,8 +813,8 @@
     "id": "N06",
     "proposal_section": "7",
     "requirement": "Product structured data/sitemap/canonical/hreflang/indexing",
-    "implementation_evidence": "src/app/sitemap.ts; src/lib/structured-data.ts; robots.ts",
-    "remaining_work_dependencies": "Actual locales and legacy map; SEO acceptance",
+    "implementation_evidence": "Product JSON-LD, sitemap/canonical; exact reviewed localized-page hreflang and sitemap publication gates; locale SEO/proxy/browser tests",
+    "remaining_work_dependencies": "Approved complete translated pages, actual legacy URL inventory/redirect loading, indexing authorization and SEO acceptance",
     "acceptance_criteria": "Accurate sellable price, canonical and language alternates",
     "status": "partial",
     "gap_category": "code/content/acceptance"
@@ -943,7 +943,7 @@
     "id": "H02",
     "proposal_section": "11;12",
     "requirement": "Functional/integration/authorization/transaction/concurrency verification",
-    "implementation_evidence": "679 tests/79 files; 40 migrations/29 real PostgreSQL suites; 22 desktop/mobile disposable/component browser cases; bounded refund/stock concurrency; typecheck and production build",
+    "implementation_evidence": "714 tests/82 files; 41 migrations/30 real PostgreSQL suites; 36 desktop/mobile disposable/component browser cases; localized account actions and bounded refund/stock concurrency; typecheck and production build",
     "remaining_work_dependencies": "Real-provider/auth and wider role/browser acceptance; accessibility, agreed performance/load, independent pentest and restore evidence",
     "acceptance_criteria": "Evidence by requirement including negative cases and concurrency",
     "status": "partial",

@@ -1,6 +1,6 @@
 "use server";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { session } from "@/lib/data";
 import { marketSchema } from "@/lib/domain";
 type Result = { message: string; ok?: boolean };

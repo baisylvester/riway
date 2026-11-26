@@ -1,6 +1,8 @@
 # RIWAY customer, distributor and staff guide
 
-Candidate dated 25 November 2026. Features require the reviewed migrations and application to be deployed. Actual email/AI/provider services remain gated as described in `PROPOSAL-DELIVERY.md`. Use approved data only. A saved form is not proof of external delivery or payment.
+Candidate updated 26 November 2026. Features require the reviewed migrations and application to be deployed. Actual email/AI/provider services remain gated as described in `PROPOSAL-DELIVERY.md`. Use approved data only. A saved form is not proof of external delivery or payment.
+
+Language controls appear only for reviewed languages enabled in the selected market. Choose a language to keep the current page/filter/bag; a country without that language returns to English. Some screens/content remain English and are marked accordingly. No language change grants sales approval or translates legal/product claims automatically. See `LOCALIZATION.md`.
 
 ## Customers and guests
 
@@ -28,6 +30,7 @@ Sign in using the approved staff identity, authenticator MFA and the configured 
 
 | Task | Procedure |
 | --- | --- |
+| Product translations | `/admin/product-content`: select market and language, prepare that independent record, obtain approval and publish through the existing MFA/compliance controls. An untranslated/draft page uses the published English fallback. Only the operating owner may enable a professionally reviewed UI dictionary/market or publish reviewed whole-page SEO paths; see `LOCALIZATION.md`. |
 | Campaign asset draft | `/admin/library`: create a draft for the approved market/language/type with a permitted media URL, title/campaign/disclaimer and transcript for video. Save a revision. Editing creates a new draft and retains the current approved revision until review. |
 | Review or withdraw | Another authorized market admin/compliance reviewer checks content/claims/accessibility, records the approval reference and confirms publish. The author cannot approve their own version. Withdrawal removes the sharing page and linked live story visibility. Reload before editing if a stale-version message appears. |
 | Story media | In the existing CMS story form, link the approved library asset ID with appropriate market/disclaimer. Follow the existing editorial/compliance publication process. A library approval does not invent or approve the story's testimonial claims. |

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { session, staffAccess } from "@/lib/data";
 import { commerceOfferListSchema } from "@/lib/commerce-offers";
 import { staffMembershipsSchema } from "@/lib/membership";

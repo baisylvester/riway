@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { locales } from "./locales";
 
 // Mirrors public.product_market_content. Only compliance-published rows are
 // readable by the public (database policy and publication trigger).
@@ -22,6 +23,7 @@ export const videoUrlPattern =
 export const productContentRequestSchema = z.object({
   productId: z.uuid(),
   market: z.enum(["PH", "SG", "MY"]),
+  locale: z.enum(locales).default("en"),
   ingredients: z.string().trim().max(4000),
   usage: z.string().trim().max(4000),
   labelNotes: z.string().trim().max(2000),

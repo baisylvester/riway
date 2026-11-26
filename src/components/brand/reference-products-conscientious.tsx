@@ -1,3 +1,4 @@
+import { LocalizedAnchor } from "@/components/localized-link";
 import type { CSSProperties } from "react";
 import type { Market, Product } from "@/lib/domain";
 import { ReferenceShell } from "./reference-shell";
@@ -75,13 +76,13 @@ export function ReferenceConscientious({
               Discover the presentation, then review the product information for
               your market.
             </p>
-            <a
+            <LocalizedAnchor
               className="btn magnetic"
               href="#product-information"
               data-cursor="Open"
             >
               Product information
-            </a>
+            </LocalizedAnchor>
           </div>
           <div className="scroll" aria-hidden="true" />
         </div>
@@ -336,9 +337,13 @@ export function ReferenceConscientious({
         <h2 className="display split-t">
           Indulge in the highest level of <em>luxury.</em>
         </h2>
-        <a className="btn magnetic" href="/support" data-cursor="Open">
+        <LocalizedAnchor
+          className="btn magnetic"
+          href="/support"
+          data-cursor="Open"
+        >
           Contact RIWAY
-        </a>
+        </LocalizedAnchor>
       </section>
     </ReferenceShell>
   );

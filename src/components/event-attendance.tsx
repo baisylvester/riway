@@ -1,5 +1,5 @@
 import { StaffActionForm } from "./staff-action-form";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import {
   changeEventAttendance,
   saveEventAdmission,

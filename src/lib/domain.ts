@@ -92,10 +92,10 @@ export interface Offer {
   approval_reference: string | null;
   max_quantity: number;
 }
-export function money(minor: number | null, currency: string) {
+export function money(minor: number | null, currency: string, locale = "en") {
   return minor === null
     ? "Pricing to be confirmed"
-    : new Intl.NumberFormat("en", { style: "currency", currency }).format(
+    : new Intl.NumberFormat(locale, { style: "currency", currency }).format(
         minor / 100,
       );
 }

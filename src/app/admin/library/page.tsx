@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { currentMarket, session } from "@/lib/data";
 import { libraryResultsSchema, libraryQuery } from "@/lib/content-library";
 import {

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { content, currentMarket } from "@/lib/data";
 import { markets } from "@/lib/domain";
 import { EventCalendar } from "@/components/event-calendar";

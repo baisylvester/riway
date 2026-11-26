@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { currentLocale } from "@/lib/locale-server";
+import Link from "@/components/localized-link";
 import { currentMarket } from "@/lib/data";
 import { SupportForm } from "@/components/forms";
 import { cmsSections, pageKeys } from "@/lib/cms-pages";
@@ -7,7 +8,11 @@ export const metadata = { title: "Support" };
 export default async function Support() {
   const market = await currentMarket();
   // Approved regional contacts and shipping/returns/refund policies, when published.
-  const sections = await cmsSections(pageKeys.support, market);
+  const sections = await cmsSections(
+    pageKeys.support,
+    market,
+    await currentLocale(),
+  );
   return (
     <>
       <section className="section page-section">

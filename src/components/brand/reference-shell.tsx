@@ -1,9 +1,12 @@
 "use client";
+import { LocalizedAnchor } from "@/components/localized-link";
 import { useEffect, useRef, type ReactNode } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { createReferenceBehaviors } from "./reference-behaviors";
 import { ReferenceFooter } from "./reference-footer";
+import { LanguagePicker } from "../language-picker";
+import { useUi, useLocale } from "../locale-provider";
 export function ReferenceShell({
   children,
   brand = "RIWAY",
@@ -11,6 +14,8 @@ export function ReferenceShell({
   children: ReactNode;
   brand?: string;
 }) {
+  const t = useUi(),
+    { locale } = useLocale();
   const root = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = root.current!;
@@ -240,68 +245,79 @@ export function ReferenceShell({
           <i />
         </div>
       </div>
-      <nav className="nav" aria-label="Main navigation">
-        <a className="brand" href="/">
+      <nav className="nav" aria-label={t("navigation")} lang={locale}>
+        <LocalizedAnchor className="brand" href="/">
           RIWAY
-        </a>
+        </LocalizedAnchor>
         <ul>
           <li>
-            <a href="/purtier">Purtier</a>
+            <LocalizedAnchor href="/purtier">Purtier</LocalizedAnchor>
           </li>
           <li>
-            <a href="/conscientious">Conscientious</a>
+            <LocalizedAnchor href="/conscientious">
+              Conscientious
+            </LocalizedAnchor>
           </li>
           <li>
-            <a href={brand === "RIWAY" ? "#story" : "/#story"}>The company</a>
+            <LocalizedAnchor href={brand === "RIWAY" ? "#story" : "/#story"}>
+              {t("company")}
+            </LocalizedAnchor>
           </li>
           <li>
-            <a href={brand === "RIWAY" ? "#events" : "/events"}>Events</a>
+            <LocalizedAnchor href={brand === "RIWAY" ? "#events" : "/events"}>
+              {t("events")}
+            </LocalizedAnchor>
           </li>
           <li>
-            <a href="/support">Contact</a>
+            <LocalizedAnchor href="/support">{t("contact")}</LocalizedAnchor>
           </li>
         </ul>
         <div className="nav-actions">
-          <a className="login-link" href="/auth/login">
-            Login
-          </a>
-          <button className="menu-btn" type="button" aria-label="Open menu">
-            <span>Menu</span>
+          <LanguagePicker />
+          <LocalizedAnchor className="login-link" href="/auth/login">
+            {t("login")}
+          </LocalizedAnchor>
+          <button className="menu-btn" type="button" aria-label={t("openMenu")}>
+            <span>{t("menu")}</span>
             <i />
           </button>
         </div>
       </nav>
-      <div className="menu">
+      <div className="menu" lang={locale}>
         <button className="close" type="button">
-          Close
+          {t("close")}
         </button>
         <div className="m-links">
-          <a href="/">
+          <LocalizedAnchor href="/">
             <small>01</small>
             <em>RIWAY</em>
-          </a>
-          <a href="/purtier">
+          </LocalizedAnchor>
+          <LocalizedAnchor href="/purtier">
             <small>02</small>PURTIER <em>Placenta</em>
-          </a>
-          <a href="/conscientious">
+          </LocalizedAnchor>
+          <LocalizedAnchor href="/conscientious">
             <small>03</small>
             <em>CONSCIENTIOUS</em>
-          </a>
-          <a href="/about">
-            <small>04</small>The <em>company</em>
-          </a>
-          <a href="/events">
+          </LocalizedAnchor>
+          <LocalizedAnchor href="/about">
+            <small>04</small>
+            <em>{t("company")}</em>
+          </LocalizedAnchor>
+          <LocalizedAnchor href="/events">
             <small>05</small>
-            <em>Events</em>
-          </a>
-          <a href="/support">
-            <small>06</small>Find a <em>distributor</em>
-          </a>
+            <em>{t("events")}</em>
+          </LocalizedAnchor>
+          <LocalizedAnchor href="/support">
+            <small>06</small>
+            <em>{t("support")}</em>
+          </LocalizedAnchor>
           <div className="commerce-links">
-            <a href="/shop">Catalogue</a>
-            <a href="/cart">Review bag</a>
-            <a href="/account">Account</a>
-            <a href="/distributor">Distributor area</a>
+            <LocalizedAnchor href="/shop">{t("catalogue")}</LocalizedAnchor>
+            <LocalizedAnchor href="/cart">{t("bag")}</LocalizedAnchor>
+            <LocalizedAnchor href="/account">{t("account")}</LocalizedAnchor>
+            <LocalizedAnchor href="/distributor">
+              {t("distributor")}
+            </LocalizedAnchor>
           </div>
         </div>
         <div className="m-side">
@@ -314,15 +330,7 @@ export function ReferenceShell({
             (65) 6531 0188
           </div>
           <div>
-            <b>Languages</b>
-            <div className="langs">
-              <span>English</span>
-              <span>简体中文</span>
-              <span>繁體中文</span>
-              <span>日本語</span>
-              <span>ไทย</span>
-              <span>Bahasa</span>
-            </div>
+            <LanguagePicker />
           </div>
         </div>
       </div>

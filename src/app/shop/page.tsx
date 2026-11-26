@@ -1,6 +1,8 @@
 import { catalogue, currentMarket } from "@/lib/data";
 import { ProductCard } from "@/components/product-card";
 import { markets } from "@/lib/domain";
+import { currentLocale } from "@/lib/locale-server";
+import { ui } from "@/lib/ui-dictionaries";
 export const metadata = { title: "Our collections" };
 const categories = ["All", "Nutrition", "Skincare", "Packages"] as const;
 const firstValue = (value: string | string[] | undefined) =>
@@ -14,6 +16,11 @@ export default async function Shop({
   }>;
 }) {
   const query = await searchParams;
+  const locale = await currentLocale();
+  const t = (
+    key: Parameters<typeof ui>[1],
+    values?: Record<string, string | number>,
+  ) => ui(locale, key, values);
   const q = firstValue(query.q).trim();
   const category =
     categories.find((value) => value === firstValue(query.category)) ?? "All";
@@ -25,13 +32,11 @@ export default async function Shop({
       `${p.name} ${p.subtitle}`.toLowerCase().includes(q.toLowerCase()),
   );
   return (
-    <section className="section page-section">
-      <span className="eyebrow">THE RIWAY COLLECTIONS</span>
-      <h1>Discover your everyday extraordinary.</h1>
-      <p className="lead">
-        Explore our signature nutrition and personal care collections.
-      </p>
-      <div className="notice">
+    <section className="section page-section" lang={locale}>
+      <span className="eyebrow">{t("catalogueEyebrow")}</span>
+      <h1>{t("catalogueTitle")}</h1>
+      <p className="lead">{t("catalogueIntro")}</p>
+      <div className="notice" lang="en">
         {markets[market].name} · Product information is available for discovery.
         Online sales remain closed pending RIWAY policy and market registration
         approvals.
@@ -40,26 +45,42 @@ export default async function Shop({
       </div>
       <form className="filter-bar">
         <label>
-          Search collections
+          {t("searchCollections")}
           <input
             name="q"
             type="search"
             defaultValue={q}
-            placeholder="Search products…"
+            placeholder={t("searchProducts")}
           />
         </label>
         <label>
-          Collection
+          {t("collection")}
           <select name="category" defaultValue={category}>
             {categories.map((c) => (
-              <option key={c}>{c}</option>
+              <option key={c} value={c}>
+                {t(
+                  c === "All"
+                    ? "all"
+                    : c === "Nutrition"
+                      ? "nutrition"
+                      : c === "Skincare"
+                        ? "skincare"
+                        : "packages",
+                )}
+              </option>
             ))}
           </select>
         </label>
-        <button className="button">Search</button>
+        <button className="button">{t("search")}</button>
       </form>
       <div className="result-count">
-        {filtered.length} collection{filtered.length !== 1 ? "s" : ""}
+        {locale === "en" ? (
+          <>
+            {filtered.length} collection{filtered.length !== 1 ? "s" : ""}
+          </>
+        ) : (
+          t("results", { count: filtered.length })
+        )}
       </div>
       <div className="products-grid">
         {filtered.map((p) => (
@@ -68,8 +89,8 @@ export default async function Shop({
       </div>
       {!filtered.length && (
         <div className="empty">
-          <h2>No matching collections</h2>
-          <p>Try another search or select all collections.</p>
+          <h2>{t("noResults")}</h2>
+          <p>{t("trySearch")}</p>
         </div>
       )}
     </section>

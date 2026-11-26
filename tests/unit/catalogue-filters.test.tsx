@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { Product } from "../../src/lib/domain";
+vi.mock("server-only", () => ({}));
 
 const mocks = vi.hoisted(() => ({
   catalogue: vi.fn(),
@@ -44,7 +45,9 @@ it("uses the first repeated search value without crashing", async () => {
 });
 it("uses the first repeated collection consistently in results and select", async () => {
   const html = await render({ category: ["Skincare", "Nutrition"] });
-  expect(html).toContain('<option selected="">Skincare</option>');
+  expect(html).toContain(
+    '<option value="Skincare" selected="">Skincare</option>',
+  );
   expect(html).toContain("<h3>CONSCIENTIOUS</h3>");
   expect(html).not.toContain("<h3>PURTIER PLACENTA</h3>");
 });
@@ -52,7 +55,7 @@ it.each(["unknown", "__proto__", "", undefined])(
   "defaults unsupported collection %s to All",
   async (category) => {
     const html = await render({ category });
-    expect(html).toContain('<option selected="">All</option>');
+    expect(html).toContain('<option value="All" selected="">All</option>');
     expect(html).toContain("2 collections");
   },
 );

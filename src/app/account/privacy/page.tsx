@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { currentMarket, requireSession } from "@/lib/data";
 import { privacyListSchema, privacyPage } from "@/lib/privacy-requests";
 import { PrivacyIntakeForm } from "@/components/privacy-request-forms";

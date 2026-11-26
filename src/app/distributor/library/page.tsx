@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { requireSession } from "@/lib/data";
 import { libraryResultsSchema, libraryQuery } from "@/lib/content-library";
 import { LibraryFilters, LibraryCard } from "@/components/content-library";

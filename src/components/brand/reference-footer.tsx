@@ -1,3 +1,4 @@
+import { LocalizedAnchor } from "@/components/localized-link";
 import { CookieSettingsButton } from "../consent-manager";
 
 export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
@@ -21,29 +22,37 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
           </div>
           <div>
             <b>Houses</b>
-            <a href="/">RIWAY International</a>
+            <LocalizedAnchor href="/">RIWAY International</LocalizedAnchor>
             <br />
-            <a href={brand === "PURTIER" ? "/conscientious" : "/purtier"}>
+            <LocalizedAnchor
+              href={brand === "PURTIER" ? "/conscientious" : "/purtier"}
+            >
               {brand === "PURTIER" ? "CONSCIENTIOUS" : "PURTIER Placenta"}
-            </a>
+            </LocalizedAnchor>
           </div>
           <div>
             <b>This page</b>
             {brand === "PURTIER" ? (
               <>
-                <a href="#product-information">Product information</a>
+                <LocalizedAnchor href="#product-information">
+                  Product information
+                </LocalizedAnchor>
                 <br />
-                <a href="#editions">Editions</a>
+                <LocalizedAnchor href="#editions">Editions</LocalizedAnchor>
               </>
             ) : (
               <>
-                <a href="#him">For him</a>
+                <LocalizedAnchor href="#him">For him</LocalizedAnchor>
                 <br />
-                <a href="#her">For her</a>
+                <LocalizedAnchor href="#her">For her</LocalizedAnchor>
                 <br />
-                <a href="#gallery">The collection</a>
+                <LocalizedAnchor href="#gallery">
+                  The collection
+                </LocalizedAnchor>
                 <br />
-                <a href="#product-information">Product information</a>
+                <LocalizedAnchor href="#product-information">
+                  Product information
+                </LocalizedAnchor>
               </>
             )}
           </div>
@@ -76,19 +85,19 @@ export function ReferenceFooter({ brand = "RIWAY" }: { brand?: string }) {
         </div>
         <div>
           <b>Houses</b>
-          <a href="/purtier">PURTIER Placenta</a>
+          <LocalizedAnchor href="/purtier">PURTIER Placenta</LocalizedAnchor>
           <br />
-          <a href="/conscientious">CONSCIENTIOUS</a>
+          <LocalizedAnchor href="/conscientious">CONSCIENTIOUS</LocalizedAnchor>
         </div>
         <div>
           <b>Company</b>
-          <a href="#story">About</a>
+          <LocalizedAnchor href="#story">About</LocalizedAnchor>
           <br />
-          <a href="#goals">6 Goals</a>
+          <LocalizedAnchor href="#goals">6 Goals</LocalizedAnchor>
           <br />
-          <a href="#rightway">Golden Deer Award</a>
+          <LocalizedAnchor href="#rightway">Golden Deer Award</LocalizedAnchor>
           <br />
-          <a href="#events">Events</a>
+          <LocalizedAnchor href="#events">Events</LocalizedAnchor>
         </div>
         <div>
           <b>Contact</b>101 Bedok North Avenue 3<br />

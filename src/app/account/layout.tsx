@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { redirect } from "next/navigation";
 import { session } from "@/lib/data";
 import { SignOut } from "@/components/auth-form";

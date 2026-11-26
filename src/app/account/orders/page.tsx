@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { requireSession } from "@/lib/data";
 import { money } from "@/lib/domain";
 import { pageNumber } from "@/lib/pagination";

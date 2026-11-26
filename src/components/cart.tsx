@@ -1,9 +1,10 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { useStore } from "./store-provider";
 import { CartQuantity } from "./cart-quantity";
+import { useLocale, useUi } from "./locale-provider";
 import {
   cartSchema,
   money,
@@ -21,6 +22,8 @@ export function Cart({
   offers: Offer[];
   market: Market;
 }) {
+  const t = useUi(),
+    { locale } = useLocale();
   const { items, ready, update, restore } = useStore();
   const itemCount = items.reduce((total, item) => total + item.quantity, 0);
   const [message, setMessage] = useState("");
@@ -52,12 +55,12 @@ export function Cart({
       setMessage(
         response.ok
           ? items.length
-            ? "Your bag was saved to your account."
-            : "Your empty bag was saved to your account."
-          : (data.error?.message ?? "Your bag could not be saved. Try again."),
+            ? t("bagSaved")
+            : t("emptyBagSaved")
+          : (data.error?.message ?? t("bagSaveError")),
       );
     } catch {
-      setMessage("Your bag could not be saved. Try again.");
+      setMessage(t("bagSaveError"));
     } finally {
       requestInFlight.current = false;
       setPending(false);
@@ -78,22 +81,22 @@ export function Cart({
       const parsed = cartSchema.safeParse(d.items);
       if (!parsed.success) throw Error();
       restore(parsed.data);
-      setMessage("Your saved account bag was restored.");
+      setMessage(t("bagRestored"));
     } catch {
-      setMessage("Your saved bag could not be restored.");
+      setMessage(t("bagRestoreError"));
     } finally {
       requestInFlight.current = false;
       setPending(false);
     }
   }
-  if (!ready) return <p>Loading your bag…</p>;
+  if (!ready) return <p>{t("loadingBag")}</p>;
   if (!items.length)
     return (
       <div className="empty">
-        <h2>Your bag is waiting for a discovery.</h2>
-        <p>Explore our collections and save a product for review.</p>
+        <h2>{t("emptyBag")}</h2>
+        <p>{t("emptyBagHelp")}</p>
         <Link className="button" href="/shop">
-          Explore collections
+          {t("exploreCollections")}
         </Link>
         <p>
           <button
@@ -101,7 +104,7 @@ export function Cart({
             disabled={pending}
             onClick={saveBag}
           >
-            Save empty bag to account
+            {t("saveEmptyBag")}
           </button>
         </p>
         <p>
@@ -110,7 +113,7 @@ export function Cart({
             disabled={pending}
             onClick={restoreBag}
           >
-            Restore account bag
+            {t("restoreBag")}
           </button>
         </p>
         <p role="status">{message}</p>
@@ -136,9 +139,11 @@ export function Cart({
               )}
             </div>
             <div>
-              <h3>{p?.name ?? "Unavailable product"}</h3>
+              <h3>{p?.name ?? t("unavailableProduct")}</h3>
               <p className="small muted">
-                {money(o?.retail_minor ?? null, markets[market].currency)}
+                {o?.retail_minor == null
+                  ? t("pricingPending")
+                  : money(o.retail_minor, markets[market].currency, locale)}
               </p>
             </div>
             <CartQuantity
@@ -156,39 +161,41 @@ export function Cart({
             disabled={pending}
             onClick={saveBag}
           >
-            Save bag to account
+            {t("saveBag")}
           </button>
           <button
             className="button button-outline"
             disabled={pending}
             onClick={restoreBag}
           >
-            Restore account bag
+            {t("restoreBag")}
           </button>
           <Link href="/shop" className="text-link">
-            Continue exploring →
+            {t("continueExploring")} →
           </Link>
         </div>
         <p role="status">{message}</p>
       </div>
       <aside className="panel">
-        <h2>Your selection</h2>
+        <h2>{t("yourSelection")}</h2>
         <p className="small muted">
-          {itemCount} {itemCount === 1 ? "item" : "items"} ·{" "}
-          {markets[market].name}
+          {locale === "en"
+            ? `${itemCount} ${itemCount === 1 ? "item" : "items"}`
+            : t("itemsCount", { count: itemCount })}{" "}
+          · {markets[market].name}
         </p>
-        <div className="price">{money(total, markets[market].currency)}</div>
-        <div className="notice">
+        <div className="price">
+          {total === null
+            ? t("pricingPending")
+            : money(total, markets[market].currency, locale)}
+        </div>
+        <div className="notice" lang="en">
           Online purchasing is unavailable. Prices, shipping and taxes require
           approved market configuration.
         </div>
-        {unknown && (
-          <p className="error-message">
-            Remove unavailable products before continuing.
-          </p>
-        )}
+        {unknown && <p className="error-message">{t("removeUnavailable")}</p>}
         <Link className="button" href="/checkout">
-          Review checkout
+          {t("checkout")}
         </Link>
       </aside>
     </div>

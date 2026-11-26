@@ -1,6 +1,6 @@
 "use server";
 import { z } from "zod";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { session } from "@/lib/data";
 type Result = { message: string; ok?: boolean };
 export async function requestReturn(_: Result, f: FormData): Promise<Result> {

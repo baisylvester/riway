@@ -146,6 +146,7 @@ try {
     "checkout_collection.sql",
     "bonus_campaigns.sql",
     "returns_refunds.sql",
+    "locale_content.sql",
     "checkout.sql",
     "operations.sql",
     "tenant_inventory.sql",

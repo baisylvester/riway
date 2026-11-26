@@ -1,13 +1,16 @@
 "use client";
 import { useEffect, useId, useState, type FormEvent } from "react";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { browserDb } from "@/lib/supabase/browser";
 import { authErrorMessage } from "@/lib/auth-feedback";
+import { useLocale } from "./locale-provider";
+import { localizedHref } from "@/lib/locales";
 export function AuthForm({
   mode = "login",
 }: {
   mode?: "login" | "register" | "reset" | "update";
 }) {
+  const { locale } = useLocale();
   const statusId = useId();
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
@@ -33,13 +36,20 @@ export function AuthForm({
         // cannot reuse a signed-out redirect cached by Next route prefetching.
         navigating = true;
         setMessage("Signed in. Opening your account…");
-        window.location.replace("/account");
+        window.location.replace(localizedHref("/account", locale));
       }
       if (mode === "register") {
         const { error } = await client.auth.signUp({
           email,
           password,
-          options: { emailRedirectTo: location.origin + "/auth/callback" },
+          options: {
+            emailRedirectTo:
+              location.origin +
+              "/auth/callback" +
+              (locale === "en"
+                ? ""
+                : `?next=${encodeURIComponent(localizedHref("/account", locale))}`),
+          },
         });
         if (error) throw error;
         setMessage(
@@ -49,7 +59,9 @@ export function AuthForm({
       if (mode === "reset") {
         const { error } = await client.auth.resetPasswordForEmail(email, {
           redirectTo:
-            location.origin + "/auth/callback?next=/auth/update-password",
+            location.origin +
+            "/auth/callback?next=" +
+            encodeURIComponent(localizedHref("/auth/update-password", locale)),
         });
         if (error) throw error;
         setMessage(
@@ -60,7 +72,7 @@ export function AuthForm({
         const { error } = await client.auth.updateUser({ password });
         if (error) throw error;
         navigating = true;
-        window.location.replace("/account");
+        window.location.replace(localizedHref("/account", locale));
       }
     } catch (error) {
       navigating = false;
@@ -154,12 +166,13 @@ export function AuthForm({
   );
 }
 export function SignOut() {
+  const { locale } = useLocale();
   return (
     <button
       className="button button-outline"
       onClick={async () => {
         const { error } = await browserDb().auth.signOut();
-        if (!error) window.location.replace("/");
+        if (!error) window.location.replace(localizedHref("/", locale));
       }}
     >
       Sign out

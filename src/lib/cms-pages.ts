@@ -33,7 +33,12 @@ export const pageKeys = {
   ],
 } as const;
 
-export type CmsSection = { key: string; title: string; body: string };
+export type CmsSection = {
+  key: string;
+  title: string;
+  body: string;
+  locale?: string;
+};
 
 export function slugCandidates(key: string, market: Market, locale = "en") {
   const m = market.toLowerCase();
@@ -56,7 +61,18 @@ export function pickSections(
       .map((s) => bySlug.get(s))
       .find(Boolean);
     if (hit && hit.body.trim())
-      out.push({ key, title: hit.title, body: hit.body });
+      out.push({
+        key,
+        title: hit.title,
+        body: hit.body,
+        ...(locale !== "en"
+          ? {
+              locale: hit.slug.endsWith(`-${locale.toLowerCase()}`)
+                ? locale
+                : "en",
+            }
+          : {}),
+      });
   }
   return out;
 }

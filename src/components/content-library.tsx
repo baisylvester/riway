@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import type { LibraryAsset } from "@/lib/content-library";
 import { StaffActionForm } from "./staff-action-form";
 import {

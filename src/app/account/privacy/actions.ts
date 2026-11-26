@@ -1,5 +1,5 @@
 "use server";
-import { revalidatePath } from "next/cache";
+import { revalidatePath } from "@/lib/revalidation";
 import { z } from "zod";
 import { session, staffAccess } from "@/lib/data";
 import {

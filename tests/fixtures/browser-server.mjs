@@ -106,6 +106,16 @@ const identifier = (value) => {
     throw new Error("Invalid fixture identifier");
   return '"' + value + '"';
 };
+// Synthetic multilingual content. Publication is still checked by the actual
+// database triggers; no text is inserted into a hosted content store.
+await pg.exec(`select set_config('request.jwt.claims','{"sub":"${users.reviewer}","role":"authenticated","aal":"aal2"}',false);
+ insert into public.content_entries(slug,kind,title,body,market,status)values
+ ('support-contacts','page','Synthetic English contacts','Synthetic English contact information for disposable tests only.','PH','published'),
+ ('support-contacts-fil','page','Mga synthetic contact','Synthetic Filipino contact content for disposable tests only.','PH','published'),
+ ('support-contacts-ms','page','Hidden synthetic Malay draft','This unpublished Malay draft must not be visible.','PH','draft');
+ insert into public.product_market_content(product_id,market,locale,ingredients,status,approval_reference)
+ select id,'PH','en','Synthetic approved English ingredients','published','SYNTHETIC-ONLY'from public.products where slug in('synthetic-qualifier-desktop','synthetic-qualifier-mobile');
+ select set_config('request.jwt.claims','{}',false);`);
 // Two paid orders for the desktop/mobile customer return journeys. Payments
 // are simulated through the real settlement RPC inside this disposable DB.
 await pg.exec(`insert into public.sponsor_attributions(user_id,distributor_id)values('${users.customer}','${users.distributor}');
@@ -132,6 +142,7 @@ const tables = new Set([
   "orders",
   "sponsor_attributions",
   "memberships",
+  "product_market_content",
 ]);
 let sequence = Promise.resolve();
 const server = createServer((req, res) => {
@@ -237,6 +248,31 @@ const server = createServer((req, res) => {
             );
             return null;
           }
+          if (req.method === "POST" && table === "product_market_content") {
+            const permitted = new Set([
+              "product_id",
+              "market",
+              "locale",
+              "ingredients",
+              "usage",
+              "label_notes",
+              "regulatory_statement",
+              "video_url",
+              "status",
+              "approval_reference",
+            ]);
+            const keys = Object.keys(body);
+            if (keys.some((k) => !permitted.has(k)))
+              throw Error("Unsupported fixture content write");
+            await tx.query(
+              `insert into public.product_market_content(${keys.map(identifier).join(",")})values(${keys.map((_, i) => `$${i + 1}`).join(",")})on conflict(product_id,market,locale)do update set ${keys
+                .filter((k) => !["product_id", "market", "locale"].includes(k))
+                .map((k) => `${identifier(k)}=excluded.${identifier(k)}`)
+                .join(",")}`,
+              keys.map((k) => body[k]),
+            );
+            return null;
+          }
           if (req.method !== "GET")
             throw new Error("Fixture method unavailable");
           const columns = url.searchParams.get("select") ?? "*";
@@ -253,6 +289,16 @@ const server = createServer((req, res) => {
             const field = identifier(key);
             if (operator === "is" && argument === "null")
               return `${field} is null`;
+            if (operator === "in" && /^\([A-Za-z0-9,_-]+\)$/.test(argument)) {
+              const placeholders = argument
+                .slice(1, -1)
+                .split(",")
+                .map((value) => {
+                  values.push(value);
+                  return `$${values.length}`;
+                });
+              return `${field} in (${placeholders.join(",")})`;
+            }
             if (!["eq", "neq"].includes(operator))
               throw new Error("Fixture filter unavailable");
             values.push(argument);
@@ -353,6 +399,11 @@ const child = spawn(
       AUTH_PROVIDER: "supabase",
       AI_ASSISTANT_PROVIDER: "disabled",
       EMAIL_PROVIDER: "disabled",
+      UI_TRANSLATION_APPROVAL_REFERENCE: "SYNTHETIC-BROWSER-ONLY",
+      UI_LOCALES_PH: "en,fil,ms,zh-CN",
+      UI_LOCALES_SG: "en",
+      UI_LOCALES_MY: "en,ms,zh-CN",
+      LOCALIZED_SEO_PATHS: '{"fil":["/shop"]}',
     },
   },
 );

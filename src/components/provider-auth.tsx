@@ -8,29 +8,33 @@ import {
 } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { verifyStaffIdentity } from "@/app/verify-identity";
+import { useLocale } from "./locale-provider";
+import { localizedHref } from "@/lib/locales";
 
 export function ClerkLogin({ register = false }: { register?: boolean }) {
+  const { locale } = useLocale();
   return register ? (
     <SignUp
       routing="hash"
-      signInUrl="/auth/login"
-      forceRedirectUrl="/account"
+      signInUrl={localizedHref("/auth/login", locale)}
+      forceRedirectUrl={localizedHref("/account", locale)}
     />
   ) : (
     <SignIn
       routing="hash"
-      signUpUrl="/auth/register"
-      forceRedirectUrl="/account"
+      signUpUrl={localizedHref("/auth/register", locale)}
+      forceRedirectUrl={localizedHref("/account", locale)}
     />
   );
 }
 
 export function ClerkSignOut() {
+  const { locale } = useLocale();
   const clerk = useClerk();
   return (
     <button
       className="button button-outline"
-      onClick={() => clerk.signOut({ redirectUrl: "/" })}
+      onClick={() => clerk.signOut({ redirectUrl: localizedHref("/", locale) })}
     >
       Sign out
     </button>

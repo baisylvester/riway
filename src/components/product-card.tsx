@@ -1,7 +1,8 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import Image from "next/image";
 import { ArrowUpRight } from "lucide-react";
 import type { Product } from "@/lib/domain";
+import { Ui } from "./locale-provider";
 export function ProductArt({
   product,
   hero = false,
@@ -34,7 +35,21 @@ export function ProductCard({ product }: { product: Product }) {
   return (
     <Link className="product-card" href={`/shop/${product.slug}`}>
       <div className={`product-art ${product.slug}`}>
-        <span className="product-tag">{product.category}</span>
+        <span className="product-tag">
+          {["Nutrition", "Skincare", "Packages"].includes(product.category) ? (
+            <Ui
+              id={
+                product.category === "Nutrition"
+                  ? "nutrition"
+                  : product.category === "Skincare"
+                    ? "skincare"
+                    : "packages"
+              }
+            />
+          ) : (
+            <span lang="en">{product.category}</span>
+          )}
+        </span>
         <ProductArt product={product} />
         <span className="circle-link">
           <ArrowUpRight size={20} />
@@ -43,10 +58,10 @@ export function ProductCard({ product }: { product: Product }) {
       <div className="product-title">
         <h3>{product.name}</h3>
         <span>
-          Explore collection <ArrowUpRight size={14} />
+          <Ui id="explore" /> <ArrowUpRight size={14} />
         </span>
       </div>
-      <p>{product.subtitle}</p>
+      <p lang="en">{product.subtitle}</p>
     </Link>
   );
 }

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { session } from "@/lib/data";
 import { money } from "@/lib/domain";
 import { returnContextSchema, type ReturnContext } from "@/lib/order-returns";
@@ -299,7 +299,7 @@ export async function OrderReturns({
             )}
         </article>
       ))}
-      <Link href="/legal/terms-of-sale">Terms of Sale</Link>
+      <Link href="/legal/terms">Terms of Sale</Link>
       <Link href="/support">Contact RIWAY support</Link>
     </section>
   );

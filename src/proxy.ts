@@ -3,6 +3,21 @@ import { NextResponse, type NextRequest } from "next/server";
 import type { NextFetchEvent } from "next/server";
 import { clerkMiddleware } from "@clerk/nextjs/server";
 import { authProvider } from "./lib/auth-config";
+import { asMarket } from "./lib/domain";
+import {
+  enabledLocales,
+  localizablePath,
+  localizedHref,
+  splitLocalePath,
+} from "./lib/locales";
+function routeResponse(request: NextRequest) {
+  const route = splitLocalePath(request.nextUrl.pathname),
+    headers = new Headers(request.headers);
+  // Never trust locale/path headers supplied by the browser or an upstream.
+  headers.set("x-riway-locale", route.prefixed ? route.locale : "en");
+  headers.set("x-riway-path", route.path);
+  return NextResponse.next({ request: { headers } });
+}
 const clerkProxy = clerkMiddleware(async (auth, request) => {
   const identity = await auth();
   const protectedPage = [
@@ -12,19 +27,48 @@ const clerkProxy = clerkMiddleware(async (auth, request) => {
     "/operations",
   ].some(
     (prefix) =>
-      request.nextUrl.pathname === prefix ||
-      request.nextUrl.pathname.startsWith(prefix + "/"),
+      splitLocalePath(request.nextUrl.pathname).path === prefix ||
+      splitLocalePath(request.nextUrl.pathname).path.startsWith(prefix + "/"),
   );
   const response =
     !identity.userId && protectedPage
-      ? NextResponse.redirect(new URL("/auth/login", request.url))
-      : NextResponse.next();
+      ? NextResponse.redirect(
+          new URL(
+            localizedHref(
+              "/auth/login",
+              splitLocalePath(request.nextUrl.pathname).locale,
+            ),
+            request.url,
+          ),
+        )
+      : routeResponse(request);
   response.headers.set("Cache-Control", "private, no-store");
   return response;
 });
 export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  const route = splitLocalePath(request.nextUrl.pathname);
+  if (route.prefixed) {
+    if (
+      !enabledLocales(
+        asMarket(request.cookies.get("riway-market")?.value),
+      ).includes(route.locale) ||
+      !localizablePath(route.path)
+    )
+      return new NextResponse("Not found", {
+        status: 404,
+        headers: { "Cache-Control": "private, no-store" },
+      });
+    const canonical = localizedHref(route.path, route.locale);
+    if (canonical !== request.nextUrl.pathname) {
+      if (!["GET", "HEAD"].includes(request.method))
+        return new NextResponse("Invalid locale URL", { status: 400 });
+      const target = request.nextUrl.clone();
+      target.pathname = canonical;
+      return NextResponse.redirect(target, 308);
+    }
+  }
   if (authProvider() === "clerk") return clerkProxy(request, event);
-  let response = NextResponse.next({ request });
+  let response = routeResponse(request);
   if (
     ![
       "/account",
@@ -35,9 +79,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       "/auth",
       "/checkout",
     ].some(
-      (prefix) =>
-        request.nextUrl.pathname === prefix ||
-        request.nextUrl.pathname.startsWith(prefix + "/"),
+      (prefix) => route.path === prefix || route.path.startsWith(prefix + "/"),
     )
   )
     return response;
@@ -49,7 +91,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       getAll: () => request.cookies.getAll(),
       setAll(values) {
         values.forEach(({ name, value }) => request.cookies.set(name, value));
-        response = NextResponse.next({ request });
+        response = routeResponse(request);
         values.forEach(({ name, value, options }) =>
           response.cookies.set(name, value, options),
         );
@@ -59,14 +101,16 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
   const {
     data: { user },
   } = await client.auth.getUser();
-  const path = request.nextUrl.pathname;
+  const path = route.path;
   if (
     !user &&
     ["/account", "/admin", "/distributor", "/operations"].some(
       (prefix) => path === prefix || path.startsWith(prefix + "/"),
     )
   ) {
-    const redirect = NextResponse.redirect(new URL("/auth/login", request.url));
+    const redirect = NextResponse.redirect(
+      new URL(localizedHref("/auth/login", route.locale), request.url),
+    );
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     redirect.headers.set("Cache-Control", "private, no-store");
     return redirect;

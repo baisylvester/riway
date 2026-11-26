@@ -1,5 +1,5 @@
 "use client";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { CookieSettingsButton } from "./consent-manager";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -13,7 +13,12 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { useStore } from "./store-provider";
 import { markets, type Market } from "@/lib/domain";
+import { useLocale, useUi } from "./locale-provider";
+import { LanguagePicker } from "./language-picker";
+import { localizedHref, splitLocalePath } from "@/lib/locales";
 export function Header({ market }: { market: Market }) {
+  const t = useUi(),
+    { locale } = useLocale();
   const { items } = useStore(),
     path = usePathname(),
     router = useRouter();
@@ -69,64 +74,66 @@ export function Header({ market }: { market: Market }) {
     };
   }, [open]);
   const links = [
-    ["/about", "Our world"],
-    ["/shop", "Our collections"],
-    ["/membership", "Opportunity"],
-    ["/events", "Events"],
+    ["/about", t("about")],
+    ["/shop", t("collections")],
+    ["/membership", t("opportunity")],
+    ["/events", t("events")],
   ];
   return (
     <>
       <div className="announcement">
-        A shared vision. A world of possibilities.{" "}
+        {t("announcement")}{" "}
         <Link href="/about">
-          Discover RIWAY <ArrowUpRight size={12} />
+          {t("discover")} <ArrowUpRight size={12} />
         </Link>
       </div>
       <header className="header">
-        <Link className="wordmark" href="/" aria-label="RIWAY home">
+        <Link className="wordmark" href="/" aria-label={t("home")}>
           RIWAY<span>INTERNATIONAL</span>
         </Link>
         <nav
           id="main-navigation"
           ref={navigation}
           className={open ? "navigation open" : "navigation"}
-          aria-label="Main navigation"
+          aria-label={t("navigation")}
         >
           {links.map(([url, label]) => (
             <Link
               key={url}
               href={url}
               onClick={() => setOpen(false)}
-              aria-current={path.startsWith(url) ? "page" : undefined}
+              aria-current={
+                splitLocalePath(path).path.startsWith(url) ? "page" : undefined
+              }
             >
               {label}
             </Link>
           ))}
           <div className="rw-menu-extra">
             <Link href="/stories" onClick={() => setOpen(false)}>
-              Stories
+              {t("stories")}
             </Link>
             <Link href="/support" onClick={() => setOpen(false)}>
-              Contact & support
+              {t("support")}
             </Link>
             <Link href="/distributor" onClick={() => setOpen(false)}>
-              Distributor area
+              {t("distributor")}
             </Link>
             <Link href="/account" onClick={() => setOpen(false)}>
-              Member account
+              {t("account")}
             </Link>
             <Link href="/cart" onClick={() => setOpen(false)}>
-              Review bag
+              {t("bag")}
             </Link>
           </div>
         </nav>
         <div className="header-actions">
           <label className="market">
             <Globe2 size={15} />
-            <span className="sr-only">Select country</span>
+            <span className="sr-only">{t("country")}</span>
             <select
               name="market"
-              aria-label="Select country"
+              aria-label={t("country")}
               value={market}
               onChange={async (e) => {
                 setMarketError("");
@@ -137,11 +144,19 @@ export function Header({ market }: { market: Market }) {
                     body: JSON.stringify({ market: e.target.value }),
                   });
                   if (!result.ok) throw new Error();
+                  const chosen = await result.json();
+                  if (locale !== "en" && !chosen.locales?.includes(locale)) {
+                    window.location.assign(
+                      localizedHref(
+                        path + window.location.search + window.location.hash,
+                        "en",
+                      ),
+                    );
+                    return;
+                  }
                   router.refresh();
                 } catch {
-                  setMarketError(
-                    "Your country could not be changed. Please try again.",
-                  );
+                  setMarketError(t("countryError"));
                 }
               }}
             >
@@ -152,17 +167,18 @@ export function Header({ market }: { market: Market }) {
               ))}
             </select>
           </label>
-          <Link
-            className="icon-link"
-            href="/account"
-            aria-label="Member account"
-          >
+          <LanguagePicker />
+          <Link className="icon-link" href="/account" aria-label={t("account")}>
             <UserRound size={19} />
           </Link>
           <Link
             className="icon-link bag"
             href="/cart"
-            aria-label={`Shopping bag, ${itemCount} ${itemCount === 1 ? "item" : "items"}`}
+            aria-label={
+              locale === "en"
+                ? `Shopping bag, ${itemCount} ${itemCount === 1 ? "item" : "items"}`
+                : t("bagCount", { count: itemCount })
+            }
           >
             <ShoppingBag size={20} />
             <span>{itemCount}</span>
@@ -171,7 +187,7 @@ export function Header({ market }: { market: Market }) {
             ref={menuButton}
             aria-controls="main-navigation"
             className="mobile-menu"
-            aria-label={open ? "Close menu" : "Open menu"}
+            aria-label={t(open ? "closeMenu" : "openMenu")}
             aria-expanded={open}
             onClick={() => setOpen(!open)}
           >
@@ -188,6 +204,7 @@ export function Header({ market }: { market: Market }) {
   );
 }
 export function Footer() {
+  const t = useUi();
   return (
     <footer>
       <div className="footer-top">
@@ -195,36 +212,36 @@ export function Footer() {
           RIWAY<span>INTERNATIONAL</span>
         </Link>
         <p>
-          Bringing people together.
+          {t("people")}
           <br />
-          Opening a world of possibilities.
+          {t("possibilities")}
         </p>
         <div>
-          <Link href="/about">Our world</Link>
-          <Link href="/stories">Stories</Link>
-          <Link href="/support">Contact & support</Link>
+          <Link href="/about">{t("about")}</Link>
+          <Link href="/stories">{t("stories")}</Link>
+          <Link href="/support">{t("support")}</Link>
         </div>
         <div>
-          <Link href="/account">Member area</Link>
-          <Link href="/distributor">Distributor area</Link>
-          <Link href="/legal">Policies & conduct</Link>
+          <Link href="/account">{t("memberArea")}</Link>
+          <Link href="/distributor">{t("distributor")}</Link>
+          <Link href="/legal">{t("policies")}</Link>
         </div>
       </div>
       <span className="rw-footer-word" aria-hidden="true">
         RIWAY
       </span>
-      <p className="rw-footer-notice">
+      <p className="rw-footer-notice" lang="en">
         Explore our collections and save products to your review bag. Online
         purchasing and payment collection are unavailable. Contact RIWAY for
         approved market-specific product information.
       </p>
       <div className="footer-bottom">
         <span>
-          © {new Date().getFullYear()} RIWAY International. All rights reserved.
+          © {new Date().getFullYear()} RIWAY International. {t("rights")}
         </span>
-        <span>Development preview · Online purchasing unavailable</span>
-        <Link href="/legal/privacy">Privacy</Link>
-        <Link href="/legal/cookies">Cookies</Link>
+        <span>{t("preview")}</span>
+        <Link href="/legal/privacy">{t("privacy")}</Link>
+        <Link href="/legal/cookies">{t("cookies")}</Link>
         <CookieSettingsButton />
       </div>
     </footer>

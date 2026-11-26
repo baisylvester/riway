@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { money } from "@/lib/domain";
 import type { Suggestion } from "@/lib/recommendations";
 import { ProductCard } from "./product-card";

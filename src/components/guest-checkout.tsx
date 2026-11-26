@@ -1,9 +1,12 @@
 "use client";
 import { useState, useEffect, type FormEvent } from "react";
-import Link from "next/link";
+import Link from "@/components/localized-link";
 import { browserDb } from "@/lib/supabase/browser";
 import { authErrorMessage } from "@/lib/auth-feedback";
+import { useLocale } from "./locale-provider";
+import { localizedHref } from "@/lib/locales";
 export function GuestCheckout() {
+  const { locale } = useLocale();
   const [email, setEmail] = useState("");
   const [token, setToken] = useState("");
   const [ready, setReady] = useState(false);
@@ -21,7 +24,10 @@ export function GuestCheckout() {
         email: email.trim(),
         options: {
           shouldCreateUser: true,
-          emailRedirectTo: location.origin + "/auth/callback?next=/checkout",
+          emailRedirectTo:
+            location.origin +
+            "/auth/callback?next=" +
+            encodeURIComponent(localizedHref("/checkout", locale)),
         },
       });
       if (error) throw error;
@@ -47,7 +53,7 @@ export function GuestCheckout() {
       if (error) throw error;
       if (!data.user?.email_confirmed_at || !data.session)
         throw new Error("Unverified");
-      window.location.replace("/checkout");
+      window.location.replace(localizedHref("/checkout", locale));
     } catch {
       setMessage(
         "This code could not be verified. Check the email and code, or request a new link. Your bag remains saved.",

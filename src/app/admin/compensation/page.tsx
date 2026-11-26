@@ -1,9 +1,11 @@
 import { session } from "@/lib/data";
 import {
   compensationEventLabels,
+  compensationHoldLabels,
   compensationSyncSchema,
 } from "@/lib/compensation-sync";
 import { CompensationRetryForm } from "@/components/compensation-retry-form";
+import { compensationAdapter } from "@/services/compensation";
 
 export const metadata = { title: "RIWAY volume sync" };
 
@@ -11,9 +13,12 @@ export default async function CompensationSync() {
   const { client } = await session();
   const { data, error } = await client.rpc("staff_compensation_sync");
   const sync = compensationSyncSchema.safeParse(data);
-  const enabled =
-    !!process.env.COMPENSATION_PROVIDER &&
-    process.env.COMPENSATION_PROVIDER !== "disabled";
+  let enabled = false;
+  try {
+    enabled = compensationAdapter() !== null;
+  } catch {
+    // An unsupported setting cannot dispatch queued events.
+  }
   return (
     <>
       <h1>RIWAY volume sync</h1>
@@ -27,8 +32,7 @@ export default async function CompensationSync() {
       {!enabled && (
         <p className="notice">
           Delivery to RIWAY is switched off until RIWAY supplies its API
-          contract and credentials. Events are kept and will be sent, once each,
-          after activation.
+          contract and credentials. Queued events stay available for review.
         </p>
       )}
       {error || !sync.success ? (
@@ -42,7 +46,11 @@ export default async function CompensationSync() {
           <div className="stats">
             <div className="stat">
               <span>Waiting</span>
-              <strong>{sync.data.counts.pending}</strong>
+              <strong>{sync.data.counts.pending - sync.data.held}</strong>
+            </div>
+            <div className="stat">
+              <span>On hold</span>
+              <strong>{sync.data.held}</strong>
             </div>
             <div className="stat">
               <span>Sending</span>
@@ -75,7 +83,7 @@ export default async function CompensationSync() {
                   <th>Event</th>
                   <th>Status</th>
                   <th>Attempts</th>
-                  <th>Last error</th>
+                  <th>Hold or last error</th>
                   <th>Queued</th>
                   <th />
                 </tr>
@@ -86,9 +94,13 @@ export default async function CompensationSync() {
                     <td>{e.orderId.slice(0, 8).toUpperCase()}</td>
                     <td>{e.market}</td>
                     <td>{compensationEventLabels[e.eventType]}</td>
-                    <td>{e.status}</td>
+                    <td>{e.holdReason ? "On hold" : e.status}</td>
                     <td>{e.attempts}</td>
-                    <td>{e.lastErrorCode ?? "—"}</td>
+                    <td>
+                      {e.holdReason
+                        ? compensationHoldLabels[e.holdReason]
+                        : (e.lastErrorCode ?? "—")}
+                    </td>
                     <td>{new Date(e.createdAt).toISOString().slice(0, 16)}</td>
                     <td>
                       {e.status === "failed" && (

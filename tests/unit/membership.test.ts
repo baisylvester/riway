@@ -171,6 +171,9 @@ describe("membership confirmation and account evidence", () => {
   const confirmation = {
     enrollmentId: ids.enrollment,
     externalMemberId: "VERIFIED-SAMPLE-EXTERNAL-ID",
+    sponsorMemberId: "VERIFIED-SAMPLE-SPONSOR",
+    verifiedMarket: "PH",
+    verifiedTier: "TEST_STARTER",
     reference: "SAMPLE-VERIFICATION-REFERENCE",
     verified: true,
   };
@@ -186,6 +189,9 @@ describe("membership confirmation and account evidence", () => {
       // One character passes no database check, so the form must refuse it too.
       { externalMemberId: "x" },
       { externalMemberId: "x".repeat(129) },
+      { sponsorMemberId: "" },
+      { verifiedMarket: "US" },
+      { verifiedTier: "invalid tier" },
       { reference: "" },
     ]) {
       expect(

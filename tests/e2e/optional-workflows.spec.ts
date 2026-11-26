@@ -8,6 +8,8 @@ const users = {
   distributor: "81000000-0000-4000-8000-000000000002",
   editor: "81000000-0000-4000-8000-000000000003",
   reviewer: "81000000-0000-4000-8000-000000000004",
+  memberDesktop: "81000000-0000-4000-8000-000000000005",
+  memberMobile: "81000000-0000-4000-8000-000000000006",
 };
 // The production router retains prior pages hidden in the DOM. Text assertions
 // and clicks target the visible page; raw response/ownership checks stay exact.
@@ -53,6 +55,100 @@ async function identity(context: BrowserContext, role: keyof typeof users) {
   ]);
 }
 test.describe.configure({ mode: "serial" });
+
+test("a qualifying purchase releases held volume only after matched RIWAY evidence", async ({
+  page,
+  context,
+  browser,
+}) => {
+  const mobile = test.info().project.name === "mobile";
+  const memberId = mobile
+    ? "SYNTHETIC-RIWAY-MOBILE"
+    : "SYNTHETIC-RIWAY-DESKTOP";
+  await identity(context, mobile ? "memberMobile" : "memberDesktop");
+  await page.goto("/account/membership");
+  const purchase = page.getByRole("article").filter({
+    has: page.getByRole("heading", { name: "Synthetic membership package" }),
+  });
+  await expect(purchase).toContainText("Awaiting RIWAY confirmation");
+  const orderId = (await purchase.getByRole("link").getAttribute("href"))
+    ?.split("/")
+    .at(-1);
+  expect(orderId).toBeTruthy();
+  await page.goto("/admin/compensation");
+  await expect(
+    page.getByText("Staff access required.").filter({ visible: true }),
+  ).toBeVisible();
+
+  const staffContext = await browser.newContext();
+  try {
+    await identity(staffContext, "reviewer");
+    const staff = await staffContext.newPage();
+    await staff.goto("/admin/compensation");
+    const heldOrder = staff.getByRole("row").filter({
+      has: staff.getByRole("cell", {
+        name: orderId!.slice(0, 8).toUpperCase(),
+        exact: true,
+      }),
+    });
+    await expect(heldOrder).toContainText(
+      "Membership requires RIWAY confirmation",
+    );
+    await staff.goto("/admin/memberships");
+    const review = staff.getByRole("article").filter({
+      hasText: orderId!,
+    });
+    await review
+      .getByText("Confirm an existing RIWAY record", { exact: true })
+      .filter({ visible: true })
+      .click();
+    const confirm = review.getByRole("button", {
+      name: "Confirm verified RIWAY record",
+    });
+    async function submit(sponsor: string) {
+      await review
+        .getByLabel("Existing RIWAY member ID")
+        .filter({ visible: true })
+        .fill(memberId);
+      await review
+        .getByLabel("Sponsor member ID shown in RIWAY")
+        .filter({ visible: true })
+        .fill(sponsor);
+      await review
+        .getByLabel("Market shown in RIWAY")
+        .filter({ visible: true })
+        .selectOption("PH");
+      await review
+        .getByLabel("Tier code shown in RIWAY")
+        .filter({ visible: true })
+        .fill("SYNTHETIC_STARTER");
+      await review
+        .getByLabel("Verification reference")
+        .filter({ visible: true })
+        .fill("SYNTHETIC-BROWSER-VERIFICATION");
+      await review
+        .getByRole("checkbox", { name: /I verified the customer/ })
+        .check();
+      await confirm.click();
+    }
+    await submit("SYNTHETIC-WRONG-SPONSOR");
+    await expect(review.getByRole("status")).toContainText(
+      "Reconcile the records before confirming.",
+    );
+    await page.goto("/account/membership");
+    await expect(purchase).toContainText("Awaiting RIWAY confirmation");
+    await submit("QA-BROWSER");
+    await expect(review).toContainText("Confirmed by RIWAY");
+    await staff.goto("/admin/compensation");
+    await expect(heldOrder).toHaveCount(0);
+    await page.reload();
+    await expect(purchase).toContainText("Confirmed by RIWAY");
+    await expect(purchase).toContainText(memberId);
+  } finally {
+    await staffContext.close();
+  }
+});
+
 test("customer requests a return; staff approve, cancel before dispatch and record actual goods", async ({
   page,
   context,

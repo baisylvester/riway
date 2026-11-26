@@ -179,30 +179,46 @@ export async function confirmMembershipEnrollment(
     const parsed = membershipConfirmationSchema.safeParse({
       enrollmentId: form.get("enrollmentId"),
       externalMemberId: form.get("externalMemberId"),
+      sponsorMemberId: form.get("sponsorMemberId"),
+      verifiedMarket: form.get("verifiedMarket"),
+      verifiedTier: form.get("verifiedTier"),
       reference: form.get("reference"),
       verified: form.get("verified") === "on",
     });
     if (!parsed.success)
       return {
         message:
-          "Enter the existing RIWAY member ID and verification reference, and confirm that you checked the RIWAY record.",
+          "Enter the member ID, sponsor ID, market, tier code and verification reference from the RIWAY record.",
       };
     const input = parsed.data;
     const { data, error } = await current.client.rpc(
-      "confirm_membership_enrollment",
+      "confirm_riway_membership",
       {
         p_enrollment: input.enrollmentId,
-        p_external_member_id: input.externalMemberId,
+        p_member: input.externalMemberId,
+        p_sponsor: input.sponsorMemberId,
+        p_market: input.verifiedMarket,
+        p_tier: input.verifiedTier,
         p_reference: input.reference,
       },
     );
-    if (error) return { message: problem(error.code) };
+    if (error)
+      return {
+        message:
+          error.code === "23514"
+            ? "Check for a sponsor, market or tier mismatch, or a refund on the qualifying purchase. Reconcile the records before confirming."
+            : problem(error.code),
+      };
     const enrollment = membershipEnrollmentSchema.safeParse(data);
     if (
       !enrollment.success ||
       enrollment.data.id !== input.enrollmentId ||
       enrollment.data.status !== "confirmed" ||
       enrollment.data.externalMemberId !== input.externalMemberId ||
+      enrollment.data.sponsorMemberId !== input.sponsorMemberId ||
+      enrollment.data.market !== input.verifiedMarket ||
+      enrollment.data.tierCode !== input.verifiedTier ||
+      enrollment.data.confirmationReference !== input.reference ||
       !enrollment.data.confirmedAt
     )
       return {

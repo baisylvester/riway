@@ -204,7 +204,29 @@ export function MembershipConfirmationForm({
         >
           <label>
             Existing RIWAY member ID
-            <input name="externalMemberId" required maxLength={128} />
+            <input
+              name="externalMemberId"
+              required
+              minLength={2}
+              maxLength={128}
+            />
+          </label>
+          <label>
+            Sponsor member ID shown in RIWAY
+            <input name="sponsorMemberId" required maxLength={128} />
+          </label>
+          <label>
+            Market shown in RIWAY
+            <select name="verifiedMarket" required defaultValue="">
+              <option value="">Choose a market</option>
+              <option value="PH">Philippines</option>
+              <option value="SG">Singapore</option>
+              <option value="MY">Malaysia</option>
+            </select>
+          </label>
+          <label>
+            Tier code shown in RIWAY
+            <input name="verifiedTier" required minLength={2} maxLength={40} />
           </label>
           <label>
             Verification reference

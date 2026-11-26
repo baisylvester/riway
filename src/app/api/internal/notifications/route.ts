@@ -82,6 +82,12 @@ export async function POST(request: Request) {
     !["PGRST202", "42883"].includes(String(reorders.error.code ?? ""))
   )
     return failure("Reorder reminders are unavailable.", 503);
+  const replenishment = await client.rpc("queue_replenishment_reminders");
+  if (
+    replenishment.error &&
+    !["PGRST202", "42883"].includes(String(replenishment.error.code ?? ""))
+  )
+    return failure("Replenishment reminders are unavailable.", 503);
   const consultations = await client.rpc("queue_consultation_reminders");
   if (
     consultations.error &&

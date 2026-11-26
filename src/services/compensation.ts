@@ -35,8 +35,8 @@ export const compensationPayloadSchema = z.object({
   subtotalMinor: z.number().int().nonnegative(),
   discountMinor: z.number().int().nonnegative(),
   totalMinor: z.number().int().positive(),
-  sponsorMemberId: z.string().min(1).max(100),
-  customerMemberId: z.string().min(1).max(100).nullable(),
+  sponsorMemberId: z.string().min(1).max(128),
+  customerMemberId: z.string().min(1).max(128).nullable(),
   lines: z.array(line).min(1).max(30),
 });
 export type CompensationPayload = z.infer<typeof compensationPayloadSchema>;
@@ -113,7 +113,8 @@ export async function deliverCompensationBatch(
     if (
       !payload.success ||
       payload.data.eventType !== event.data.eventType ||
-      !event.data.externalReference.includes(payload.data.orderId)
+      event.data.externalReference !==
+        `riway-web:order:${payload.data.orderId}:${payload.data.eventType === "order_paid" ? "paid" : "reversed"}`
     ) {
       // A malformed snapshot will not improve on retry; staff review it.
       result = "rejected";

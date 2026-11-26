@@ -23,6 +23,7 @@ export function OrderPayment({
   expiresAt,
   returned,
   channels = [],
+  startXendit = false,
   enabled,
 }: {
   orderId: string;
@@ -33,6 +34,7 @@ export function OrderPayment({
   expiresAt?: string;
   returned?: boolean;
   channels?: { code: string; label: string }[];
+  startXendit?: boolean;
   enabled: boolean;
 }) {
   const [busy, setBusy] = useState(false),
@@ -108,40 +110,46 @@ export function OrderPayment({
           {busy ? "Opening…" : "Resume secure payment"}
         </button>
       )}
-      {enabled && open && gateway === "xendit" && channels.length > 1 && (
-        <form
-          className="stack"
-          onSubmit={(e) => {
-            e.preventDefault();
-            if (next) void resume(next);
-          }}
-        >
-          <label>
-            Use a different payment method
-            <select
-              value={next}
-              onChange={(e) => setNext(e.target.value)}
-              disabled={busy}
-            >
-              <option value="">Choose</option>
-              {channels
-                .filter((c) => c.label !== channel)
-                .map((c) => (
-                  <option key={c.code} value={c.code}>
-                    {c.label}
-                  </option>
-                ))}
-            </select>
-          </label>
-          <p className="small muted">
-            Your current payment link is cancelled with Xendit before a new one
-            opens, so this order cannot be paid twice.
-          </p>
-          <button className="button button-outline" disabled={busy || !next}>
-            Switch payment method
-          </button>
-        </form>
-      )}
+      {open &&
+        ((enabled && gateway === "xendit" && channels.length > 1) ||
+          (startXendit && channels.length > 0)) && (
+          <form
+            className="stack"
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (next) void resume(next);
+            }}
+          >
+            <label>
+              {startXendit
+                ? "Choose a Xendit payment method"
+                : "Use a different payment method"}
+              <select
+                value={next}
+                onChange={(e) => setNext(e.target.value)}
+                disabled={busy}
+              >
+                <option value="">Choose</option>
+                {channels
+                  .filter((c) => c.label !== channel)
+                  .map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.label}
+                    </option>
+                  ))}
+              </select>
+            </label>
+            {!startXendit && (
+              <p className="small muted">
+                Your current payment link is cancelled with Xendit before a new
+                one opens, so this order cannot be paid twice.
+              </p>
+            )}
+            <button className="button button-outline" disabled={busy || !next}>
+              {startXendit ? "Continue to Xendit" : "Switch payment method"}
+            </button>
+          </form>
+        )}
       <p role="status">{message}</p>
     </div>
   );

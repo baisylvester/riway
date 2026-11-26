@@ -21,12 +21,19 @@ const r2Origin =
 // Measurement providers are allowed only when their IDs are set at build time;
 // the scripts themselves still load only after the visitor consents.
 const measurement = measurementCspOrigins(analyticsConfig(process.env));
+// Guest verification reaches the loopback Auth fixture only in a manual test build.
+const manualAuthOrigin =
+  process.env.RIWAY_MANUAL_SANDBOX === "1" &&
+  process.env.CLOUDFLARE_BUILD !== "1" &&
+  process.env.NEXT_PUBLIC_SUPABASE_URL === "http://127.0.0.1:4682"
+    ? " http://127.0.0.1:4682"
+    : "";
 const policy = [
   "default-src 'self'",
   `script-src 'self' 'unsafe-inline' ${process.env.NODE_ENV === "development" ? "'unsafe-eval'" : ""} ${clerkOrigin ? `${clerkOrigin} https://challenges.cloudflare.com https://*.protect.clerk.com` : ""} ${measurement.script.join(" ")}`,
   "style-src 'self' 'unsafe-inline'",
   `img-src 'self' data: https://static.wixstatic.com https://skiimthwadramxdzhgoy.supabase.co ${r2Origin} ${clerkOrigin ? "https://img.clerk.com" : ""} ${measurement.img.join(" ")}`,
-  `connect-src 'self' https://skiimthwadramxdzhgoy.supabase.co ${clerkOrigin ? `${clerkOrigin} https://*.protect.clerk.com:*` : ""} ${measurement.connect.join(" ")}`,
+  `connect-src 'self' https://skiimthwadramxdzhgoy.supabase.co${manualAuthOrigin} ${clerkOrigin ? `${clerkOrigin} https://*.protect.clerk.com:*` : ""} ${measurement.connect.join(" ")}`,
   `frame-src 'self' ${clerkOrigin ? "https://challenges.cloudflare.com https://*.protect.clerk.com" : ""}`,
   "worker-src 'self' blob:",
   "font-src 'self'",

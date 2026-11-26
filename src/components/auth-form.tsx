@@ -7,8 +7,10 @@ import { useLocale } from "./locale-provider";
 import { localizedHref } from "@/lib/locales";
 export function AuthForm({
   mode = "login",
+  signInTarget,
 }: {
   mode?: "login" | "register" | "reset" | "update";
+  signInTarget?: string;
 }) {
   const { locale } = useLocale();
   const statusId = useId();
@@ -36,7 +38,9 @@ export function AuthForm({
         // cannot reuse a signed-out redirect cached by Next route prefetching.
         navigating = true;
         setMessage("Signed in. Opening your account…");
-        window.location.replace(localizedHref("/account", locale));
+        window.location.replace(
+          signInTarget ?? localizedHref("/account", locale),
+        );
       }
       if (mode === "register") {
         const { error } = await client.auth.signUp({

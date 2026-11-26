@@ -6,13 +6,15 @@ import { EmailCodePanel } from "./email-code-panel";
 
 export function AuthPanel({
   mode = "login",
+  signInTarget,
 }: {
   mode?: "login" | "register" | "reset" | "update";
+  signInTarget?: string;
 }) {
   return authProvider() === "clerk" ? (
-    <ClerkLogin register={mode === "register"} />
+    <ClerkLogin register={mode === "register"} signInTarget={signInTarget} />
   ) : (
-    <AuthForm mode={mode} />
+    <AuthForm mode={mode} signInTarget={signInTarget} />
   );
 }
 

@@ -48,6 +48,9 @@ end $$;
 
 -- Unpaid cancellation never produces volume.
 update public.orders set status='cancelled' where id=current_setting('comp_qa.order2')::uuid;
+-- Provider capture on an expired order is payment evidence for review,
+-- but it is not accepted order volume.
+update public.orders set payment_status='paid' where id=current_setting('comp_qa.order2')::uuid;
 do $$ begin
  if exists(select 1 from private.compensation_volume_events) then raise exception 'FAIL: unpaid cancellation produced volume'; end if;
 end $$;
@@ -71,11 +74,18 @@ do $$ declare e private.compensation_volume_events; begin
  if e.payload::text ~* 'full_name|line1|postal|phone|email' then raise exception 'FAIL: personal data in payload'; end if;
 end $$;
 
--- A refund queues a reversal, which waits for the paid acknowledgement.
+-- Reversal uses the exact paid snapshot even if identities changed later.
+update public.distributor_profiles set external_member_id='QA-COMP-SPONSOR-CHANGED'
+where external_member_id='QA-COMP-SPONSOR';
+insert into public.memberships(user_id,external_member_id,tier,status)
+values(current_setting('comp_qa.customer')::uuid,'QA-COMP-CUSTOMER-NEW','Fixture','active');
 update public.orders set payment_status='refunded',status='refunded' where id=current_setting('comp_qa.order1')::uuid;
 update public.orders set status='refunded' where id=current_setting('comp_qa.order1')::uuid;
 do $$ begin
  if (select count(*) from private.compensation_volume_events)<>2 then raise exception 'FAIL: reversal not queued once'; end if;
+ if (select payload-'eventType' from private.compensation_volume_events where event_type='order_reversed')
+ is distinct from (select payload-'eventType' from private.compensation_volume_events where event_type='order_paid')
+ then raise exception 'FAIL: reversal changed paid identity or order facts'; end if;
 end $$;
 set local role service_role;
 do $$ declare jobs jsonb; j jsonb; ok boolean; begin
@@ -144,15 +154,14 @@ do $$ begin
  if not exists(select 1 from public.audit_logs where action='COMPENSATION_RETRY:order_reversed') then raise exception 'FAIL: retry audit'; end if;
 end $$;
 
--- Backfill: bounded window and idempotent.
-delete from private.compensation_volume_events;
+-- Backfill can restore a reversal from retained paid evidence. Clearing both
+-- events for a refunded order must not reconstruct its historic identity.
+delete from private.compensation_volume_events where event_type='order_reversed';
 set local role service_role;
 do $$ begin
  begin perform public.enqueue_missing_compensation_events(now()-interval '40 days'); raise exception 'FAIL: unbounded backfill';
  exception when raise_exception then if SQLERRM<>'Backfill window must be within 31 days' then raise; end if; end;
- -- A shared database may hold other recent paid orders, so require at least
- -- the fixture order here and check its exact events below.
- if public.enqueue_missing_compensation_events(now()-interval '1 day')<1 then raise exception 'FAIL: backfill paid'; end if;
+ perform public.enqueue_missing_compensation_events(now()-interval '1 day');
  if public.enqueue_missing_compensation_events(now()-interval '1 day')<>0 then raise exception 'FAIL: backfill replay'; end if;
 end $$;
 reset role;
@@ -160,5 +169,13 @@ do $$ begin
  if (select count(*) from private.compensation_volume_events where order_id=current_setting('comp_qa.order1')::uuid)<>2
   or exists(select 1 from private.compensation_volume_events where order_id=current_setting('comp_qa.order2')::uuid) then
   raise exception 'FAIL: backfill should restore paid and reversal'; end if;
+end $$;
+delete from private.compensation_volume_events where order_id=current_setting('comp_qa.order1')::uuid;
+set local role service_role;
+select public.enqueue_missing_compensation_events(now()-interval '1 day');
+reset role;
+do $$ begin
+ if exists(select 1 from private.compensation_volume_events where order_id=current_setting('comp_qa.order1')::uuid)
+ then raise exception 'FAIL: reconstructed refunded order without original paid evidence'; end if;
 end $$;
 rollback;

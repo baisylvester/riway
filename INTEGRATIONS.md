@@ -1,5 +1,13 @@
 # Future API integration handoff
 
+## RIWAY membership and volume reconciliation
+
+In Membership administration, a market administrator or compliance reviewer with verified MFA enters the member ID, sponsor member ID, market, tier code and reference observed in RIWAY. The database matches the sponsor, market and tier to the qualifying order, checks that the order remains paid, and records the evidence in the same transaction as activation. The same evidence can be replayed. Conflicting evidence and refunded qualifying orders require RIWAY review.
+
+In RIWAY volume sync, an enrolment's order volume stays on hold until the verified member ID matches the queued facts. A never-attempted event can receive the confirmed member ID once. The reversal retains the original paid facts and waits for acknowledgement of that event. Historical mismatches stay visible on hold. Reconciliation can restore a missing reversal from a retained paid event, but it cannot reconstruct the paid side of an already refunded order.
+
+For the provider phase, obtain the versioned RIWAY sandbox contracts for identity lookup, sponsor and placement, membership submission and status, and compensation submission, acknowledgement, reconciliation, reversal and partial adjustment. Confirm request idempotency, safe retry rules, authentication and the test identities with the RIWAY integration owner. The staff verification form and hold reasons are application interfaces. Compensation dispatch remains disabled until the RIWAY adapter is implemented and verified against its sandbox.
+
 ## Current proposal candidate — 25 November 2026
 
 The current task authorizes completion work; the 2 November payment deferral below is historical, not a new task prohibition. Existing Stripe/Xendit and durable notification/compensation work from later merged releases is retained. Actual RIWAY member/volume/SSO contracts remain absent; disabled adapters are not completed integrations. The new OpenAI Responses/transcription adapter is real code but disabled and unaccepted without credentials, privacy approval and approved corpus. The real Stripe/Xendit refund adapters and verified callbacks are now supplied, with default-off minute dispatch/reconciliation; actual merchant/channel acceptance and approved policies remain pending. See [REFUNDS.md](REFUNDS.md). See [EXTERNAL-DEPENDENCIES.md](EXTERNAL-DEPENDENCIES.md) and [PROPOSAL-DELIVERY.md](PROPOSAL-DELIVERY.md) for current gates and configuration.

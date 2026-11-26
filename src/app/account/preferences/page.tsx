@@ -18,8 +18,8 @@ export default async function Preferences() {
       <h2>Communication preferences</h2>
       <p>
         Reorder reminders are optional. Transactional order, account and booking
-        messages are separate. A reminder opens your previous order for review;
-        it never places an order or authorizes a payment.
+        messages are separate. Use a reminder to review a previous order or a
+        replenishment schedule. You choose whether to place an order and pay.
       </p>
       {error || !result.success ? (
         <p>Preferences are unavailable. Please try later or contact support.</p>
@@ -36,9 +36,9 @@ export default async function Preferences() {
               name="email"
               defaultChecked={result.data.emailEnabled}
             />
-            Email me a reorder reminder based on my purchases and RIWAY-approved
-            product timing. I can stop these emails at any time here or through
-            the unsubscribe link in an email.
+            Email me a reorder reminder for eligible purchases and replenishment
+            schedules based on RIWAY-approved product timing. I can stop these
+            emails here or through their unsubscribe link.
           </label>
         </StaffActionForm>
       )}

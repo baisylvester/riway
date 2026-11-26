@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "@/components/localized-link";
 import { BonusItems } from "@/components/bonus-items";
 import { OrderReturns } from "@/components/order-returns";
 import { z } from "zod";
@@ -35,6 +36,10 @@ export default async function Order({
     .eq("user_id", user.id)
     .maybeSingle();
   if (!o) notFound();
+  const schedule =
+    o.payment_status === "paid"
+      ? await client.rpc("replenishment_options", { p_order: id })
+      : null;
   const stripe = await client.rpc("stripe_checkout_status", { p_order: id });
   const xendit = await client.rpc("xendit_payment_status", { p_order: id });
   const gateway = !xendit.error && xendit.data ? "xendit" : "stripe";
@@ -45,15 +50,18 @@ export default async function Order({
   const selectedFulfilment = fulfilmentSnapshotSchema.safeParse(
     o.checkout_fulfilment,
   );
+  const xenditConfig = xenditReadiness();
+  const canStartXendit =
+    unpaid && !stripe.error && !stripe.data && !xendit.error && !xendit.data;
   // Other channels the customer may switch to, if this order is still open.
   const switchable =
-    gateway === "xendit" && unpaid && xenditReadiness().enabled
+    unpaid && xenditConfig.enabled && (gateway === "xendit" || canStartXendit)
       ? eligibleChannels(
           market,
           await client
             .rpc("xendit_checkout_channels", {
               p_market: market,
-              p_live: xendit.data.livemode,
+              p_live: xendit.data?.livemode ?? xenditConfig.livemode,
             })
             .then((r) => (Array.isArray(r.data) ? (r.data as string[]) : [])),
           Number(o.total_minor),
@@ -179,9 +187,10 @@ export default async function Order({
         expiresAt={gateway === "xendit" ? payment.data?.expiresAt : undefined}
         returned={returned}
         channels={switchable}
+        startXendit={canStartXendit}
         enabled={
           (gateway === "xendit"
-            ? xenditReadiness().enabled
+            ? xenditConfig.enabled
             : stripeReadiness().enabled) && unpaid
         }
       />
@@ -195,6 +204,11 @@ export default async function Order({
             dispatched.
           </p>
         )}
+      {schedule?.data && (
+        <Link href={`/account/replenishment?start=${id}`}>
+          Start a replenishment schedule
+        </Link>
+      )}
       <Reorder
         items={o.order_items
           .filter((i: { product_id: string | null }) => i.product_id)

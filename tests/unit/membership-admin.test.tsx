@@ -67,6 +67,7 @@ const enrollment = () => ({
   packageName: "Fixture package",
   quantity: 1,
   sponsorId,
+  sponsorMemberId: "TEST-SPONSOR",
   createdAt: timestamp,
   paidAt: timestamp,
   confirmedAt: null as string | null,
@@ -121,6 +122,9 @@ function confirmation() {
   return form({
     enrollmentId,
     externalMemberId: "EXTERNAL-TEST-ID",
+    sponsorMemberId: "TEST-SPONSOR",
+    verifiedMarket: "PH",
+    verifiedTier: "TEST_STARTER",
     reference: "TEST-VERIFICATION",
     verified: "on",
   });
@@ -263,15 +267,19 @@ describe("membership administration actions", () => {
         status: "confirmed",
         confirmedAt: timestamp,
         externalMemberId: "EXTERNAL-TEST-ID",
+        confirmationReference: "TEST-VERIFICATION",
       },
       error: null,
     });
     expect(
       (await confirmMembershipEnrollment({ message: "" }, confirmation())).ok,
     ).toBe(true);
-    expect(f.rpc).toHaveBeenLastCalledWith("confirm_membership_enrollment", {
+    expect(f.rpc).toHaveBeenLastCalledWith("confirm_riway_membership", {
       p_enrollment: enrollmentId,
-      p_external_member_id: "EXTERNAL-TEST-ID",
+      p_member: "EXTERNAL-TEST-ID",
+      p_sponsor: "TEST-SPONSOR",
+      p_market: "PH",
+      p_tier: "TEST_STARTER",
       p_reference: "TEST-VERIFICATION",
     });
   });
@@ -309,7 +317,11 @@ describe("membership administration actions", () => {
       p_enrollment: enrollmentId,
       p_reference: "TEST-REVIEW",
     });
-    f.access.mockResolvedValue({ user: { id: userId }, allowed: true, mfa: false });
+    f.access.mockResolvedValue({
+      user: { id: userId },
+      allowed: true,
+      mfa: false,
+    });
     f.rpc.mockClear();
     expect(
       (await rejectMembershipEnrollment({ message: "" }, rejection())).ok,

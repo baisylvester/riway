@@ -12,6 +12,8 @@
     "db:new": "supabase migration new",
     "test:http": "node tests/integration/http.mjs",
     "test:postgres": "node scripts/test-postgres.mjs",
+    "sandbox:manual": "node tests/fixtures/browser-server.mjs --manual",
+    "sandbox:online": "node tests/fixtures/browser-server.mjs --online",
     "verify:env": "node scripts/verify-env.mjs",
     "setup:providers": "node scripts/setup-providers.mjs",
     "build:cloudflare": "node scripts/cloudflare-build.mjs",

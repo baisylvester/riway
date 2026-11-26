@@ -81,6 +81,25 @@ it("preserves a refreshed session cookie on authenticated locale routes", async 
     "sb-refresh=synthetic-refreshed",
   );
 });
+it.each(["supabase", "clerk"])(
+  "passes only the approved renewal review target through %s sign-in",
+  async (provider) => {
+    vi.stubEnv("AUTH_PROVIDER", provider);
+    const path =
+      "/fil/account/replenishment?review=88000000-0000-4000-8000-000000000003";
+    const result = await proxy(request(path), event);
+    const location = new URL(result!.headers.get("location")!);
+    expect(location.pathname).toBe("/fil/auth/login");
+    expect(location.searchParams.get("next")).toBe(path);
+    const altered = await proxy(
+      request(path + "&next=https://example.invalid"),
+      event,
+    );
+    expect(
+      new URL(altered!.headers.get("location")!).searchParams.has("next"),
+    ).toBe(false);
+  },
+);
 it("preserves authenticated server-action POST method, body and localized URL", async () => {
   f.getUser.mockResolvedValue({ data: { user: { id: "synthetic" } } });
   const req = request("/fil/account/preferences?test=1", {

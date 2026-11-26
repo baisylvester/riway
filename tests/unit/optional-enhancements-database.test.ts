@@ -34,6 +34,9 @@ it("enforces consultation conflicts, privacy, lifecycle and library publication/
       ),
     );
     await pg.exec(
+      readFileSync(resolve(root, "tests/security/replenishment.sql"), "utf8"),
+    );
+    await pg.exec(
       readFileSync(
         resolve(root, "tests/security/checkout_collection.sql"),
         "utf8",

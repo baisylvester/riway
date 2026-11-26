@@ -20,6 +20,7 @@ const pages = {
   "/account": () => import("@/app/account/page"),
   "/account/membership": () => import("@/app/account/membership/page"),
   "/account/orders": () => import("@/app/account/orders/page"),
+  "/account/replenishment": () => import("@/app/account/replenishment/page"),
   "/account/addresses": () => import("@/app/account/addresses/page"),
   "/account/security": () => import("@/app/account/security/page"),
   "/account/privacy": () => import("@/app/account/privacy/page"),

@@ -127,6 +127,7 @@ export type Notification =
       context: unknown;
     }
   | { type: "reorder_reminder"; reference: string; context: unknown }
+  | { type: "replenishment_reminder"; reference: string; context: unknown }
   | { type: "return_update"; reference: string; context: unknown }
   | { type: "corporate_low_stock"; reference: string; context: unknown }
   | {
@@ -327,6 +328,48 @@ export function notificationContent(notification: Notification) {
       subject,
       text: [text, ...statements].join("\n"),
       html: `<h1>${subject}</h1><p>It may be time to review your previous purchase, based on RIWAY-approved product timing.</p><p><a href="${escaped(link)}">Review your previous order</a></p><p>This does not place an order, start a subscription or authorize payment. Review current prices and availability at checkout.</p><p><a href="${escaped(unsubscribe)}">Stop reorder emails</a></p>${statements.map((s) => `<p>${escaped(s)}</p>`).join("")}`,
+      headers: {
+        "List-Unsubscribe": `<${unsubscribe}>`,
+        "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" as const,
+      },
+    };
+  }
+  if (notification.type === "replenishment_reminder") {
+    const c = z
+      .object({
+        scheduleId: z.uuid(),
+        market: z.enum(["PH", "SG", "MY"]),
+        dueDate: z.iso.date(),
+        unsubscribeToken: z.uuid(),
+      })
+      .parse(notification.context);
+    const link = new URL(
+      `/account/replenishment?review=${c.scheduleId}`,
+      siteOrigin(),
+    ).href;
+    const unsubscribe = new URL(
+      `/api/preferences/unsubscribe?token=${c.unsubscribeToken}`,
+      siteOrigin(),
+    ).href;
+    const due = new Intl.DateTimeFormat("en", {
+      dateStyle: "long",
+      timeZone: "UTC",
+    }).format(new Date(c.dueDate));
+    const subject = "Review your RIWAY replenishment schedule";
+    const timing = `Your scheduled renewal date is ${due} (UTC).`;
+    const review =
+      "Sign in to review the schedule. Each renewal requires your approval of the current price and a separate payment.";
+    const statements = orderStatements[c.market];
+    return {
+      subject,
+      text: [
+        timing,
+        review,
+        link,
+        `Stop optional reorder emails: ${unsubscribe}`,
+        ...statements,
+      ].join("\n"),
+      html: `<h1>${subject}</h1><p>${escaped(timing)}</p><p>${escaped(review)}</p><p><a href="${escaped(link)}">Review your replenishment schedule</a></p><p><a href="${escaped(unsubscribe)}">Stop reorder emails</a></p>${statements.map((line) => `<p>${escaped(line)}</p>`).join("")}`,
       headers: {
         "List-Unsubscribe": `<${unsubscribe}>`,
         "List-Unsubscribe-Post": "List-Unsubscribe=One-Click" as const,

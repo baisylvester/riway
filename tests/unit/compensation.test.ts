@@ -134,11 +134,12 @@ describe("deliverCompensationBatch", () => {
       event({
         externalReference: `riway-web:order:${crypto.randomUUID()}:paid`,
       }),
+      event({ externalReference: `riway-web:order:${orderId}:reversed` }),
     ]);
     const submit = vi.fn();
     const result = await deliverCompensationBatch(rpc, { submit });
     expect(submit).not.toHaveBeenCalled();
-    expect(result.rejected).toBe(3);
+    expect(result.rejected).toBe(4);
     for (const c of calls.slice(1))
       expect(c.args).toMatchObject({
         p_result: "rejected",

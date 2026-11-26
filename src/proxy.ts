@@ -8,6 +8,7 @@ import {
   enabledLocales,
   localizablePath,
   localizedHref,
+  replenishmentSignInTarget,
   splitLocalePath,
 } from "./lib/locales";
 function routeResponse(request: NextRequest) {
@@ -17,6 +18,19 @@ function routeResponse(request: NextRequest) {
   headers.set("x-riway-locale", route.prefixed ? route.locale : "en");
   headers.set("x-riway-path", route.path);
   return NextResponse.next({ request: { headers } });
+}
+function signInUrl(request: NextRequest) {
+  const route = splitLocalePath(request.nextUrl.pathname);
+  const login = new URL(
+    localizedHref("/auth/login", route.locale),
+    request.url,
+  );
+  const target = replenishmentSignInTarget(
+    request.nextUrl.pathname + request.nextUrl.search,
+    asMarket(request.cookies.get("riway-market")?.value),
+  );
+  if (target) login.searchParams.set("next", target);
+  return login;
 }
 const clerkProxy = clerkMiddleware(async (auth, request) => {
   const identity = await auth();
@@ -32,15 +46,7 @@ const clerkProxy = clerkMiddleware(async (auth, request) => {
   );
   const response =
     !identity.userId && protectedPage
-      ? NextResponse.redirect(
-          new URL(
-            localizedHref(
-              "/auth/login",
-              splitLocalePath(request.nextUrl.pathname).locale,
-            ),
-            request.url,
-          ),
-        )
+      ? NextResponse.redirect(signInUrl(request))
       : routeResponse(request);
   response.headers.set("Cache-Control", "private, no-store");
   return response;
@@ -108,9 +114,7 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
       (prefix) => path === prefix || path.startsWith(prefix + "/"),
     )
   ) {
-    const redirect = NextResponse.redirect(
-      new URL(localizedHref("/auth/login", route.locale), request.url),
-    );
+    const redirect = NextResponse.redirect(signInUrl(request));
     response.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
     redirect.headers.set("Cache-Control", "private, no-store");
     return redirect;

@@ -19,3 +19,25 @@ it("links to an authenticated review, discloses no automatic order/charge and su
     "List-Unsubscribe=One-Click",
   );
 });
+
+it("links to a dated renewal review and uses the same optional email opt-out", () => {
+  const scheduleId = "88000000-0000-4000-8000-000000000003";
+  const unsubscribeToken = "88000000-0000-4000-8000-000000000004";
+  const notice = notificationContent({
+    type: "replenishment_reminder",
+    reference: scheduleId,
+    context: {
+      scheduleId,
+      market: "PH",
+      dueDate: "2026-11-29",
+      unsubscribeToken,
+    },
+  });
+  expect(notice.text).toContain("November 29, 2026 (UTC)");
+  expect(notice.text).toContain(`/account/replenishment?review=${scheduleId}`);
+  expect(notice.text).toContain("a separate payment");
+  expect(notice.headers?.["List-Unsubscribe"]).toContain(unsubscribeToken);
+  expect(notice.headers?.["List-Unsubscribe-Post"]).toBe(
+    "List-Unsubscribe=One-Click",
+  );
+});

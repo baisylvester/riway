@@ -11,7 +11,13 @@ import { verifyStaffIdentity } from "@/app/verify-identity";
 import { useLocale } from "./locale-provider";
 import { localizedHref } from "@/lib/locales";
 
-export function ClerkLogin({ register = false }: { register?: boolean }) {
+export function ClerkLogin({
+  register = false,
+  signInTarget,
+}: {
+  register?: boolean;
+  signInTarget?: string;
+}) {
   const { locale } = useLocale();
   return register ? (
     <SignUp
@@ -23,7 +29,7 @@ export function ClerkLogin({ register = false }: { register?: boolean }) {
     <SignIn
       routing="hash"
       signUpUrl={localizedHref("/auth/register", locale)}
-      forceRedirectUrl={localizedHref("/account", locale)}
+      forceRedirectUrl={signInTarget ?? localizedHref("/account", locale)}
     />
   );
 }

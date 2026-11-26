@@ -133,7 +133,7 @@
     "id": "W14",
     "proposal_section": "4.2",
     "requirement": "Language selection, translated UI and locale URLs",
-    "implementation_evidence": "Explicit localized App Router entrypoints; market-gated en/fil/ms/zh-CN dictionaries and language picker; localized navigation/catalogue/bag controls; published CMS/product language selection with labelled English fallback; locale_content.sql, proxy/SSR and desktop/mobile tests; LOCALIZATION.md",
+    "implementation_evidence": "Explicit localized App Router entrypoints; market-gated en/fil/ms/zh-CN dictionaries and language picker; localized navigation/catalogue/bag controls; published CMS/product language selection with labelled English fallback; three-letter library editor/query support; locale_content.sql, proxy/SSR and desktop/mobile tests; LOCALIZATION.md",
     "remaining_work_dependencies": "Professional dictionary/content review; complete English-only account/auth/checkout/staff and brand-copy translations still need code/content; enable only reviewed market languages and complete-page SEO paths; actual provider/device acceptance",
     "acceptance_criteria": "Locale URLs, translated UI and language selector agree",
     "status": "partial",

@@ -26,9 +26,9 @@ export function LibraryFilters({
         <input
           name="locale"
           defaultValue={query.locale ?? ""}
-          pattern="[a-z]{2}(-[A-Z]{2})?"
+          pattern="[a-z]{2,3}(-[A-Z]{2})?"
           placeholder="en"
-          maxLength={5}
+          maxLength={6}
         />
       </label>
       <label>
@@ -128,7 +128,8 @@ export function LibraryEditor({
         <input
           name="locale"
           required
-          pattern="[a-z]{2}(-[A-Z]{2})?"
+          pattern="[a-z]{2,3}(-[A-Z]{2})?"
+          maxLength={6}
           defaultValue={asset?.locale ?? "en"}
         />
       </label>

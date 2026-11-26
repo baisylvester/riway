@@ -89,7 +89,10 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
   ).toHaveCount(0);
   await identity(context, "reviewer");
   await page.goto("/admin/returns");
-  await page.getByText("Approve market refund policy", { exact: true }).click();
+  await page
+    .getByText("Approve market refund policy", { exact: true })
+    .filter({ visible: true })
+    .click();
   const policy = page.locator("form").filter({
     has: page.getByRole("button", {
       name: "Approve refund policy",
@@ -184,10 +187,12 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
     .getByRole("button", { name: "Record case resolution", exact: true })
     .click();
   await expect(
-    page.getByText(
-      "Synthetic review completed. No gateway refund was dispatched.",
-      { exact: true },
-    ),
+    page
+      .getByText(
+        "Synthetic review completed. No gateway refund was dispatched.",
+        { exact: true },
+      )
+      .filter({ visible: true }),
   ).toBeVisible();
   const withdraw = page.locator("form").filter({
     has: page.getByRole("button", {
@@ -200,17 +205,23 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
     .getByRole("button", { name: "Withdraw future policy", exact: true })
     .click();
   await expect(
-    page.getByText("Approve market refund policy", { exact: true }),
+    page
+      .getByText("Approve market refund policy", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await identity(context, "customer");
   await page.goto(orderPath!);
   await expect(
-    page.getByText(
-      "Synthetic review completed. No gateway refund was dispatched.",
-      { exact: true },
-    ),
+    page
+      .getByText(
+        "Synthetic review completed. No gateway refund was dispatched.",
+        { exact: true },
+      )
+      .filter({ visible: true }),
   ).toBeVisible();
-  await expect(page.getByText(/Cancelled before dispatch/)).toBeVisible();
+  await expect(
+    page.getByText(/Cancelled before dispatch/).filter({ visible: true }),
+  ).toBeVisible();
 });
 test("market staff approve and withdraw a bonus campaign; customers cannot access its controls", async ({
   page,
@@ -502,6 +513,19 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
   ).toBeVisible();
   await identity(context, "distributor");
   await page.goto("/distributor/library");
+  // Three-letter language codes must survive native form validation as well
+  // as the server query/schema checks (for example Filipino's `fil`).
+  await page.getByLabel("Language code", { exact: true }).fill("fil");
+  await page
+    .getByRole("button", { name: "Search library", exact: true })
+    .click();
+  await expect(
+    page.getByText("0 approved assets for PH", { exact: true }),
+  ).toBeVisible();
+  await page.getByLabel("Language code", { exact: true }).fill("en");
+  await page
+    .getByRole("button", { name: "Search library", exact: true })
+    .click();
   const live = page
     .locator("article")
     .filter({ has: page.getByRole("heading", { name: title, exact: true }) });

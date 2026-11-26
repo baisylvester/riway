@@ -157,7 +157,7 @@ test("staff publish an independent product translation without changing its Engl
       ? "Synthetic mobile qualifying goods"
       : "Synthetic qualifying goods";
   await page.goto(`/fil/shop/${slug}`);
-  const panel = page.locator('[data-product-content="PH"]');
+  const panel = page.locator('[data-product-content="PH"]:visible');
   await expect(panel).toHaveAttribute("lang", "en");
   await expect(panel).toContainText("Synthetic approved English ingredients");
   await identity(context, true);
@@ -182,17 +182,16 @@ test("staff publish an independent product translation without changing its Engl
   await expect(card.getByRole("status")).toHaveText("Published.");
   await context.clearCookies();
   await page.goto(`/fil/shop/${slug}`);
-  await expect(page.locator('[data-product-content="PH"]')).toHaveAttribute(
-    "lang",
-    "fil",
-  );
-  await expect(page.locator('[data-product-content="PH"]')).toContainText(
-    "Synthetic Filipino ingredients",
-  );
+  await expect(
+    page.locator('[data-product-content="PH"]:visible'),
+  ).toHaveAttribute("lang", "fil");
+  await expect(
+    page.locator('[data-product-content="PH"]:visible'),
+  ).toContainText("Synthetic Filipino ingredients");
   await page.goto(`/shop/${slug}`);
-  await expect(page.locator('[data-product-content="PH"]')).toContainText(
-    "Synthetic approved English ingredients",
-  );
+  await expect(
+    page.locator('[data-product-content="PH"]:visible'),
+  ).toContainText("Synthetic approved English ingredients");
 });
 test("localized private URLs keep authentication and reject API/staff aliases and header spoofing", async ({
   page,

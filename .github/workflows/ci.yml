@@ -22,10 +22,13 @@ jobs:
           RIWAY_DISPOSABLE_BROWSER=1 node tests/fixtures/browser-server.mjs > .cache/optional-browser-server.log 2>&1 &
           fixture_pid=$!
           trap 'kill "$fixture_pid" 2>/dev/null || true' EXIT
-          for attempt in $(seq 1 60); do
-            if curl --silent --fail http://127.0.0.1:4174/auth/login > /dev/null; then break; fi
+          fixture_ready=0
+          for attempt in $(seq 1 180); do
+            kill -0 "$fixture_pid" 2>/dev/null || { cat .cache/optional-browser-server.log; exit 1; }
+            if curl --silent --fail --max-time 2 http://127.0.0.1:4174/auth/login > /dev/null; then fixture_ready=1; break; fi
             sleep 1
           done
+          test "$fixture_ready" = 1 || { cat .cache/optional-browser-server.log; exit 1; }
           RIWAY_DISPOSABLE_BROWSER=1 PLAYWRIGHT_EXTERNAL_SERVER=1 PLAYWRIGHT_PORT=4174 npx playwright test tests/e2e/optional-workflows.spec.ts tests/e2e/assistant-voice.spec.ts tests/e2e/localization.spec.ts --workers=1 --output=.cache/optional-browser-results
       - uses: actions/upload-artifact@v4
         if: failure()

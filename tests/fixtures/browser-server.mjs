@@ -374,47 +374,65 @@ const server = createServer((req, res) => {
     });
 });
 await new Promise((resolve) => server.listen(4682, "127.0.0.1", resolve));
-const child = spawn(
-  process.execPath,
-  [
-    resolve(root, "node_modules/next/dist/bin/next"),
-    "dev",
-    "--webpack",
-    "--hostname",
-    "127.0.0.1",
-    "--port",
-    "4174",
-  ],
-  {
-    cwd: root,
-    windowsHide: true,
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:4682",
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_disposable_fixture",
-      NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:4174",
-      SITE_URL: "http://127.0.0.1:4174",
-      PAYMENT_PROVIDER: "disabled",
-      AUTH_PROVIDER: "supabase",
-      AI_ASSISTANT_PROVIDER: "disabled",
-      EMAIL_PROVIDER: "disabled",
-      UI_TRANSLATION_APPROVAL_REFERENCE: "SYNTHETIC-BROWSER-ONLY",
-      UI_LOCALES_PH: "en,fil,ms,zh-CN",
-      UI_LOCALES_SG: "en",
-      UI_LOCALES_MY: "en,ms,zh-CN",
-      LOCALIZED_SEO_PATHS: '{"fil":["/shop"]}',
-    },
+const next = resolve(root, "node_modules/next/dist/bin/next");
+const childOptions = {
+  cwd: root,
+  windowsHide: true,
+  stdio: "inherit",
+  env: {
+    ...process.env,
+    NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:4682",
+    NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_disposable_fixture",
+    NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:4174",
+    SITE_URL: "http://127.0.0.1:4174",
+    PAYMENT_PROVIDER: "disabled",
+    AUTH_PROVIDER: "supabase",
+    AI_ASSISTANT_PROVIDER: "disabled",
+    EMAIL_PROVIDER: "disabled",
+    UI_TRANSLATION_APPROVAL_REFERENCE: "SYNTHETIC-BROWSER-ONLY",
+    UI_LOCALES_PH: "en,fil,ms,zh-CN",
+    UI_LOCALES_SG: "en",
+    UI_LOCALES_MY: "en,ms,zh-CN",
+    LOCALIZED_SEO_PATHS: '{"fil":["/shop"]}',
   },
-);
-console.log(
-  "Disposable browser fixture API: http://127.0.0.1:4682; app: http://127.0.0.1:4174. Auth is synthetic; database RLS/RPCs are real.",
-);
-async function stop() {
-  child.kill();
+};
+let child;
+let stopping = false;
+async function stop(code = 0) {
+  if (stopping) return;
+  stopping = true;
+  child?.kill();
   server.close();
   await pg.close();
-  process.exit();
+  process.exit(code);
 }
-process.on("SIGINT", stop);
-process.on("SIGTERM", stop);
+process.on("SIGINT", () => void stop());
+process.on("SIGTERM", () => void stop());
+try {
+  // Cold-route compilation in `next dev` can trigger HMR and reload the
+  // previous page while a real link navigation is in flight. Build once and
+  // exercise the production server so this fixture has no development HMR.
+  child = spawn(process.execPath, [next, "build", "--webpack"], childOptions);
+  const built = await new Promise((resolve, reject) => {
+    child.once("error", reject);
+    child.once("exit", (code) => resolve(code));
+  });
+  if (built !== 0)
+    throw new Error("Disposable browser production build failed.");
+  child = spawn(
+    process.execPath,
+    [next, "start", "--hostname", "127.0.0.1", "--port", "4174"],
+    childOptions,
+  );
+  child.once("error", (error) => {
+    console.error(error);
+    void stop(1);
+  });
+  child.once("exit", (code) => void stop(code ?? 1));
+  console.log(
+    "Disposable browser fixture API: http://127.0.0.1:4682; production app: http://127.0.0.1:4174. Auth is synthetic; database RLS/RPCs are real.",
+  );
+} catch (error) {
+  console.error(error);
+  await stop(1);
+}

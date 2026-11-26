@@ -114,6 +114,13 @@ and independent original/translated records. Desktop/mobile tests exercise real
 database routines behind synthetic Auth/REST. They are not actual Supabase/Clerk
 or email-provider acceptance, physical-device coverage or a full WCAG audit.
 
+Library forms and query validation also accept three-letter language codes. The
+additive `20261126014000_library_query_locales.sql` migration preserves the existing
+market, verified-distributor and MFA checks. Browser coverage submits the `fil`
+filter and returns to English before opening a published sharing page. The
+disposable fixture builds once and runs the production application; allow build
+time before the application on port 4174 becomes ready.
+
 For rollback, disable the affected market languages and remove their reviewed SEO
 paths, then deploy the prior reviewed application if required. Preserve approved
 content and the broader locale-validation constraint. Do not delete translations,

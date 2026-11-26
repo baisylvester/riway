@@ -24,6 +24,9 @@ end $$;
 reset role;set local role authenticated;
 do $$begin
  perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('locale.reviewer'),'role','authenticated','aal','aal2')::text,true);
+ if (public.search_library('PH','fil','','image',0,true)->'assets') is distinct from '[]'::jsonb then raise exception 'FAIL: three-letter library query';end if;
+ begin perform public.search_library('PH','fil<script>','','image',0,true);raise exception 'FAIL: invalid library locale query';exception when invalid_parameter_value then null;end;
+ begin perform public.search_library('SG','fil','','image',0,true);raise exception 'FAIL: cross-market translated library query';exception when insufficient_privilege then null;end;
  update public.product_market_content set status='published',approval_reference='QA-LOCALE'where product_id=current_setting('locale.product')::uuid and locale='fil';
  insert into public.product_market_content(product_id,market,locale,ingredients,status,approval_reference)values(current_setting('locale.product')::uuid,'PH','en','Synthetic independent English text','published','QA-ENGLISH');
  update public.product_market_content set ingredients='Synthetic updated Filipino text',approval_reference='QA-LOCALE-2'where product_id=current_setting('locale.product')::uuid and locale='fil';

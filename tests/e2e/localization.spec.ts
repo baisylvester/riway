@@ -169,6 +169,7 @@ test("staff publish an independent product translation without changing its Engl
   });
   await card
     .getByLabel("Ingredients", { exact: true })
+    .filter({ visible: true })
     .fill(
       "Synthetic Filipino ingredients published in a disposable browser test.",
     );
@@ -177,6 +178,7 @@ test("staff publish an independent product translation without changing its Engl
     .selectOption("published");
   await card
     .getByLabel("Approval reference", { exact: true })
+    .filter({ visible: true })
     .fill("SYNTHETIC-TRANSLATION");
   await card.getByRole("button", { name: "Save", exact: true }).click();
   await expect(card.getByRole("status")).toHaveText("Published.");
@@ -241,7 +243,9 @@ test("authenticated account actions and navigation work on localized URLs", asyn
   await identity(context);
   await page.goto("/fil/account/preferences");
   await expect(page.locator("html")).toHaveAttribute("lang", "fil");
-  const consent = page.getByLabel(/Email me a reorder reminder/);
+  const consent = page
+    .getByLabel(/Email me a reorder reminder/)
+    .filter({ visible: true });
   const original = await consent.isChecked();
   await consent.setChecked(!original);
   await page

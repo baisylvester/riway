@@ -8,8 +8,10 @@ import { spawn } from "node:child_process";
 import { resolve, dirname, extname, isAbsolute } from "node:path";
 import { createRequire } from "node:module";
 import { build } from "esbuild";
+import { createManualSandbox } from "./manual-sandbox.mjs";
 const root = resolve(import.meta.dirname, "../..");
-if (process.env.RIWAY_DISPOSABLE_BROWSER !== "1")
+const manual = process.argv.includes("--manual");
+if (!manual && process.env.RIWAY_DISPOSABLE_BROWSER !== "1")
   throw new Error(
     "Set RIWAY_DISPOSABLE_BROWSER=1 to start the isolated fixture.",
   );
@@ -83,6 +85,11 @@ export const users = {
   reviewer: "81000000-0000-4000-8000-000000000004",
   memberDesktop: "81000000-0000-4000-8000-000000000005",
   memberMobile: "81000000-0000-4000-8000-000000000006",
+  ...(manual && {
+    manualBuyer: "81000000-0000-4000-8000-000000000007",
+    manualSgStaff: "81000000-0000-4000-8000-000000000008",
+    guest: "81000000-0000-4000-8000-000000000009",
+  }),
 };
 await pg.exec(`insert into auth.users(id,email,email_confirmed_at)values ${Object.entries(
   users,
@@ -177,6 +184,12 @@ await pg.exec(`
   end loop;
  end $$;
 `);
+if (manual)
+  await pg.query(
+    "insert into public.staff_roles(user_id,market,role)values($1,'SG','admin')",
+    [users.manualSgStaff],
+  );
+const manualSandbox = manual ? await createManualSandbox(pg, users) : null;
 const tables = new Set([
   "markets",
   "products",
@@ -191,6 +204,21 @@ const tables = new Set([
   "sponsor_attributions",
   "memberships",
   "product_market_content",
+  ...(manual
+    ? [
+        "addresses",
+        "support_tickets",
+        "inventory",
+        "audit_logs",
+        "product_recommendations",
+        "media_assets",
+      ]
+    : []),
+]);
+const rowRpc = new Set([
+  "lookup_distributor",
+  "lookup_distributor_store",
+  "find_distributors",
 ]);
 let sequence = Promise.resolve();
 const server = createServer((req, res) => {
@@ -198,7 +226,12 @@ const server = createServer((req, res) => {
     .then(async () => {
       res.setHeader("content-type", "application/json");
       res.setHeader("cache-control", "no-store");
+      if (req.headers.host !== "127.0.0.1:4682") {
+        res.writeHead(403).end();
+        return;
+      }
       const url = new URL(req.url, "http://127.0.0.1:4682");
+      if (manualSandbox && (await manualSandbox(req, res, url))) return;
       if (req.method === "GET" && url.pathname === "/fixture/assistant-voice") {
         res.setHeader("content-type", "text/html; charset=utf-8");
         res.setHeader(
@@ -270,7 +303,8 @@ const server = createServer((req, res) => {
           ]);
           await tx.exec(`set local role ${role}`);
           if (url.pathname.startsWith("/rest/v1/rpc/")) {
-            const name = identifier(url.pathname.split("/").pop());
+            const rpc = url.pathname.split("/").pop();
+            const name = identifier(rpc);
             const keys = Object.keys(body);
             const args = keys
               .map((key, index) => `${identifier(key)}=>$${index + 1}`)
@@ -281,7 +315,9 @@ const server = createServer((req, res) => {
                 : body[k],
             );
             const r = await tx.query(
-              `select public.${name}(${args})as value`,
+              rowRpc.has(rpc)
+                ? `select coalesce(jsonb_agg(to_jsonb(item)), '[]'::jsonb) as value from public.${name}(${args}) as item`
+                : `select public.${name}(${args})as value`,
               values,
             );
             return r.rows[0]?.value ?? null;
@@ -321,12 +357,136 @@ const server = createServer((req, res) => {
             );
             return null;
           }
-          if (req.method !== "GET")
+          const editColumns =
+            manual &&
+            {
+              products: [
+                "name",
+                "slug",
+                "category",
+                "subtitle",
+                "description",
+                "status",
+              ],
+              content_entries: [
+                "slug",
+                "kind",
+                "title",
+                "excerpt",
+                "body",
+                "story_asset_id",
+                "status",
+                "market",
+                "location",
+                "starts_at",
+                "image_url",
+                "publish_at",
+                "unpublish_at",
+              ],
+              product_offers: [
+                "product_id",
+                "market",
+                "currency",
+                "retail_minor",
+                "member_minor",
+                "max_quantity",
+              ],
+              support_tickets:
+                req.method === "PATCH"
+                  ? ["status"]
+                  : ["user_id", "subject", "message", "market"],
+              profiles: ["id", "full_name", "phone", "marketing_consent"],
+              addresses: [
+                "user_id",
+                "full_name",
+                "phone",
+                "line1",
+                "city",
+                "postal_code",
+                "country",
+              ],
+            }[table];
+          if (editColumns && ["POST", "PATCH"].includes(req.method)) {
+            const keys = Object.keys(body);
+            if (!keys.length || keys.some((k) => !editColumns.includes(k)))
+              throw new Error("Unsupported fixture write");
+            const values = keys.map((k) => body[k]);
+            const columns = keys.map(identifier);
+            const assignments = columns
+              .map((k, i) => k + "=$" + (i + 1))
+              .join(",");
+            if (req.method === "PATCH") {
+              const id = url.searchParams
+                .get("id")
+                ?.match(/^eq\.([a-f0-9-]{36})$/)?.[1];
+              if (
+                !id ||
+                !["products", "content_entries", "support_tickets"].includes(
+                  table,
+                )
+              )
+                throw new Error("Expected a single supported record");
+              const result = await tx.query(
+                `update public.${identifier(table)} set ${assignments} where id=$${values.length + 1} returning id`,
+                [...values, id],
+              );
+              if (!result.rows.length)
+                throw new Error("Record not available to this identity");
+              return req.headers.prefer?.includes("return=representation")
+                ? result.rows[0]
+                : null;
+            }
+            const unique = {
+              product_offers: ["product_id", "market"],
+              profiles: ["id"],
+            }[table];
+            const conflict = unique
+              ? " on conflict(" +
+                unique.map(identifier).join(",") +
+                ") do update set " +
+                keys
+                  .filter((key) => !unique.includes(key))
+                  .map(identifier)
+                  .map((column) => column + "=excluded." + column)
+                  .join(",")
+              : "";
+            await tx.query(
+              `insert into public.${identifier(table)}(${columns.join(",")})values(${values.map((_, i) => "$" + (i + 1)).join(",")})${conflict}`,
+              values,
+            );
+            return null;
+          }
+          if (manual && req.method === "DELETE" && table === "addresses") {
+            const id = url.searchParams
+              .get("id")
+              ?.match(/^eq\.([a-f0-9-]{36})$/)?.[1];
+            if (
+              !id ||
+              !user ||
+              url.searchParams.get("user_id") !== "eq." + user.sub
+            )
+              throw new Error("Expected the caller's address");
+            await tx.query(
+              "delete from public.addresses where id=$1 and user_id=$2",
+              [id, user.sub],
+            );
+            return null;
+          }
+          if (!["GET", "HEAD"].includes(req.method))
             throw new Error("Fixture method unavailable");
           const columns = url.searchParams.get("select") ?? "*";
           const orderItems =
             table === "orders" && columns === "*,order_items(*)";
-          if (!orderItems && columns !== "*" && !/^[a-z0-9_,]+$/i.test(columns))
+          const productName =
+            manual &&
+            ["inventory", "product_offers"].includes(table) &&
+            columns === "*,products(name)";
+          if (
+            !orderItems &&
+            !productName &&
+            columns !== "*" &&
+            !/^[a-z0-9_,]+$/i.test(columns)
+          )
             throw new Error("Nested fixture selection unavailable");
           const values = [];
           const conditions = [];
@@ -387,7 +547,21 @@ const server = createServer((req, res) => {
           );
           if (!Number.isInteger(limit) || !Number.isInteger(offset))
             throw new Error("Invalid fixture page");
-          const sql = `select ${orderItems || columns === "*" ? "*" : columns.split(",").map(identifier).join(",")} from public.${identifier(table)}${conditions.length ? " where " + conditions.join(" and ") : ""}${order ? " order by " + order : ""} limit ${limit} offset ${offset}`;
+          const source = `from public.${identifier(table)}${conditions.length ? " where " + conditions.join(" and ") : ""}`;
+          if (req.method === "HEAD") {
+            const {
+              rows: [{ count }],
+            } = await tx.query(
+              `select count(*)::int as count ${source}`,
+              values,
+            );
+            res.setHeader(
+              "content-range",
+              count ? `0-${count - 1}/${count}` : "*/0",
+            );
+            return null;
+          }
+          const sql = `select ${orderItems || productName || columns === "*" ? "*" : columns.split(",").map(identifier).join(",")} ${source}${order ? " order by " + order : ""} limit ${limit} offset ${offset}`;
           const r = await tx.query(sql, values);
           if (orderItems) {
             // Exact allowlisted embedding only; both reads keep caller RLS.
@@ -398,6 +572,17 @@ const server = createServer((req, res) => {
                   [row.id],
                 )
               ).rows;
+          }
+          if (productName) {
+            for (const row of r.rows) {
+              row.products =
+                (
+                  await tx.query(
+                    "select name from public.products where id=$1",
+                    [row.product_id],
+                  )
+                ).rows[0] ?? null;
+            }
           }
           return req.headers.accept?.includes("vnd.pgrst.object")
             ? (r.rows[0] ?? null)
@@ -430,16 +615,27 @@ const childOptions = {
   env: {
     ...process.env,
     NEXT_PUBLIC_SUPABASE_URL: "http://127.0.0.1:4682",
+    RIWAY_MANUAL_SANDBOX: manual ? "1" : "0",
     NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: "sb_publishable_disposable_fixture",
     NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:4174",
     SITE_URL: "http://127.0.0.1:4174",
     PAYMENT_PROVIDER: "disabled",
+    PAYMENT_PROVIDERS: "disabled",
     RIWAY_INTEGRATION: "disabled",
     COMPENSATION_PROVIDER: "disabled",
     SUPABASE_SERVICE_ROLE_KEY: "",
     AUTH_PROVIDER: "supabase",
     AI_ASSISTANT_PROVIDER: "disabled",
     EMAIL_PROVIDER: "disabled",
+    STORAGE_PROVIDER: "supabase",
+    INVENTORY_PROVIDER: "disabled",
+    NEXT_TELEMETRY_DISABLED: "1",
+    PAYMENT_WORKER_SECRET: "",
+    REFUND_WORKER_SECRET: "",
+    NOTIFICATION_WORKER_SECRET: "",
+    COMPENSATION_WORKER_SECRET: "",
+    NEXT_PUBLIC_GA4_MEASUREMENT_ID: "",
+    NEXT_PUBLIC_META_PIXEL_ID: "",
     UI_TRANSLATION_APPROVAL_REFERENCE: "SYNTHETIC-BROWSER-ONLY",
     UI_LOCALES_PH: "en,fil,ms,zh-CN",
     UI_LOCALES_SG: "en",
@@ -483,6 +679,8 @@ try {
   console.log(
     "Disposable browser fixture API: http://127.0.0.1:4682; production app: http://127.0.0.1:4174. Auth is synthetic; database RLS/RPCs are real.",
   );
+  if (manual)
+    console.log("Open manual sandbox: http://127.0.0.1:4682/fixture/manual");
 } catch (error) {
   console.error(error);
   await stop(1);

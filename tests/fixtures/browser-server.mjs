@@ -81,6 +81,8 @@ export const users = {
   distributor: "81000000-0000-4000-8000-000000000002",
   editor: "81000000-0000-4000-8000-000000000003",
   reviewer: "81000000-0000-4000-8000-000000000004",
+  memberDesktop: "81000000-0000-4000-8000-000000000005",
+  memberMobile: "81000000-0000-4000-8000-000000000006",
 };
 await pg.exec(`insert into auth.users(id,email,email_confirmed_at)values ${Object.entries(
   users,
@@ -129,6 +131,52 @@ await pg.exec(`insert into public.sponsor_attributions(user_id,distributor_id)va
  r:=public.prepare_stripe_checkout(o,'${users.customer}',false,'https://example.invalid');
  perform public.apply_stripe_checkout_event('evt_browser_'||o,(r->>'id')::uuid,o,'cs_test_browser_'||replace(o::text,'-',''),false,100,'php','complete','paid','pi_browser'||replace(o::text,'-',''));
  end loop;end $$;`);
+// Seed separate qualifying purchases so the desktop and mobile reviewers
+// can each exercise the complete staff confirmation workflow once.
+await pg.exec(`
+ insert into public.products(id,slug,name,category,status) values
+ ('84000000-0000-4000-8000-000000000005','synthetic-membership-package','Synthetic membership package','Packages','published');
+ insert into public.product_offers(product_id,market,currency,retail_minor,regulatory_approved,approval_reference,max_quantity)
+ values('84000000-0000-4000-8000-000000000005','PH','PHP',500,true,'SYNTHETIC-DISPOSABLE',24);
+ do $$
+ declare
+  buyer uuid;
+  order_id uuid;
+  draft jsonb;
+  offer jsonb;
+  qualification jsonb;
+  quote jsonb;
+  payment jsonb;
+  settlement text;
+  cart jsonb:='[{"productId":"84000000-0000-4000-8000-000000000005","quantity":1}]';
+ begin
+  perform set_config('request.jwt.claims','{"sub":"${users.reviewer}","role":"authenticated","aal":"aal2"}',true);
+  draft:=public.save_commerce_draft(null,'package','PH','Synthetic membership package','review',
+   '{"components":[{"productId":"84000000-0000-4000-8000-000000000001","quantity":1}],"retailMinor":500,"memberMinor":400}',0);
+  offer:=public.approve_commerce_draft((draft->>'id')::uuid,1,'84000000-0000-4000-8000-000000000005','SYNTHETIC-BROWSER');
+  qualification:=public.approve_membership_rule((offer->>'id')::uuid,'SYNTHETIC_STARTER','Synthetic Starter',1,
+   'synthetic-terms','Synthetic terms limited to this disposable workflow.',
+   'synthetic-code','Synthetic conduct limited to this disposable workflow.','SYNTHETIC-BROWSER');
+  foreach buyer in array array['${users.memberDesktop}'::uuid,'${users.memberMobile}'::uuid] loop
+   insert into public.sponsor_attributions(user_id,distributor_id) values(buyer,'${users.distributor}');
+   perform set_config('request.jwt.claims',jsonb_build_object('sub',buyer,'role','authenticated','aal','aal1')::text,true);
+   quote:=public.quote_fulfilment_checkout('PH',cart,null,'{"method":"delivery"}');
+   order_id:=public.create_fulfilment_order('PH',cart,
+    '{"full_name":"Synthetic applicant","phone":"0000000000","line1":"Disposable fixture address","city":"Manila","postal_code":"1000","country":"PH"}',
+    gen_random_uuid(),(select checkout_terms_version from public.markets where code='PH'),null,quote->>'quoteHash',
+    jsonb_build_object('ruleId',qualification->>'id','termsVersion','synthetic-terms','codeVersion','synthetic-code','accepted',true),
+    '{"method":"delivery"}');
+   perform set_config('request.jwt.claims','{}',true);
+   payment:=public.prepare_stripe_checkout(order_id,buyer,false,'https://example.invalid');
+   settlement:=public.apply_stripe_checkout_event('evt_membership_'||order_id,(payment->>'id')::uuid,order_id,
+    'cs_test_membership_'||replace(order_id::text,'-',''),false,(payment->>'amount')::bigint,payment->>'currency',
+    'complete','paid','pi_membership'||replace(order_id::text,'-',''));
+   if settlement is distinct from 'paid' then
+    raise exception 'Disposable membership settlement failed (%)',settlement;
+   end if;
+  end loop;
+ end $$;
+`);
 const tables = new Set([
   "markets",
   "products",
@@ -386,6 +434,9 @@ const childOptions = {
     NEXT_PUBLIC_SITE_URL: "http://127.0.0.1:4174",
     SITE_URL: "http://127.0.0.1:4174",
     PAYMENT_PROVIDER: "disabled",
+    RIWAY_INTEGRATION: "disabled",
+    COMPENSATION_PROVIDER: "disabled",
+    SUPABASE_SERVICE_ROLE_KEY: "",
     AUTH_PROVIDER: "supabase",
     AI_ASSISTANT_PROVIDER: "disabled",
     EMAIL_PROVIDER: "disabled",

@@ -5,7 +5,7 @@ do $$
 declare
  buyer uuid:=gen_random_uuid(); reviewer uuid:=gen_random_uuid(); sg uuid:=gen_random_uuid();
  sponsor uuid:=gen_random_uuid(); product uuid:=gen_random_uuid(); original uuid:=gen_random_uuid();
- rule uuid; schedule uuid; renewal uuid; replacement uuid; q jsonb; latest jsonb; attempt jsonb;
+ rule uuid; schedule uuid; renewal uuid; replacement uuid; q jsonb; latest jsonb; attempt jsonb; exported jsonb;
  delivery jsonb:='{"full_name":"Synthetic shopper","phone":"0000000000","line1":"Synthetic fixture address","city":"Manila","postal_code":"1000","country":"PH"}';
  revision integer;
 begin
@@ -101,9 +101,17 @@ begin
  end if;
  perform public.change_replenishment(schedule,revision,'cancel');
  if (public.my_replenishment_schedules()->0->>'state')<>'cancelled' then raise exception 'FAIL: cancellation'; end if;
+ exported:=public.export_my_data()->'replenishmentSchedules'->0;
+ if (exported->>'id')::uuid is distinct from schedule or exported->>'termsVersion' is distinct from 'PH-v1'
+  or jsonb_array_length(exported->'renewals') is distinct from 2
+  or exported ? 'sponsorId' or exported ? 'approvalReference'
+  or has_function_privilege('authenticated','private.export_my_data_without_replenishment()','execute') then
+  raise exception 'FAIL: privacy export offer or renewal facts';
+ end if;
  perform set_config('request.jwt.claims',jsonb_build_object('sub',reviewer,'role','authenticated','aal','aal2')::text,true);
  perform public.withdraw_replenishment_rule(rule);
  if jsonb_array_length(public.my_replenishment_schedules())<>0 then raise exception 'FAIL: another customer schedule visible'; end if;
+ if jsonb_array_length(public.export_my_data()->'replenishmentSchedules')<>0 then raise exception 'FAIL: another customer export'; end if;
  perform set_config('request.jwt.claims',jsonb_build_object('sub',buyer,'role','authenticated','aal','aal1')::text,true);
  if public.replenishment_options(original)is not null then raise exception 'FAIL: withdrawn rule advertised'; end if;
 end $$;

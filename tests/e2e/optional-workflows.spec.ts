@@ -9,6 +9,8 @@ const users = {
   editor: "81000000-0000-4000-8000-000000000003",
   reviewer: "81000000-0000-4000-8000-000000000004",
 };
+// The production router retains prior pages hidden in the DOM. Text assertions
+// and clicks target the visible page; raw response/ownership checks stay exact.
 async function identity(context: BrowserContext, role: keyof typeof users) {
   const user = {
     id: users[role],
@@ -67,6 +69,7 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
   const returns = page.getByRole("region", { name: "Returns and refunds" });
   await returns
     .getByText("Request a return, refund or paid cancellation", { exact: true })
+    .filter({ visible: true })
     .click();
   const intake = returns.locator("form").filter({
     has: page.getByRole("button", { name: "Submit request for review" }),
@@ -78,7 +81,9 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
   await intake
     .getByRole("button", { name: "Submit request for review" })
     .click();
-  await expect(returns.getByText(/Synthetic return request/)).toBeVisible();
+  await expect(
+    returns.getByText(/Synthetic return request/).filter({ visible: true }),
+  ).toBeVisible();
   await expect(
     returns.getByRole("button", { name: "Approve refund amounts" }),
   ).toHaveCount(0);
@@ -121,6 +126,7 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
   await page.goto(`/admin/returns?order=${orderPath!.split("/").at(-1)}`);
   await page
     .getByText("Approve full or partial refund", { exact: true })
+    .filter({ visible: true })
     .click();
   const approval = page.locator("form").filter({
     has: page.getByRole("button", {
@@ -136,8 +142,13 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
   await approval
     .getByRole("button", { name: "Approve refund amounts", exact: true })
     .click();
-  await expect(page.getByText(/Approved, awaiting dispatch/)).toBeVisible();
-  await page.getByText("Refund management", { exact: true }).click();
+  await expect(
+    page.getByText(/Approved, awaiting dispatch/).filter({ visible: true }),
+  ).toBeVisible();
+  await page
+    .getByText("Refund management", { exact: true })
+    .filter({ visible: true })
+    .click();
   const management = page.locator("form").filter({
     has: page.getByRole("button", {
       name: "Record refund management",
@@ -151,9 +162,12 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
   await management
     .getByRole("button", { name: "Record refund management", exact: true })
     .click();
-  await expect(page.getByText(/Cancelled before dispatch/)).toBeVisible();
+  await expect(
+    page.getByText(/Cancelled before dispatch/).filter({ visible: true }),
+  ).toBeVisible();
   await page
     .getByText("Record physical goods received", { exact: true })
+    .filter({ visible: true })
     .click();
   const receipt = page.locator("form").filter({
     has: page.getByRole("button", {
@@ -172,7 +186,10 @@ test("customer requests a return; staff approve, cancel before dispatch and reco
   await expect(receipt.getByRole("status")).toContainText(
     "Returned-goods receipt recorded",
   );
-  await page.getByText("Resolve this case", { exact: true }).click();
+  await page
+    .getByText("Resolve this case", { exact: true })
+    .filter({ visible: true })
+    .click();
   const resolution = page.locator("form").filter({
     has: page.getByRole("button", {
       name: "Record case resolution",
@@ -236,7 +253,10 @@ test("market staff approve and withdraw a bonus campaign; customers cannot acces
     : "84000000-0000-4000-8000-000000000002";
   await identity(context, "reviewer");
   await page.goto("/admin/bonuses");
-  await page.getByText("Approve a campaign", { exact: true }).click();
+  await page
+    .getByText("Approve a campaign", { exact: true })
+    .filter({ visible: true })
+    .click();
   const form = page.locator("form").filter({
     has: page.getByRole("button", {
       name: "Approve bonus campaign",
@@ -321,7 +341,9 @@ test("customer books, reschedules and cancels; records persist through page relo
     .getByRole("button", { name: "Book consultation", exact: true })
     .click();
   await expect(
-    page.getByText("Consultation booked. You can review it below."),
+    page
+      .getByText("Consultation booked. You can review it below.")
+      .filter({ visible: true }),
   ).toBeVisible();
   await page.reload();
   const booking = page
@@ -377,24 +399,32 @@ test("event capacity, cancellation and staff check-in persist across customer an
     .fill("SYNTHETIC-CAPACITY");
   await page.getByRole("button", { name: "Approve capacity" }).click();
   await expect(
-    page.getByText("Capacity approved.", { exact: true }),
+    page
+      .getByText("Capacity approved.", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await identity(context, "customer");
   await page.goto(`/events/${slug}`);
   await page.getByRole("button", { name: "Register for event" }).click();
   await expect(
-    page.getByText("Your registration is confirmed.", { exact: true }),
+    page
+      .getByText("Your registration is confirmed.", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await expect(
-    page.getByText("1 registered / 1 places", { exact: true }),
+    page
+      .getByText("1 registered / 1 places", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await identity(context, "distributor");
   await page.goto(`/events/${slug}`);
   await page.getByRole("button", { name: "Register for event" }).click();
   await expect(
-    page.getByText("Registration is unavailable for this event.", {
-      exact: true,
-    }),
+    page
+      .getByText("Registration is unavailable for this event.", {
+        exact: true,
+      })
+      .filter({ visible: true }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Cancel registration" }),
@@ -404,24 +434,32 @@ test("event capacity, cancellation and staff check-in persist across customer an
   await page.getByLabel("I confirm cancellation.").check();
   await page.getByRole("button", { name: "Cancel registration" }).click();
   await expect(
-    page.getByText("Your registration · cancelled", { exact: true }),
+    page
+      .getByText("Your registration · cancelled", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await identity(context, "distributor");
   await page.goto(`/events/${slug}`);
   await page.getByRole("button", { name: "Register for event" }).click();
   await expect(
-    page.getByText("Your registration is confirmed.", { exact: true }),
+    page
+      .getByText("Your registration is confirmed.", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await identity(context, "reviewer");
   await page.goto(`/admin/events?event=${eventId}`);
   await page.getByLabel("I verified this attendee’s registration.").check();
   await page.getByRole("button", { name: "Check in attendee" }).click();
   await expect(
-    page.getByText("Attendee · registered · Checked in", { exact: true }),
+    page
+      .getByText("Attendee · registered · Checked in", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await page.reload();
   await expect(
-    page.getByText("Attendee · registered · Checked in", { exact: true }),
+    page
+      .getByText("Attendee · registered · Checked in", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
 });
 test("communication consent saves and personal export stays in the current account", async ({
@@ -432,7 +470,9 @@ test("communication consent saves and personal export stays in the current accou
   await page.goto("/account/preferences");
   await page.getByLabel(/Email me a reorder reminder/).check();
   await page.getByRole("button", { name: "Save preferences" }).click();
-  await expect(page.getByText("Reorder email preference saved.")).toBeVisible();
+  await expect(
+    page.getByText("Reorder email preference saved.").filter({ visible: true }),
+  ).toBeVisible();
   await page.reload();
   await expect(page.getByLabel(/Email me a reorder reminder/)).toBeChecked();
   const response = await context.request.get("/api/account/export");
@@ -478,7 +518,10 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
 }) => {
   await identity(context, "editor");
   await page.goto("/admin/library");
-  await page.getByText("Create a campaign asset", { exact: true }).click();
+  await page
+    .getByText("Create a campaign asset", { exact: true })
+    .filter({ visible: true })
+    .click();
   const form = page
     .locator("form")
     .filter({ has: page.getByRole("button", { name: "Create draft asset" }) });
@@ -487,9 +530,11 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
   await form.getByLabel("Approved source URL").fill("/design/purtier-7th.png");
   await form.getByRole("button", { name: "Create draft asset" }).click();
   await expect(
-    page.getByText(
-      "New draft version saved. Another reviewer must approve it before sharing.",
-    ),
+    page
+      .getByText(
+        "New draft version saved. Another reviewer must approve it before sharing.",
+      )
+      .filter({ visible: true }),
   ).toBeVisible();
   const reviewerContext = await browser.newContext({
     viewport:
@@ -509,7 +554,9 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
   await card.getByLabel(/I reviewed this exact version/).check();
   await card.getByRole("button", { name: "Record review decision" }).click();
   await expect(
-    card.getByText("Version published.", { exact: true }),
+    card
+      .getByText("Version published.", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await identity(context, "distributor");
   await page.goto("/distributor/library");
@@ -520,7 +567,9 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
     .getByRole("button", { name: "Search library", exact: true })
     .click();
   await expect(
-    page.getByText("0 approved assets for PH", { exact: true }),
+    page
+      .getByText("0 approved assets for PH", { exact: true })
+      .filter({ visible: true }),
   ).toBeVisible();
   await page.getByLabel("Language code", { exact: true }).fill("en");
   await page
@@ -548,7 +597,9 @@ test("library editor drafts; another reviewer publishes and withdraws the sharin
   await card.getByLabel("Withdraw currently shared version").check();
   await card.getByRole("button", { name: "Record review decision" }).click();
   await expect(
-    card.getByText("Asset withdrawn from the library and sharing page."),
+    card
+      .getByText("Asset withdrawn from the library and sharing page.")
+      .filter({ visible: true }),
   ).toBeVisible();
   const result = await publicContext.request.get(share);
   const withdrawn = await result.text();

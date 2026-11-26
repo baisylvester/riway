@@ -125,8 +125,9 @@ test("guest checkout verifies a code from the local inbox", async ({
   ).toBeVisible();
 });
 
-test("a customer reviews and settles a due replenishment order", async ({
+test("a customer receives one queued reminder and settles a due replenishment order", async ({
   page,
+  request,
 }, testInfo) => {
   test.skip(
     process.env.RIWAY_MANUAL_SANDBOX !== "1" ||
@@ -155,9 +156,32 @@ test("a customer reviews and settles a due replenishment order", async ({
   await expect(
     page.getByRole("heading", { name: "Synthetic qualifying goods" }),
   ).toBeVisible();
+  await page.goto("/admin/distributors");
+  const product = page.getByRole("row").filter({
+    has: page.getByRole("cell", {
+      name: "Synthetic qualifying goods",
+      exact: true,
+    }),
+  });
+  await product.getByLabel("Reminder lead days").fill("0");
+  await product
+    .getByLabel("Timing approval reference")
+    .fill("SYNTHETIC-RENEWAL-TIMING");
+  await product
+    .getByRole("button", { name: "Approve reminder timing" })
+    .click();
+  await expect(
+    product.getByText("Reminder timing saved.", { exact: true }),
+  ).toBeVisible();
 
   await page.goto(consoleUrl);
   await page.getByRole("button", { name: "Existing customer" }).click();
+  await page.goto("/account/preferences");
+  await page.getByLabel(/Email me a reorder reminder/).check();
+  await page.getByRole("button", { name: "Save preferences" }).click();
+  await expect(
+    page.getByText("Reorder email preference saved.").filter({ visible: true }),
+  ).toBeVisible();
   await page.goto(consoleUrl);
   await page.locator('select[name="product"]').selectOption("standard");
   await page.getByLabel("Accept synthetic Terms of Sale").check();
@@ -186,8 +210,24 @@ test("a customer reviews and settles a due replenishment order", async ({
   await page.goto(consoleUrl);
   await page.getByRole("button", { name: "Make next renewal due" }).click();
   await expect(status).toContainText("The sandbox renewal is due");
+  const queue = page.getByRole("button", {
+    name: "Check for due renewal reminders",
+  });
+  await queue.click();
+  await expect(status).toContainText("1 renewal reminder queued");
+  await queue.click();
+  await expect(status).toContainText("0 renewal reminders queued");
   await page.getByRole("link", { name: "Your schedules" }).click();
-  await page.getByRole("link", { name: "Review renewal", exact: true }).click();
+  const review = await page
+    .getByRole("link", { name: "Review renewal", exact: true })
+    .getAttribute("href");
+  expect(review).toMatch(/^\/account\/replenishment\?review=[a-f0-9-]{36}$/);
+  const signedOut = await request.get(review!, { maxRedirects: 0 });
+  expect(signedOut.status()).toBe(307);
+  const login = new URL(signedOut.headers().location, signedOut.url());
+  expect(login.pathname).toBe("/auth/login");
+  expect(login.searchParams.get("next")).toBe(review);
+  await page.goto(`/auth/login?next=${encodeURIComponent(review!)}`);
   await expect(
     page.getByLabel("Current order total").filter({ visible: true }),
   ).toBeVisible();

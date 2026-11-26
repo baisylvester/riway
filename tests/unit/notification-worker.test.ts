@@ -85,6 +85,16 @@ describe("notification worker preflight", () => {
       names.indexOf("claim_notifications"),
     );
   });
+  it("queues approved replenishment reviews before claiming notifications", async () => {
+    await POST(request());
+    const names = mocks.rpc.mock.calls.map(([name]) => name);
+    expect(
+      names.indexOf("queue_replenishment_reminders"),
+    ).toBeGreaterThanOrEqual(0);
+    expect(names.indexOf("queue_replenishment_reminders")).toBeLessThan(
+      names.indexOf("claim_notifications"),
+    );
+  });
   it("keeps jobs unclaimed when the sales report queue fails", async () => {
     mocks.rpc.mockImplementation(async (name: string) =>
       name === "queue_sales_reports"

@@ -1,15 +1,20 @@
 import { AuthPanel } from "@/components/auth-panel";
-import { session } from "@/lib/data";
+import { currentMarket, session } from "@/lib/data";
+import { replenishmentSignInTarget } from "@/lib/locales";
 import { redirect } from "next/navigation";
 export const metadata = { title: "Sign in" };
 export default async function Login({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; next?: string | string[] }>;
 }) {
   const { user } = await session();
-  if (user) redirect("/account");
   const params = await searchParams;
+  const target =
+    typeof params.next === "string"
+      ? replenishmentSignInTarget(params.next, await currentMarket())
+      : undefined;
+  if (user) redirect(target ?? "/account");
   return (
     <section className="auth-container">
       <span className="eyebrow">YOUR RIWAY ACCOUNT</span>
@@ -21,7 +26,7 @@ export default async function Login({
           a new link and open it in the same browser.
         </p>
       )}
-      <AuthPanel />
+      <AuthPanel signInTarget={target} />
     </section>
   );
 }

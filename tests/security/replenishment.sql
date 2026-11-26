@@ -6,6 +6,7 @@ declare
  buyer uuid:=gen_random_uuid(); reviewer uuid:=gen_random_uuid(); sg uuid:=gen_random_uuid();
  sponsor uuid:=gen_random_uuid(); product uuid:=gen_random_uuid(); original uuid:=gen_random_uuid();
  rule uuid; schedule uuid; renewal uuid; replacement uuid; q jsonb; latest jsonb; attempt jsonb; exported jsonb;
+ notice private.notification_jobs; lease_token uuid:=gen_random_uuid();
  delivery jsonb:='{"full_name":"Synthetic shopper","phone":"0000000000","line1":"Synthetic fixture address","city":"Manila","postal_code":"1000","country":"PH"}';
  revision integer;
 begin
@@ -64,6 +65,31 @@ begin
   raise exception 'FAIL: early renewal quote';
  exception when invalid_parameter_value then null; end;
  update private.replenishment_schedules set next_due_at=now()-interval '1 second' where id=schedule;
+ if public.queue_replenishment_reminders()<>0 then raise exception 'FAIL: reminder without email consent and timing'; end if;
+ perform public.set_reorder_preference(true,0,'reorder-email-v1');
+ if public.queue_replenishment_reminders()<>0 then raise exception 'FAIL: reminder without approved timing'; end if;
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',reviewer,'role','authenticated','aal','aal2')::text,true);
+ perform public.set_reorder_timing(product,0,'ROLLBACK-LEAD');
+ perform set_config('request.jwt.claims',jsonb_build_object('sub',buyer,'role','authenticated','aal','aal1')::text,true);
+ update public.inventory set on_hand=0 where product_id=product;
+ if public.queue_replenishment_reminders()<>0 then raise exception 'FAIL: unavailable product reminder'; end if;
+ update public.inventory set on_hand=8 where product_id=product;
+ if public.queue_replenishment_reminders()<>1 then raise exception 'FAIL: eligible reminder missing'; end if;
+ if public.queue_replenishment_reminders()<>0 then raise exception 'FAIL: duplicate cycle reminder'; end if;
+ if has_function_privilege('authenticated','public.queue_replenishment_reminders()','execute')
+  or has_table_privilege('authenticated','private.replenishment_reminders','select') then
+  raise exception 'FAIL: reminder grants';
+ end if;
+ update private.notification_jobs set status='processing',lease=lease_token,lease_until=now()+interval '5 minutes'
+ where user_id=buyer and kind='replenishment_reminder' returning * into notice;
+ if not public.notification_authorized(notice.id,notice.lease)
+  or public.notification_authorized(notice.id,gen_random_uuid()) or notice.context->>'scheduleId'<>schedule::text then
+  raise exception 'FAIL: reminder lease or schedule';
+ end if;
+ update private.replenishment_schedules set state='paused' where id=schedule;
+ if public.notification_authorized(notice.id,notice.lease) then raise exception 'FAIL: paused reminder'; end if;
+ update private.replenishment_schedules set state='active' where id=schedule;
+ if not public.notification_authorized(notice.id,notice.lease) then raise exception 'FAIL: valid reminder after resume'; end if;
  q:=public.quote_replenishment(schedule,4);
  if (q->'quote'->>'totalMinor')::integer<>100 then raise exception 'FAIL: initial quote'; end if;
  update public.product_offers set retail_minor=150 where product_id=product and market='PH';
@@ -73,6 +99,7 @@ begin
  exception when serialization_failure then null; end;
  q:=public.quote_replenishment(schedule,4);
  renewal:=public.create_replenishment_order(schedule,4,q->'quote'->>'quoteHash',q->>'terms');
+ if public.notification_authorized(notice.id,notice.lease) then raise exception 'FAIL: open renewal reminder'; end if;
  if not exists(select 1 from public.orders where id=renewal and sponsor_id=sponsor and total_minor=150 and payment_status='pending')or
   not exists(select 1 from public.inventory_reservations where order_id=renewal and product_id=product) then
   raise exception 'FAIL: pending sponsored renewal and reservation';
@@ -86,6 +113,11 @@ begin
   raise exception 'FAIL: skipped with open order';
  exception when invalid_parameter_value then null; end;
  perform public.cancel_order(renewal,'Synthetic unpaid cancellation');
+ if not public.notification_authorized(notice.id,notice.lease) then raise exception 'FAIL: closed renewal reminder'; end if;
+ perform public.unsubscribe_reorder((notice.context->>'unsubscribeToken')::uuid);
+ if public.notification_authorized(notice.id,notice.lease) then raise exception 'FAIL: unsubscribed reminder'; end if;
+ perform public.set_reorder_preference(true,2,'reorder-email-v1');
+ if public.notification_authorized(notice.id,notice.lease) then raise exception 'FAIL: stale consent revision'; end if;
  q:=public.quote_replenishment(schedule,5);
  replacement:=public.create_replenishment_order(schedule,5,q->'quote'->>'quoteHash',q->>'terms');
  if replacement=renewal then raise exception 'FAIL: retry reused closed order'; end if;

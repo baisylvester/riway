@@ -550,6 +550,7 @@ export async function createManualSandbox(pg, users, onlineOrigin) {
       ${table(["Order", "Event", "Status", "Attempts", "Error", "Acknowledgement"], outbox)}
       ${form(button("refund:succeeded", "Settle approved refund") + button("refund:failed", "Fail approved refund"))}</section>
       <section><h2>Notification queue</h2><p>Check that the application queues a notice once. Delivery is disabled.</p>
+      ${form(button("queue-replenishment-reminders", "Check for due renewal reminders"))}
       ${table(["Kind", "Status", "Count"], mail)}</section>
       <section><h2>More workflows</h2><p>${links([
         ["Distributor", "/distributor"],
@@ -625,7 +626,18 @@ export async function createManualSandbox(pg, users, onlineOrigin) {
     let message;
     try {
       if (action === "create") message = await createOrder(form, identity);
-      else if (action === "renewal-due")
+      else if (action === "queue-replenishment-reminders") {
+        const queued = await pg.transaction(async (tx) => {
+          await tx.exec("set local role service_role");
+          const {
+            rows: [{ count }],
+          } = await tx.query(
+            "select public.queue_replenishment_reminders() as count",
+          );
+          return count;
+        });
+        message = `${queued} renewal reminder${queued === 1 ? "" : "s"} queued. Email delivery is disabled.`;
+      } else if (action === "renewal-due")
         message = await makeRenewalDue(form, identity);
       else if (action === "pay" || action === "expire")
         message = await payment(form, action);

@@ -33,12 +33,13 @@ export default async function Replenishment({
   const entries = replenishmentSchedules.safeParse(schedules.data);
   const option = replenishmentOption.safeParse(eligible.data);
   const selected = entries.data?.find((item) => item.id === review);
-  const response = selected
-    ? await client.rpc("quote_replenishment", {
-        p_id: selected.id,
-        p_revision: selected.revision,
-      })
-    : null;
+  const response =
+    selected?.due && selected.state === "active" && !selected.withdrawn
+      ? await client.rpc("quote_replenishment", {
+          p_id: selected.id,
+          p_revision: selected.revision,
+        })
+      : null;
   const currentQuote = replenishmentQuote.safeParse(response?.data);
   return (
     <div className="stack">
@@ -156,7 +157,7 @@ export default async function Replenishment({
                 </StaffActionForm>
               </>
             )}
-            {item.id === selected?.id && !currentQuote.success && (
+            {item.id === selected?.id && response && !currentQuote.success && (
               <p className="notice">
                 {response?.error
                   ? replenishmentMessage(response.error)

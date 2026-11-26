@@ -125,3 +125,17 @@ export function authReturnPath(
     return "/account";
   return localizedHref(route.path, route.locale);
 }
+
+export function replenishmentSignInTarget(next: string | null, market: Market) {
+  const route = splitLocalePath(next ?? "");
+  const review =
+    /^\/account\/replenishment\?review=([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i.exec(
+      route.path,
+    );
+  if (!review || !enabledLocales(market).includes(route.locale))
+    return undefined;
+  return localizedHref(
+    `/account/replenishment?review=${review[1].toLowerCase()}`,
+    route.locale,
+  );
+}

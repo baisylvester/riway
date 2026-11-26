@@ -55,7 +55,7 @@ Checks were run against the candidate source on 26 November 2026. Local runtime 
 | Existing public browser suite | Earlier run: 29 passed, two timing failures and one skipped. Both affected spec files rerun in isolation: all six cases passed. Browser workers now bounded to two to avoid software WebGL starvation. This is not a clean full browser/device matrix or an accessibility audit. |
 | TypeScript | Passed. |
 | Production build | Webpack production build passed. Cloudflare packaging and deployment must pass the Node 22 Linux workflow. |
-| Final HTTP integration rerun | **Blocked at the first health check (503)**. Direct outbound Supabase fetch fails with `EACCES` in the current restricted execution environment, even with the public runtime configuration set. The full HTTP suite did not run and is not counted as passed. Rerun in authorized CI/staging with database connectivity. |
+| Final HTTP integration rerun | **53 checks passed** after turn-scoped network access was granted. The local production server used the configured public Supabase connection, disabled providers and `TEST_BASE_URL=http://localhost:4173`. Next normalizes the loopback callback origin to `localhost`, so the initial run using `127.0.0.1` stopped at that origin assertion; the canonical-host rerun passed in full. These are public reads, cookie operations and unauthenticated/invalid requests, not positive hosted customer transactions or provider acceptance. No hosted fixtures were created. |
 | Dependency audit | Earlier candidate `npm audit --audit-level=high`: zero vulnerabilities reported. This does not replace an independent penetration test. |
 
 Reproduce from a fresh clone with Node 22, `npm ci`, configured public Supabase variables and providers disabled:
@@ -71,9 +71,9 @@ For a fresh disposable positive browser run, set `RIWAY_DISPOSABLE_BROWSER=1` an
 
 This Windows worktree shares a read-only dependency junction. For that environment only, use `node_modules/.bin/vitest.cmd run --configLoader runner --fsModuleCachePath .cache/vitest --cache=false` to keep Vite temporary/cache writes inside the workspace. Normal clones/CI use `npm test`.
 
-## Review delivery and publication limitation
+## Review delivery and publication
 
-GitHub was rechecked as account `baiaerlmrtn`. Repository tree creation returns HTTP 403, `Resource not accessible by integration`; the CLI auth-status command reports invalid credentials, while outbound CLI access is also blocked with `EACCES`, so credential validity cannot be independently established in this runtime. Browser access is unavailable for this chat. No remote branch, PR or candidate CI run is claimed. A GitHub connection with repository write access is required to publish. The PR title/body is prepared in `PULL-REQUEST-DRAFT.md`.
+The feature branch is published in [draft PR #58](https://github.com/baisylvester/riway/pull/58), against `main`. Turn-scoped network access and an existing authorized repository account resolved the earlier connector/CLI access limitation. No global account switch or credential-file changes were made. Node 22 Linux checks are available on the PR; require all three jobs to pass on its latest head before merging. Workflow inspection found verification/build/dry-run packaging only; publishing the branch did not request production deployment or hosted migrations. The review description is maintained in `PULL-REQUEST-DRAFT.md`.
 
 Because the original linked worktree's Git metadata is outside the current writable workspace, a separate local review clone is used at `C:\Users\PC2\Documents\Codex\2026-11-25\files-pasted-by-the-user-complete\work\review-repo`. It contains the candidate branch/commit without altering the original checkout. The portable Git bundle is based on the exact main commit above and contains the candidate delta; import it into a repository that contains that base. No credentials or dependencies are included.
 
@@ -84,7 +84,7 @@ git switch feat/riway-proposal-completion-20261125
 git push -u origin feat/riway-proposal-completion-20261125
 ```
 
-Run these in a clean authorized clone; if a local branch with that name already exists, inspect its head before choosing a distinct import branch. Do not force-update a user's branch. Open a draft PR against `main` using the prepared description after push, then follow the CI/deployment gates below.
+The commands above are an optional offline bundle-import path; the branch and draft PR already exist. Run them only in a clean authorized clone; if a local branch with that name already exists, inspect its head before choosing a distinct import branch. Do not force-update a user's branch. Follow the CI/deployment gates below.
 
 ## Inspected operational state
 

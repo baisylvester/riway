@@ -540,13 +540,18 @@ try {
       { onHand: 9, reserved: 0 },
     );
   }
-  const memberEnrollment = sql(
-    `select id from private.membership_enrollments where user_id='${memberCustomer}' and status='pending_verification';`,
+  const memberEvidence = JSON.parse(
+    sql(
+      `select jsonb_build_object('id',id,'sponsor',sponsor_member_id)
+    from private.membership_enrollments where user_id='${memberCustomer}' and status='pending_verification';`,
+    ),
   );
+  const memberEnrollment = memberEvidence.id;
+  const memberSponsorEvidence = memberEvidence.sponsor.replaceAll("'", "''");
   const memberConfirmRaces = await Promise.all(
     [0, 1].map((index) =>
       parallelSql(`${asUser}
-    set statement_timeout='10s'; select public.confirm_membership_enrollment('${memberEnrollment}','SAMPLE-RACE-${index}-${memberCustomer}','DISPOSABLE-CONFIRMATION-${index}');`),
+    set statement_timeout='10s'; select public.confirm_riway_membership('${memberEnrollment}','SAMPLE-RACE-${index}-${memberCustomer}','${memberSponsorEvidence}','PH','SAMPLE_RACE','DISPOSABLE-CONFIRMATION-${index}');`),
     ),
   );
   assert.equal(
@@ -570,7 +575,7 @@ try {
   const memberConfirmReplays = await Promise.all(
     Array.from({ length: 4 }, () =>
       parallelSql(`${asUser}
-    set statement_timeout='10s'; select public.confirm_membership_enrollment('${memberEnrollment}','${memberConfirmed.externalId}','${memberConfirmed.reference}');`),
+    set statement_timeout='10s'; select public.confirm_riway_membership('${memberEnrollment}','${memberConfirmed.externalId}','${memberSponsorEvidence}','PH','SAMPLE_RACE','${memberConfirmed.reference}');`),
     ),
   );
   assert(

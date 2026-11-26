@@ -190,9 +190,9 @@ do $$ declare who text; r jsonb; second_cart jsonb:=jsonb_build_array(jsonb_buil
    raise exception 'FAIL: conflicting rejection replay';
   exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
   begin
-   perform public.confirm_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-REJECTED','ROLLBACK-CONFIRM');
+   perform public.confirm_riway_membership(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-REJECTED','QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'PH','SAMPLE_1','ROLLBACK-CONFIRM');
    raise exception 'FAIL: rejected enrolment confirmed';
-  exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
+  exception when invalid_parameter_value then null; end;
   if (select count(*) from public.audit_logs where action='MEMBERSHIP_REJECT:PH' and entity_id=current_setting('membership_qa.enrollment'))<>1 then raise exception 'FAIL: rejection audit'; end if;
   -- A rejected applicant may apply again with another qualifying purchase.
   perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.customer'),'role','authenticated','aal','aal1')::text,true);
@@ -206,23 +206,72 @@ do $$ declare who text; r jsonb; second_cart jsonb:=jsonb_build_array(jsonb_buil
 end $$;
 reset role;
 
+do $$ declare queued private.compensation_volume_events; begin
+ select c.* into strict queued from private.compensation_volume_events c
+ join private.membership_enrollments e on e.order_id=c.order_id
+ where e.id=current_setting('membership_qa.enrollment')::uuid and c.event_type='order_paid';
+ if private.compensation_hold_reason(queued) is distinct from 'membership_unconfirmed'
+ or queued.attempts<>0 then raise exception 'FAIL: pending membership consumed compensation retry budget'; end if;
+ if has_table_privilege('authenticated','private.riway_membership_verifications','select,insert,update,delete')
+ or has_table_privilege('service_role','private.riway_membership_verifications','select,insert,update,delete')
+ or has_function_privilege('anon','public.confirm_riway_membership(uuid,text,text,text,text,text)','execute')
+ or has_function_privilege('service_role','public.confirm_riway_membership(uuid,text,text,text,text,text)','execute')
+ then raise exception 'FAIL: verification grants'; end if;
+end $$;
+
+-- A refund racing an external confirmation is checked against the locked
+-- order. A partial refund also requires review before activating membership.
+do $$ declare order_id uuid; begin
+ select e.order_id into strict order_id from private.membership_enrollments e
+ where e.id=current_setting('membership_qa.enrollment')::uuid;
+ perform set_config('request.jwt.claims',jsonb_build_object(
+  'sub',current_setting('membership_qa.admin'),'role','authenticated','aal','aal2')::text,true);
+ begin
+  update public.orders set refunded_minor=1 where id=order_id;
+  begin
+   perform public.confirm_riway_membership(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-REFUNDED',
+    'QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'PH','SAMPLE_1','ROLLBACK-CONFIRM');
+   raise exception 'FAIL: refunded qualifying order activated a membership';
+  exception when check_violation then
+   if SQLERRM<>'A refunded purchase requires RIWAY review before confirmation' then raise; end if;
+  end;
+  raise exception 'ROLLBACK_REFUND_EVIDENCE';
+ exception when raise_exception then
+  if SQLERRM<>'ROLLBACK_REFUND_EVIDENCE' then raise; end if;
+ end;
+end $$;
+
 set local role authenticated;
-do $$ declare who text; r jsonb; begin
+do $$ declare who text; mismatch text[]; r jsonb; begin
  foreach who in array array['customer','editor','wrong'] loop
   perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.'||who),'role','authenticated','aal','aal2')::text,true);
   begin
-   perform public.confirm_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-'||current_setting('membership_qa.customer'),'ROLLBACK-CONFIRM');
+   perform public.confirm_riway_membership(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-'||current_setting('membership_qa.customer'),'QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'PH','SAMPLE_1','ROLLBACK-CONFIRM');
    raise exception 'FAIL: unauthorized external confirmation';
   exception when insufficient_privilege then null; end;
  end loop;
  perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.admin'),'role','authenticated','aal','aal2')::text,true);
- r:=public.confirm_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-'||current_setting('membership_qa.customer'),'ROLLBACK-CONFIRM');
- if r->>'status'<>'confirmed' then raise exception 'FAIL: verified external confirmation'; end if;
- perform public.confirm_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-'||current_setting('membership_qa.customer'),'ROLLBACK-CONFIRM');
  begin
-  perform public.confirm_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'DIFFERENT-MEMBER','ROLLBACK-CONFIRM');
+  perform public.confirm_membership_enrollment(current_setting('membership_qa.enrollment')::uuid,'LEGACY-UNVERIFIED','ROLLBACK-CONFIRM');
+  raise exception 'FAIL: older RPC bypassed evidence';
+ exception when invalid_parameter_value then null; end;
+ foreach mismatch slice 1 in array array[
+  array['WRONG-SPONSOR','PH','SAMPLE_1'],
+  array['QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'SG','SAMPLE_1'],
+  array['QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'PH','SAMPLE_2']
+ ] loop
+  begin
+   perform public.confirm_riway_membership(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-UNMATCHED',mismatch[1],mismatch[2],mismatch[3],'ROLLBACK-CONFIRM');
+   raise exception 'FAIL: mismatched RIWAY evidence accepted';
+  exception when check_violation then null; end;
+ end loop;
+ r:=public.confirm_riway_membership(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-'||current_setting('membership_qa.customer'),'QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'PH','SAMPLE_1','ROLLBACK-CONFIRM');
+ if r->>'status'<>'confirmed' then raise exception 'FAIL: verified external confirmation'; end if;
+ perform public.confirm_riway_membership(current_setting('membership_qa.enrollment')::uuid,'SAMPLE-MEMBER-'||current_setting('membership_qa.customer'),'QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'PH','SAMPLE_1','ROLLBACK-CONFIRM');
+ begin
+  perform public.confirm_riway_membership(current_setting('membership_qa.enrollment')::uuid,'DIFFERENT-MEMBER','QA-SPONSOR-'||current_setting('membership_qa.sponsor'),'PH','SAMPLE_1','ROLLBACK-CONFIRM');
   raise exception 'FAIL: confirmation replay changed identity';
- exception when raise_exception then if SQLERRM like 'FAIL:%' then raise; end if; end;
+ exception when serialization_failure then null; end;
  perform set_config('request.jwt.claims',jsonb_build_object('sub',current_setting('membership_qa.customer'),'role','authenticated','aal','aal1')::text,true);
  if public.my_memberships()->'membership'->>'status'<>'active' or public.my_memberships()->'membership'->>'tier'<>'Sample tier 1'
  or public.quote_commerce_checkout('PH',current_setting('membership_qa.cart')::jsonb)->'membership'<>'null'::jsonb then raise exception 'FAIL: confirmed membership summary'; end if;
@@ -234,6 +283,19 @@ do $$ declare who text; r jsonb; begin
 end $$;
 reset role;
 do $$ declare j private.notification_jobs; begin
+ if not exists (
+  select 1 from private.riway_membership_verifications
+  where enrollment_id=current_setting('membership_qa.enrollment')::uuid
+  and sponsor_member_id='QA-SPONSOR-'||current_setting('membership_qa.sponsor')
+  and tier_code='SAMPLE_1' and market='PH' and reference='ROLLBACK-CONFIRM'
+ ) then raise exception 'FAIL: immutable verification evidence missing'; end if;
+ if not exists (
+  select 1 from private.compensation_volume_events e
+  where e.event_type='order_paid' and e.attempts=0
+  and e.order_id=(select order_id from private.membership_enrollments where id=current_setting('membership_qa.enrollment')::uuid)
+  and e.payload->>'customerMemberId'='SAMPLE-MEMBER-'||current_setting('membership_qa.customer')
+  and private.compensation_hold_reason(e) is null
+ ) then raise exception 'FAIL: confirmed membership did not release matched volume'; end if;
  if (select count(*) from private.notification_jobs where kind='membership_confirmed' and reference=current_setting('membership_qa.enrollment')::uuid)<>1 then raise exception 'FAIL: duplicate membership confirmation notification'; end if;
  select * into j from private.notification_jobs where kind='membership_requested' and reference=current_setting('membership_qa.enrollment')::uuid;
  if private.notification_authorized(j.id,j.lease) then raise exception 'FAIL: stale requested notification after confirmation'; end if;

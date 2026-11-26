@@ -134,8 +134,20 @@ export const membershipWithdrawalSchema = z.object({
 });
 export const membershipConfirmationSchema = z.object({
   enrollmentId: z.uuid(),
-  // The database requires 2-128 characters; keep the form in step with it.
-  externalMemberId: z.string().trim().min(2).max(128),
+  externalMemberId: z
+    .string()
+    .trim()
+    .min(2)
+    .max(128)
+    .regex(/^[^\x00-\x1f\x7f]+$/),
+  sponsorMemberId: z
+    .string()
+    .trim()
+    .min(1)
+    .max(128)
+    .regex(/^[^\x00-\x1f\x7f]+$/),
+  verifiedMarket: marketSchema,
+  verifiedTier: tierCode,
   reference,
   verified: z.literal(true),
 });
